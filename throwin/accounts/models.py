@@ -13,10 +13,11 @@ from common.models import BaseModel
 
 from core.utils import get_user_media_file_prefix
 
+from django.db.models.signals import post_save
+from accounts.signals import post_save_user
+
 
 # Create your models here.
-
-
 class UserManager(BaseUserManager):
     def create_user(self, email=None, phone_number=None, password=None, **extra_fields):
         """Create a regular user with either email or phone number"""
@@ -78,3 +79,32 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
     class Meta:
         verbose_name = "User"
         verbose_name_plural = "Users"
+
+
+class UserProfile(BaseModel):
+    """Profile for additional stuff information (e.g., staff introduction, scores)."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
+    introduction = models.TextField(blank=True, null=True)  # Only applicable for staff
+    total_score = models.PositiveIntegerField(default=0)  # Only applicable for staff
+
+    def __str__(self):
+        return f"Profile of {self.user.name}"
+
+
+class Like(BaseModel):
+    """Tracks which staff members a consumer likes."""
+    consumer = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="liked_staff", limit_choices_to={"kind": UserKind.CONSUMER}
+    )
+    staff = models.ForeignKey(
+        User, on_delete=models.CASCADE, related_name="likes", limit_choices_to={"kind": UserKind.RESTAURANT_STUFF}
+    )
+
+    class Meta:
+        unique_together = ("consumer", "staff")  # Prevent duplicate likes
+
+    def __str__(self):
+        return f"{self.consumer.name} likes {self.staff.name}"
+
+
+post_save.connect(post_save_user, sender=User)
