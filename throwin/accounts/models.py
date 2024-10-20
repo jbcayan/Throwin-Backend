@@ -58,6 +58,7 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
         null=True
     )
     name = models.CharField(max_length=255)
+    username = models.CharField(max_length=255, blank=True, null=True)
     gender = models.CharField(max_length=255, choices=GenderChoices.choices, default=GenderChoices.OTHER)
     kind = models.CharField(max_length=255, choices=UserKind.choices, default=UserKind.UNDEFINED)
     image = VersatileImageField(
