@@ -4,17 +4,16 @@ from django.contrib.auth.models import (
     PermissionsMixin
 )
 from django.db import models
+from django.db.models.signals import post_save
 
 from versatileimagefield.fields import VersatileImageField
 
 from accounts.choices import GenderChoices, UserKind
+from accounts.signals import post_save_user
 
 from common.models import BaseModel
 
 from core.utils import get_user_media_file_prefix
-
-from django.db.models.signals import post_save
-from accounts.signals import post_save_user
 
 
 # Create your models here.

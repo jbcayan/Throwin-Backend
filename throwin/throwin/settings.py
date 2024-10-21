@@ -112,11 +112,11 @@ WSGI_APPLICATION = 'throwin.wsgi.application'
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": 'throwin_101',
-        "USER": 'postgres',
-        "PASSWORD": '2244',
-        "HOST": 'localhost',
-        "PORT": '5432',
+        "NAME": config("DB_NAME", default="throwin"),
+        "USER": config("DB_USER", default="postgres"),
+        "PASSWORD": config("DB_PASSWORD", default="postgres"),
+        "HOST": config("DB_HOST", default="127.0.0.1"),
+        "PORT": config("DB_PORT", default="5432"),
     }
 }
 

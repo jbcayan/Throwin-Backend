@@ -3,9 +3,13 @@ from rest_framework.response import Response
 from accounts.rest.serializers.user_registration import UserRegisterSerializerWithEmail
 from rest_framework import generics, status
 from drf_spectacular.utils import extend_schema
+from rest_framework_simplejwt.tokens import RefreshToken
 
 
-@extend_schema(tags=["User Registration"])
+@extend_schema(
+    request=UserRegisterSerializerWithEmail,
+    responses={status.HTTP_201_CREATED: {"msg": "User Created Successfully"}},
+)
 class UserRegistration(generics.CreateAPIView):
     """View for user registration"""
 
@@ -18,7 +22,7 @@ class UserRegistration(generics.CreateAPIView):
 
         return Response(
             {
-                "detail": "User Created Successfully",
+                "msg": "User Created Successfully",
             },
             status=status.HTTP_201_CREATED,
         )
