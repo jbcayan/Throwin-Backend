@@ -8,7 +8,7 @@ from django.db.models.signals import post_save
 
 from versatileimagefield.fields import VersatileImageField
 
-from accounts.choices import GenderChoices, UserKind
+from accounts.choices import GenderChoices, UserKind, AuthProvider
 from accounts.signals import post_save_user
 
 from common.models import BaseModel
@@ -66,6 +66,11 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
         upload_to=get_user_media_file_prefix,
         blank=True,
         null=True
+    )
+    auth_provider = models.CharField(
+        max_length=50,
+        choices=AuthProvider.choices,
+        default=AuthProvider.EMAIL
     )
 
     objects = UserManager()

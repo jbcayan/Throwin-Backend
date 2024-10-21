@@ -15,17 +15,14 @@ class UserLoginSerializer(serializers.Serializer):
         if email and password:
             user = authenticate(request=self.context.get("request"), email=email, password=password)
 
-            # The authenticate call simply returns None for is_active=False
-            # users. (Assuming the default ModelBackend authentication
-            # backend.)
             if not user:
                 raise serializers.ValidationError(
-                    {"msg": "Unable to log in with provided credentials."
+                    {"detail": "Unable to log in with provided credentials."
                      }, code="authorization"
                 )
         else:
             raise serializers.ValidationError({
-                "msg": "Must include email and password."
+                "detail": "Must include email and password."
             }, code="authorization")
 
         attrs["user"] = user

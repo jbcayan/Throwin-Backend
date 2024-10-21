@@ -12,3 +12,11 @@ class UserKind(TextChoices):
     RESTAURANT_STUFF = "restaurant_stuff", "Restaurant Stuff"
     CONSUMER = "consumer", "Consumer"
     UNDEFINED = "undefined", "Undefined"
+
+
+class AuthProvider(TextChoices):
+    EMAIL = "email", "Email"
+    GOOGLE = "google", "Google"
+    FACEBOOK = "facebook", "Facebook"
+    LINE = "line", "Line"
+    APPLE = "apple", "Apple"

@@ -8,6 +8,8 @@ from drf_spectacular.utils import extend_schema
 @extend_schema(
     request=UserLoginSerializer,
     responses={status.HTTP_200_OK: {"data": {"email": "str", "refresh": "str", "access": "str"}}},
+    description="Login API",
+    methods=["POST"],
 )
 class UserLogin(generics.GenericAPIView):
     serializer_class = UserLoginSerializer
