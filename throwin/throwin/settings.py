@@ -29,7 +29,7 @@ DEBUG = config("DEBUG", default=False, cast=bool)
 
 ENABLE_SILK = config("ENABLE_SILK", default=False, cast=bool)
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = config("ALLOWED_HOSTS", cast=lambda v: [s.strip() for s in v.split(",")])
 
 # Application definition
 DJANGO_APPS = [
@@ -202,6 +202,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    f"https://{ALLOWED_HOSTS}"
     # "https://195.35.21.202:8000",
     # "http://195.35.21.202:8000",
     # "https://sub.example.com",
