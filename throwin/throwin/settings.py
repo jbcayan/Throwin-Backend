@@ -47,9 +47,10 @@ THIRD_PARTY_APPS = [
 ]
 
 PROJECT_APPS = [
-    'core',
-    'common',
-    'accounts',
+    'core.apps.CoreConfig',
+    'common.apps.CommonConfig',
+    'accounts.apps.AccountsConfig',
+    "store.apps.StoreConfig",
 ]
 
 if ENABLE_SILK:

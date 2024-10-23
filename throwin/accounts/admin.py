@@ -24,11 +24,10 @@ class UserProfileInline(admin.StackedInline):
 
 class UserAdmin(BaseUserAdmin):
     """User Admin Configuration"""
+    list_display = ["id", "uid",  "email", "phone_number", "name", "is_active", "is_staff", "is_superuser"]
 
-    ordering = ["-id"]
-    list_display = ["email", "phone_number", "name", "kind", "is_active", "is_staff", "is_superuser"]
     fieldsets = (
-        (None, {"fields": ("email", "phone_number", "name", "gender", "kind", "image")}),
+        (None, {"fields": ("email", "phone_number", "name", "gender", "image")}),
         (
             "Permissions",
             {
@@ -66,7 +65,6 @@ class LikeAdmin(admin.ModelAdmin):
     """Admin configuration for Likes."""
     list_display = ["consumer", "staff", "created_at"]
     search_fields = ["consumer__name", "staff__name"]
-    list_filter = ["consumer__kind", "staff__kind"]
     ordering = ["-created_at"]
 
 

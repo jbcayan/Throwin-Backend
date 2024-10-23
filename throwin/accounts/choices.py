@@ -8,6 +8,7 @@ class GenderChoices(TextChoices):
 
 
 class UserKind(TextChoices):
+    SUPER_ADMIN = "super_admin", "Super Admin"
     ADMIN = "admin", "Admin"
     RESTAURANT_STUFF = "restaurant_stuff", "Restaurant Stuff"
     CONSUMER = "consumer", "Consumer"

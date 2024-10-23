@@ -5,14 +5,11 @@ from django.contrib.auth.models import (
 )
 from django.db import models
 from django.db.models.signals import post_save
-
 from versatileimagefield.fields import VersatileImageField
 
 from accounts.choices import GenderChoices, UserKind, AuthProvider
 from accounts.signals import post_save_user
-
 from common.models import BaseModel
-
 from core.utils import get_user_media_file_prefix
 
 
@@ -22,6 +19,7 @@ class UserManager(BaseUserManager):
         """Create a regular user with either email or phone number"""
         if not email and not phone_number:
             raise ValueError("User must have either email or phone number")
+
         user = self.model(
             email=self.normalize_email(email),
             phone_number=phone_number,
@@ -33,10 +31,11 @@ class UserManager(BaseUserManager):
 
     def create_superuser(self, email=None, phone_number=None, password=None, **extra_fields):
         """Create a superuser"""
+
         user = self.create_user(email, phone_number, password, **extra_fields)
         user.is_staff = True
         user.is_superuser = True
-        user.kind = UserKind.ADMIN
+        user.kind = UserKind.SUPER_ADMIN
         user.save(using=self._db)
         return user
 
@@ -51,16 +50,26 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
         null=True
     )
     phone_number = models.CharField(
-        max_length=255,
+        max_length=15,
         unique=True,
         db_index=True,
         blank=True,
         null=True
     )
-    name = models.CharField(max_length=255)
-    username = models.CharField(max_length=255, blank=True, null=True)
-    gender = models.CharField(max_length=255, choices=GenderChoices.choices, default=GenderChoices.OTHER)
-    kind = models.CharField(max_length=255, choices=UserKind.choices, default=UserKind.UNDEFINED)
+    name = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+    username = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True
+    )
+    gender = models.CharField(
+        max_length=20,
+        choices=GenderChoices.choices,
+        default=GenderChoices.OTHER)
     image = VersatileImageField(
         "profile_image",
         upload_to=get_user_media_file_prefix,
@@ -71,6 +80,14 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
         max_length=50,
         choices=AuthProvider.choices,
         default=AuthProvider.EMAIL
+    )
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False)
+    kind = models.CharField(
+        max_length=50,
+        choices=UserKind.choices,
+        default=UserKind.UNDEFINED
     )
 
     objects = UserManager()
@@ -87,8 +104,15 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
 
 class UserProfile(BaseModel):
     """Profile for additional stuff information (e.g., staff introduction, scores)."""
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="profile")
-    introduction = models.TextField(blank=True, null=True)  # Only applicable for staff
+    user = models.OneToOneField(
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="profile"
+    )
+    introduction = models.TextField(
+        blank=True,
+        null=True
+    )  # Only applicable for staff
     total_score = models.PositiveIntegerField(default=0)  # Only applicable for staff
 
     def __str__(self):
@@ -98,10 +122,16 @@ class UserProfile(BaseModel):
 class Like(BaseModel):
     """Tracks which staff members a consumer likes."""
     consumer = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="liked_staff", limit_choices_to={"kind": UserKind.CONSUMER}
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="liked_staff",
+        limit_choices_to={"kind": UserKind.CONSUMER}
     )
     staff = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="likes", limit_choices_to={"kind": UserKind.RESTAURANT_STUFF}
+        "accounts.User",
+        on_delete=models.CASCADE,
+        related_name="likes",
+        limit_choices_to={"kind": UserKind.RESTAURANT_STUFF}
     )
 
     class Meta:
