@@ -13,7 +13,6 @@ from datetime import timedelta
 from pathlib import Path
 
 from decouple import config
-from tests.settings_base import VERSATILEIMAGEFIELD_RENDITION_KEY_SETS
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
