@@ -203,7 +203,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    f"https://{ALLOWED_HOSTS}"
+    "https://52cb-103-180-245-253.ngrok-free.app"
     # "https://195.35.21.202:8000",
     # "http://195.35.21.202:8000",
     # "https://sub.example.com",

@@ -24,10 +24,10 @@ class UserProfileInline(admin.StackedInline):
 
 class UserAdmin(BaseUserAdmin):
     """User Admin Configuration"""
-    list_display = ["id", "uid",  "email", "phone_number", "name", "is_active", "is_staff", "is_superuser"]
+    list_display = ["id", "uid",  "email", "phone_number", "name", "kind", "is_active", "is_staff", "is_superuser"]
 
     fieldsets = (
-        (None, {"fields": ("email", "phone_number", "name", "gender", "image")}),
+        (None, {"fields": ("email", "phone_number", "name", "kind", "gender", "image")}),
         (
             "Permissions",
             {

@@ -8,4 +8,6 @@ urlpatterns = [
     path("/login", include("accounts.rest.urls.user_login")),
     # path("/logout", include("accounts.rest.urls.user_logout")),
     path("/social", include("accounts.rest.urls.social_authentication")),
+    path("/user", include("accounts.rest.urls.user")),
+
 ]
