@@ -46,7 +46,7 @@ THIRD_PARTY_APPS = [
     'rest_framework',
 ]
 
-render = config("RENDER", default=False, cast=bool)
+render = True
 
 if render:
     PROJECT_APPS = [
