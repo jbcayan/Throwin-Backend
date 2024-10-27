@@ -9,9 +9,9 @@ pip install -r ../requirements.txt
 echo "python dependencies installed"
 
 # collect static files
-python throwin/manage.py collectstatic --noinput
+python manage.py collectstatic --noinput
 echo "static files collected"
 
 # migrate
-python throwin/manage.py migrate
+python manage.py migrate
 echo "db migrated"
