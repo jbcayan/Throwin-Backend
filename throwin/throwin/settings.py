@@ -46,22 +46,12 @@ THIRD_PARTY_APPS = [
     'rest_framework',
 ]
 
-render = True
-
-if render:
-    PROJECT_APPS = [
-        "throwin.core",
-        "throwin.common",
-        "throwin.accounts",
-        "throwin.store",
-    ]
-else:
-    PROJECT_APPS = [
-        'core.apps.CoreConfig',
-        'common.apps.CommonConfig',
-        'accounts.apps.AccountsConfig',
-        "store.apps.StoreConfig",
-    ]
+PROJECT_APPS = [
+    'core.apps.CoreConfig',
+    'common.apps.CommonConfig',
+    'accounts.apps.AccountsConfig',
+    "store.apps.StoreConfig",
+]
 
 if ENABLE_SILK:
     THIRD_PARTY_APPS += ["silk"]
