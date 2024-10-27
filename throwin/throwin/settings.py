@@ -110,7 +110,7 @@ WSGI_APPLICATION = 'throwin.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-if config("RENDER"):
+if config("RENDER", cast=bool):
     DATABASES = {
         "default": dj_database_url.parse(config("DATABASE_URL")),
     }
@@ -125,10 +125,6 @@ else:
             "PORT": config("DB_PORT", default="5432"),
         }
     }
-#
-# DATABASES = {
-#     "default": dj_database_url.parse(config("DATABASE_URL")),
-# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
