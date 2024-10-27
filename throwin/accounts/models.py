@@ -113,6 +113,10 @@ class UserProfile(BaseModel):
         blank=True,
         null=True
     )  # Only applicable for staff
+    address = models.TextField(
+        blank=True,
+        null=True
+    )  # applicable for consumers
     total_score = models.PositiveIntegerField(default=0)  # Only applicable for staff
 
     def __str__(self):

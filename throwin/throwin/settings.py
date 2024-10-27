@@ -9,6 +9,7 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
+import dj_database_url
 from datetime import timedelta
 from pathlib import Path
 
@@ -109,16 +110,24 @@ WSGI_APPLICATION = 'throwin.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.postgresql",
+#         "NAME": config("DB_NAME", default="throwin"),
+#         "USER": config("DB_USER", default="postgres"),
+#         "PASSWORD": config("DB_PASSWORD", default="postgres"),
+#         "HOST": config("DB_HOST", default="127.0.0.1"),
+#         "PORT": config("DB_PORT", default="5432"),
+#     }
+# }
+#
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": config("DB_NAME", default="throwin"),
-        "USER": config("DB_USER", default="postgres"),
-        "PASSWORD": config("DB_PASSWORD", default="postgres"),
-        "HOST": config("DB_HOST", default="127.0.0.1"),
-        "PORT": config("DB_PORT", default="5432"),
-    }
+    "default": dj_database_url.parse(config("DATABASE_URL")),
 }
+
+# DATABASES = {
+#     "default": dj_database_url.parse("postgresql://throwin_render_db_instance_user:vSi1R8aOCEhgWpAkAKjQq7iWlmFiOIiq@dpg-csern7e8ii6s7398bpf0-a.oregon-postgres.render.com/throwin_render_db_instance")
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators

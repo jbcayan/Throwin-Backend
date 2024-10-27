@@ -4,10 +4,13 @@ from accounts.choices import UserKind
 def post_save_user(sender, instance, created, **kwargs):
     from accounts.models import UserProfile
 
-    if created and instance.kind == UserKind.RESTAURANT_STUFF:
-        # create default profile for restaurant stuff when a new user is created
-        UserProfile.objects.create(
-            user=instance,
-            introduction="I'm restaurant stuff.",
-            total_score=0
-        )
+    default_profiles = {
+        UserKind.RESTAURANT_STUFF: {"introduction": "I'm restaurant stuff.", "address": "", "total_score": 0},
+        UserKind.CONSUMER: {"introduction": "", "address": "", "total_score": 0}
+    }
+
+    if created and instance.kind in default_profiles:
+        profile_data = default_profiles[instance.kind]
+        UserProfile.objects.create(user=instance, **profile_data)
+
+
