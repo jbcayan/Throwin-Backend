@@ -1,3 +1,5 @@
+echo "render_build.sh running"
+
 # exit on error
 set -o errexit
 
