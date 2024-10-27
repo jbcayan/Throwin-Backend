@@ -18,11 +18,13 @@ google-auth==2.35.0
 google-auth-httplib2==0.2.0
 googleapis-common-protos==1.65.0
 gprof2dot==2024.6.6
+gunicorn==23.0.0
 httplib2==0.22.0
 idna==3.10
 inflection==0.5.1
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
+packaging==24.1
 pillow==11.0.0
 proto-plus==1.24.0
 protobuf==5.28.2
