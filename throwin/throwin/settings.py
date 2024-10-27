@@ -110,23 +110,24 @@ WSGI_APPLICATION = 'throwin.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-# DATABASES = {
-#     "default": {
-#         "ENGINE": "django.db.backends.postgresql",
-#         "NAME": config("DB_NAME", default="throwin"),
-#         "USER": config("DB_USER", default="postgres"),
-#         "PASSWORD": config("DB_PASSWORD", default="postgres"),
-#         "HOST": config("DB_HOST", default="127.0.0.1"),
-#         "PORT": config("DB_PORT", default="5432"),
-#     }
-# }
+if config("RENDER"):
+    DATABASES = {
+        "default": dj_database_url.parse(config("DATABASE_URL")),
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": config("DB_NAME", default="throwin"),
+            "USER": config("DB_USER", default="postgres"),
+            "PASSWORD": config("DB_PASSWORD", default="postgres"),
+            "HOST": config("DB_HOST", default="127.0.0.1"),
+            "PORT": config("DB_PORT", default="5432"),
+        }
+    }
 #
-DATABASES = {
-    "default": dj_database_url.parse(config("DATABASE_URL")),
-}
-
 # DATABASES = {
-#     "default": dj_database_url.parse("postgresql://throwin_render_db_instance_user:vSi1R8aOCEhgWpAkAKjQq7iWlmFiOIiq@dpg-csern7e8ii6s7398bpf0-a.oregon-postgres.render.com/throwin_render_db_instance")
+#     "default": dj_database_url.parse(config("DATABASE_URL")),
 # }
 
 # Password validation
@@ -211,7 +212,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "https://52cb-103-180-245-253.ngrok-free.app"
+    "https://throwin-backend.onrender.com"
     # "https://195.35.21.202:8000",
     # "http://195.35.21.202:8000",
     # "https://sub.example.com",
