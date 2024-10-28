@@ -41,3 +41,17 @@ class UserRegisterSerializerWithEmail(serializers.ModelSerializer):
         user.save()
 
         return user
+
+
+class CheckEmailAlreadyExistsSerializer(serializers.Serializer):
+    """Serializer for checking if email already exists."""
+    email = serializers.EmailField()
+
+    class Meta:
+        fields = ("email",)
+
+    def validate(self, attrs):
+        """Ensure email doesn't already exist."""
+        if User.objects.filter(email=attrs["email"]).exists():
+            raise serializers.ValidationError({"email": "Email already exists."})
+        return attrs
