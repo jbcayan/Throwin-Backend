@@ -114,26 +114,15 @@ if config("RENDER", cast=bool):
     DATABASES = {
         "default": dj_database_url.parse(config("DATABASE_URL")),
     }
-if config("DOCKER", cast=bool):
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": "postgres",
-            "USER": "postgres",
-            "PASSWORD": "postgres",
-            "HOST": "db",  # Container name in docker-compose
-            "PORT": "5432",  # Internal container port
-        }
-    }
 else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": config("_DB_NAME", default="throwin"),
-            "USER": config("_DB_USER", default="postgres"),
-            "PASSWORD": config("_DB_PASSWORD", default="postgres"),
-            "HOST": config("_DB_HOST", default="127.0.0.1"),
-            "PORT": config("_DB_PORT", default="5432"),
+            "NAME": config("DB_NAME", default="throwin"),
+            "USER": config("DB_USER", default="postgres"),
+            "PASSWORD": config("DB_PASSWORD", default="postgres"),
+            "HOST": config("DB_HOST", default="127.0.0.1"),
+            "PORT": config("DB_PORT", default="5432"),
         }
     }
 
