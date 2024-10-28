@@ -114,15 +114,26 @@ if config("RENDER", cast=bool):
     DATABASES = {
         "default": dj_database_url.parse(config("DATABASE_URL")),
     }
+if config("DOCKER", cast=bool):
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": "postgres",
+            "USER": "postgres",
+            "PASSWORD": "postgres",
+            "HOST": "db",  # Container name in docker-compose
+            "PORT": "5432",  # Internal container port
+        }
+    }
 else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
-            "NAME": config("DB_NAME", default="throwin"),
-            "USER": config("DB_USER", default="postgres"),
-            "PASSWORD": config("DB_PASSWORD", default="postgres"),
-            "HOST": config("DB_HOST", default="127.0.0.1"),
-            "PORT": config("DB_PORT", default="5432"),
+            "NAME": config("_DB_NAME", default="throwin"),
+            "USER": config("_DB_USER", default="postgres"),
+            "PASSWORD": config("_DB_PASSWORD", default="postgres"),
+            "HOST": config("_DB_HOST", default="127.0.0.1"),
+            "PORT": config("_DB_PORT", default="5432"),
         }
     }
 
@@ -211,12 +222,11 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:8000",
     "http://127.0.0.1:8000",
     "https://throwin-backend.onrender.com"
-    # "https://195.35.21.202:8000",
-    # "http://195.35.21.202:8000",
-    # "https://sub.example.com",
 ]
 
-# CSRF_USE_SESSIONS = True
+CORS_ALLOW_CREDENTIALS = True
+CSRF_USE_SESSIONS = True
+CSRF_COOKIE_DOMAIN = 'localhost:5173'
 # CSRF_COOKIE_DOMAIN = 'core-sm.online'
 
 REST_FRAMEWORK = {

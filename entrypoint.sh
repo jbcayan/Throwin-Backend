@@ -23,6 +23,10 @@ python manage.py migrate
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
+# Start the Django development server
+echo "Starting Django development server..."
+python manage.py runserver 0.0.0.0:8000
+
 # Start the Gunicorn server
-echo "Starting Gunicorn..."
-exec gunicorn throwin.wsgi:application --bind 0.0.0.0:8000
+#echo "Starting Gunicorn..."
+#exec gunicorn throwin.wsgi:application --bind 0.0.0.0:8000
