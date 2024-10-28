@@ -1,0 +1,61 @@
+services:
+  db:
+    container_name: postgres_db
+    image: postgres:latest
+    restart: always
+    ports:
+      - "5432:5432"
+    volumes:
+      - db:/var/lib/postgresql/data
+    env_file:
+      - ./throwin/.env
+
+  redis:
+    container_name: redis_cache
+    image: redis:latest
+    restart: always
+    ports:
+      - "6379:6379"
+
+  app:
+    container_name: throwin_backend
+    image: app:throwin_backend
+    build: .
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    command: sh /entrypoint.sh
+    env_file:
+      - ./throwin/.env
+    depends_on:
+      - db
+      - redis
+
+  celery_worker:
+    container_name: throwin_celery_worker
+    build: .
+    volumes:
+      - .:/app
+    command: celery -A throwin worker -l info
+    env_file:
+      - ./throwin/.env
+    depends_on:
+      - db
+      - redis
+
+  celery_beat:
+    container_name: throwin_celery_beat
+    build: .
+    volumes:
+      - .:/app
+    command: celery -A throwin beat -l info
+    env_file:
+      - ./throwin/.env
+    depends_on:
+      - db
+      - redis
+
+volumes:
+  db:
+
