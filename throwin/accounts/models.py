@@ -1,3 +1,5 @@
+from email.policy import default
+
 from django.contrib.auth.models import (
     AbstractUser,
     BaseUserManager,
@@ -5,11 +7,14 @@ from django.contrib.auth.models import (
 )
 from django.db import models
 from django.db.models.signals import post_save
+
 from versatileimagefield.fields import VersatileImageField
 
 from accounts.choices import GenderChoices, UserKind, AuthProvider
 from accounts.signals import post_save_user
+
 from common.models import BaseModel
+
 from core.utils import get_user_media_file_prefix
 
 
@@ -96,6 +101,15 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
 
     def __str__(self):
         return self.email or self.phone_number
+
+    @property
+    def get_store(self):
+        if self.kind == UserKind.RESTAURANT_STUFF:
+            try:
+                return self.storeuser_set.select_related("store").get(is_default=True).store
+            except Exception:
+                return None
+        return None
 
     class Meta:
         verbose_name = "User"

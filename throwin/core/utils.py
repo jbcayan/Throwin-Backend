@@ -3,9 +3,9 @@
 import re
 
 
-def get_user_media_file_prefix(filename):
+def get_user_media_file_prefix(instance, filename):
     """Return the file path prefix for a user's media file."""
-    return f"users/profile_pictures/{filename}"
+    return f"users/profile_pictures/{instance.uid}/{filename}"
 
 
 def get_store_banner_file_prefix(filename):

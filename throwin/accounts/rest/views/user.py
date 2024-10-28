@@ -1,4 +1,5 @@
 """Views for user"""
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from accounts.rest.serializers.user import UserNameSerializer
 from rest_framework import generics, status
@@ -10,14 +11,10 @@ from common.permissions import IsConsumerUser
 class UserName(generics.CreateAPIView):
     """View for set name for existing user"""
 
-    serializer_class = UserNameSerializer
     permission_classes = [IsConsumerUser]
+    serializer_class = UserNameSerializer
 
     def post(self, request, *args, **kwargs):
-        print("="*30)
-        print(request.data)
-        print(request.user)
-        print("="*30)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()

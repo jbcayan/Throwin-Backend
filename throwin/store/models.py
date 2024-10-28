@@ -10,6 +10,7 @@ from common.models import BaseModel
 from core.utils import get_store_banner_file_prefix, get_store_logo_file_prefix
 
 from store.choices import StoreUserRole
+from store.utils import generate_store_code
 
 
 # Create your models here.
@@ -19,7 +20,7 @@ class Store(BaseModel):
     code = models.CharField(
         max_length=20,
         unique=True,
-        db_index=True
+        db_index=True,
     )  # Unique store code
     description = models.TextField(blank=True, null=True)
     logo = VersatileImageField(
@@ -39,12 +40,7 @@ class Store(BaseModel):
         """Generate a unique store code if not provided."""
         if not self.code:
             while True:
-                prefix = self.name[:3].lower()
-                random_digits = ''.join(str(random.randint(0, 9)) for _ in range(6))
-                generated_code = f"{prefix}{random_digits}"
-                if not Store.objects.filter(code=generated_code).exists():
-                    self.code = generated_code
-                    break
+                self.code = generate_store_code(self.name)
         super().save(*args, **kwargs)
 
     def __str__(self):
