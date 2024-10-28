@@ -18,13 +18,18 @@ class UserProfileInline(admin.StackedInline):
         return queryset.select_related("user")
 
     def has_change_permission(self, request, obj=None):
-        """Only allow editing profiles for staff users."""
-        return bool(obj and obj.kind == "restaurant_stuff")
+        """Allow editing profiles for all users, if staff."""
+        if request.user.is_staff:
+            return True  # Staff can edit profiles
+        return False  # Non-staff users cannot edit profiles
 
 
 class UserAdmin(BaseUserAdmin):
     """User Admin Configuration"""
-    list_display = ["id", "uid",  "email", "phone_number", "name", "kind", "is_active", "is_staff", "is_superuser"]
+    list_display = [
+        "id", "uid", "email", "phone_number", "name",
+        "kind", "is_active", "is_staff", "is_superuser"
+    ]
 
     fieldsets = (
         (None, {"fields": ("email", "phone_number", "name", "kind", "gender", "image")}),
@@ -54,12 +59,11 @@ class UserAdmin(BaseUserAdmin):
     )
 
     def get_inlines(self, request, obj=None):
-        """Add profile inline only if the user is restaurant staff."""
-        return [UserProfileInline] if obj and obj.kind == "restaurant_stuff" else []
+        """Add profile inline for every user, regardless of kind."""
+        return [UserProfileInline]
 
 
 admin.site.register(User, UserAdmin)
-
 
 class LikeAdmin(admin.ModelAdmin):
     """Admin configuration for Likes."""
