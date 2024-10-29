@@ -1,10 +1,14 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
 
 from google.auth.transport import requests
 from google.oauth2 import id_token
 
 from rest_framework.exceptions import AuthenticationFailed
+from rest_framework_simplejwt.tokens import AccessToken
 
 from common.utils import login_social_user
 
@@ -53,3 +57,25 @@ def register_social_user(provider, email, name):
         user.save()
 
         return login_social_user(email=email, password=settings.SOCIAL_AUTH_PASSWORD)
+
+
+class EmailVerificationTokenGenerator(PasswordResetTokenGenerator):
+    pass
+
+
+email_activation_token = EmailVerificationTokenGenerator()
+
+
+def generate_email_activation_url(user):
+    """Generate an activation url with user id and token """
+    uid64 = urlsafe_base64_encode(force_bytes(user.id))
+    token = email_activation_token.make_token(user)
+    return f"{settings.FRONTEND_URL}/activate/{uid64}/{token}"
+
+
+def generate_verification_token(user, new_email):
+    """Generate a JWT access token with user id and new email"""
+    token = AccessToken.for_user(user)
+    token["new_email"] = new_email
+
+    return str(token)

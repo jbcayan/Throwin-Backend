@@ -18,10 +18,8 @@ class UserProfileInline(admin.StackedInline):
         return queryset.select_related("user")
 
     def has_change_permission(self, request, obj=None):
-        """Allow editing profiles for all users, if staff."""
-        if request.user.is_staff:
-            return True  # Staff can edit profiles
-        return False  # Non-staff users cannot edit profiles
+        """Allow editing profiles for all users, if staffed."""
+        return bool(request.user.is_staff)
 
 
 class UserAdmin(BaseUserAdmin):
@@ -39,6 +37,7 @@ class UserAdmin(BaseUserAdmin):
                 "fields": (
                     "is_active",
                     "is_staff",
+                    "is_verified",
                     "is_superuser",
                     "groups",
                     "user_permissions",
@@ -64,6 +63,7 @@ class UserAdmin(BaseUserAdmin):
 
 
 admin.site.register(User, UserAdmin)
+
 
 class LikeAdmin(admin.ModelAdmin):
     """Admin configuration for Likes."""

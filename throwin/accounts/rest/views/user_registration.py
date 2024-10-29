@@ -1,13 +1,18 @@
 """Views for user registration"""
+
+from django.contrib.auth import get_user_model
+
+from drf_spectacular.utils import extend_schema
+
+from rest_framework import generics, status
 from rest_framework.response import Response
+
 from accounts.rest.serializers.user_registration import (
     UserRegisterSerializerWithEmail,
     CheckEmailAlreadyExistsSerializer,
 )
-from rest_framework import generics, status
-from drf_spectacular.utils import extend_schema
-
-from django.contrib.auth import get_user_model
+from accounts.tasks import send_mail_task
+from accounts.utils import generate_email_activation_url
 
 User = get_user_model()
 
@@ -28,12 +33,19 @@ class UserRegistration(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        return Response(
-            {
-                "detail": "User Created Successfully",
-            },
-            status=status.HTTP_201_CREATED,
-        )
+        activation_url = generate_email_activation_url(user)
+        print("Activation URL: ", activation_url)
+
+        # send email
+        subject = "Activate Your Account"
+        message = f"Please click the link below to activate your account. {activation_url}"
+        to_email = user.email
+        send_mail_task(subject, message, to_email)
+        print("Email sent!")
+
+        return Response({
+            "detail": "User Created Successfully",
+        }, status=status.HTTP_201_CREATED)
 
 
 @extend_schema(
@@ -50,7 +62,6 @@ class CheckEmailAlreadyExists(generics.GenericAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # email = serializer.validated_data.get("email")
-        # if User.objects.filter(email=email).exists():
-        #     return Response({"detail": "Email Already Exists"}, status=status.HTTP_400_BAD_REQUEST)
-        return Response({"detail": "Email Available"}, status=status.HTTP_200_OK)
+        return Response({
+            "detail": "Email Available"
+        }, status=status.HTTP_200_OK)
