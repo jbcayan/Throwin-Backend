@@ -10,6 +10,7 @@ from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.serializers import Serializer
 
 from rest_framework_simplejwt.tokens import AccessToken
 
@@ -25,8 +26,11 @@ from common.permissions import IsConsumerUser
 User = get_user_model()
 
 
-@extend_schema(request=UserNameSerializer)
-class UserName(generics.CreateAPIView):
+@extend_schema(
+    summary="Set name for existing user",
+    request=UserNameSerializer
+)
+class UserName(generics.GenericAPIView):
     """View for set name for existing user"""
 
     permission_classes = [IsConsumerUser]
@@ -43,8 +47,13 @@ class UserName(generics.CreateAPIView):
         )
 
 
-@extend_schema()
-class AccountActivation(APIView):
+@extend_schema(
+    summary="Activate User Account using URL Path Parameters",
+    description="Activate User Account using URL Path Parameters",
+)
+class AccountActivation(generics.GenericAPIView):
+    """View for activate user account"""
+
     def get(self, request, uidb64, token):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
@@ -67,7 +76,12 @@ class AccountActivation(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
 
-class EmailChangeRequest(generics.CreateAPIView):
+@extend_schema(
+    summary="Request for email change",
+    description="Request for email change",
+    request=EmailChangeRequestSerializer
+)
+class EmailChangeRequest(generics.GenericAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = EmailChangeRequestSerializer
 
@@ -81,8 +95,17 @@ class EmailChangeRequest(generics.CreateAPIView):
         }, status=status.HTTP_200_OK)
 
 
-@extend_schema()
-class VerifyEmailChange(APIView):
+@extend_schema(
+    summary="Verify and change user email",
+    description=(
+            "Provide the token as a query parameter to verify and update the user's email.\n\n"
+            "**Example Request:**\n"
+            "`GET /api/v1/auth/email-change/verify/?token=<your_token>`\n\n"
+            "The token should be sent as a query parameter in the URL. This token contains the user's "
+            "ID and new email address, and it must be valid and not expired."
+    ),
+)
+class VerifyEmailChange(generics.GenericAPIView):
     def get(self, request):
         token = request.query_params.get("token", "")
 

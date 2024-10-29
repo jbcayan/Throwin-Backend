@@ -6,6 +6,7 @@ from drf_spectacular.utils import extend_schema
 
 
 @extend_schema(
+    summary="Login API by email and password",
     request=UserLoginSerializer,
     responses={status.HTTP_200_OK: {"data": {"email": "str", "refresh": "str", "access": "str"}}},
     description="Login API",

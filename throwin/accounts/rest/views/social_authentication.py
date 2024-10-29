@@ -6,6 +6,7 @@ from drf_spectacular.utils import extend_schema
 
 
 @extend_schema(
+    summary="Sign in with Google",
     request=GoogleSignInSerializer,
     description="Sign in with Google",
 )
