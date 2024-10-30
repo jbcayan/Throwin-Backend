@@ -1,7 +1,7 @@
 """Django Admin Configuration"""
 
 from django.contrib import admin
-from accounts.models import User, UserProfile, Like
+from accounts.models import User, UserProfile, Like, TemporaryUser
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 
@@ -30,7 +30,22 @@ class UserAdmin(BaseUserAdmin):
     ]
 
     fieldsets = (
-        (None, {"fields": ("email", "phone_number", "name", "kind", "gender", "image")}),
+        (None,
+         {
+             "fields":
+                 (
+                     "status",
+                     "email",
+                     "phone_number",
+                     "name",
+                     "kind",
+                     "gender",
+                     "image",
+                     "auth_provider",
+                     "store",
+                 )
+         }
+         ),
         (
             "Permissions",
             {
@@ -73,3 +88,13 @@ class LikeAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Like, LikeAdmin)
+
+
+class TemporaryUserAdmin(admin.ModelAdmin):
+    """Admin configuration for TemporaryUser."""
+    list_display = ["id", "email", "token", "created_at"]
+    search_fields = ["email", "token"]
+    ordering = ["-created_at"]
+
+
+admin.site.register(TemporaryUser, TemporaryUserAdmin)

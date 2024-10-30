@@ -1,5 +1,4 @@
-from email.policy import default
-
+import uuid
 from django.contrib.auth.models import (
     AbstractUser,
     BaseUserManager,
@@ -94,6 +93,13 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
         choices=UserKind.choices,
         default=UserKind.UNDEFINED
     )
+    store = models.ForeignKey(
+        "store.Store",
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        default=None
+    )
 
     objects = UserManager()
     USERNAME_FIELD = "email"  # Or switch to phone_number as needed
@@ -157,6 +163,33 @@ class Like(BaseModel):
 
     def __str__(self):
         return f"{self.consumer.name} likes {self.staff.name}"
+
+
+class TemporaryUser(BaseModel):
+
+    """Temporary model to store unverified user data."""
+    email = models.EmailField(unique=True)
+    password = models.CharField(max_length=255)
+    token = models.CharField(max_length=255, unique=True)
+    kind = models.CharField(
+        max_length=50,
+        choices=UserKind.choices,
+        default=UserKind.UNDEFINED
+    )
+
+    def __str__(self):
+        return self.email
+
+    def save(self, *args, **kwargs):
+        from accounts.utils import generate_token
+
+        if not self.token:
+            # Generate a unique token by uuid
+            self.token = generate_token()
+        return super().save(*args, **kwargs)
+
+    class Meta:
+        ordering = ['-created_at']
 
 
 post_save.connect(post_save_user, sender=User)

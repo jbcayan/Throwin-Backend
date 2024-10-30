@@ -1,4 +1,6 @@
 """Views for user"""
+from django.utils import timezone
+from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.utils.encoding import force_str
@@ -9,15 +11,15 @@ from rest_framework import generics, status
 
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework.serializers import Serializer
 
 from rest_framework_simplejwt.tokens import AccessToken
 
+from accounts.choices import UserKind
+from accounts.models import TemporaryUser
+
 from accounts.rest.serializers.user import (
     EmailChangeRequestSerializer,
-    UserNameSerializer
-
+    UserNameSerializer,
 )
 from accounts.utils import email_activation_token
 
@@ -57,19 +59,35 @@ class AccountActivation(generics.GenericAPIView):
     def get(self, request, uidb64, token):
         try:
             uid = force_str(urlsafe_base64_decode(uidb64))
-            user = User.objects.get(pk=uid)
+            temp_user = TemporaryUser.objects.get(pk=uid, token=token)
 
-            if email_activation_token.check_token(user, token):
-                user.is_active = True
-                user.is_verified = True
-                user.save()
+            TOKEN_EXPIRATION_HOURS = 48  # Token validity period
+
+            # check if token is expired
+            if (
+                temp_user.created_at + timedelta(hours=TOKEN_EXPIRATION_HOURS)
+                <= timezone.now()
+            ):
                 return Response({
-                    "detail": "Account Activated Successfully"
-                }, status=status.HTTP_200_OK)
-            else:
-                return Response({
-                    "detail": "Invalid Token"
+                    "detail": "Token Expired"
                 }, status=status.HTTP_400_BAD_REQUEST)
+
+            # if not expired, create user
+            user = User.objects.create_user(
+                email=temp_user.email,
+                kind=temp_user.kind,
+                is_verified=True
+            )
+            user.set_password(temp_user.password)
+            user.save()
+
+            # delete temp user
+            temp_user.delete()
+
+            return Response({
+                "detail": "Account Activated Successfully"
+            }, status=status.HTTP_200_OK)
+
         except Exception:
             return Response({
                 "detail": "Invalid Token or User"
@@ -132,3 +150,4 @@ class VerifyEmailChange(generics.GenericAPIView):
             return Response({
                 "detail": "Invalid Token or Expired"
             }, status=status.HTTP_400_BAD_REQUEST)
+

@@ -23,3 +23,6 @@ class BaseModel(models.Model):
 
     class Meta:
         abstract = True
+
+    def get_all_actives(self):
+        return self.__class__.objects.filter(status=Status.ACTIVE).order_by("-id")

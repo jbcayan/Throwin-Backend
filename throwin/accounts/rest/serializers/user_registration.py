@@ -1,10 +1,13 @@
 """Serializers for User model."""
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
+
 from rest_framework import serializers
 
 from accounts.choices import UserKind
+from accounts.models import TemporaryUser
 
 User = get_user_model()
 
@@ -15,7 +18,7 @@ class UserRegisterSerializerWithEmail(serializers.ModelSerializer):
     confirm_password = serializers.CharField(write_only=True, required=True)
 
     class Meta:
-        model = User
+        model = TemporaryUser
         fields = (
             "email",
             "password",
@@ -32,15 +35,11 @@ class UserRegisterSerializerWithEmail(serializers.ModelSerializer):
         """Create a new user."""
         validated_data.pop("confirm_password")
 
-        # Create a new user with email and password
-        user = User.objects.create_user(
+        return TemporaryUser.objects.create(
             email=validated_data["email"],
+            password=validated_data["password"],
             kind=UserKind.CONSUMER,
         )
-        user.set_password(validated_data["password"])
-        user.save()
-
-        return user
 
 
 class CheckEmailAlreadyExistsSerializer(serializers.Serializer):

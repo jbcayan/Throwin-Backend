@@ -1,3 +1,7 @@
+import uuid
+import random
+import string
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
@@ -69,7 +73,7 @@ email_activation_token = EmailVerificationTokenGenerator()
 def generate_email_activation_url(user):
     """Generate an activation url with user id and token """
     uid64 = urlsafe_base64_encode(force_bytes(user.id))
-    token = email_activation_token.make_token(user)
+    token = user.token
     return f"{settings.FRONTEND_URL}/activate/{uid64}/{token}"
 
 
@@ -79,3 +83,15 @@ def generate_verification_token(user, new_email):
     token["new_email"] = new_email
 
     return str(token)
+
+
+def generate_token():
+    """Generate a token in the format: <6-char-prefix>-<UUID>."""
+
+    # Generate a 6-character random prefix (lowercase letters and digits)
+    prefix = ''.join(random.choices(string.ascii_lowercase + string.digits, k=6))
+
+    # Generate a UUID and convert it to a hex string (no dashes)
+    uuid_part = uuid.uuid4().hex
+
+    return f"{prefix}-{uuid_part}"

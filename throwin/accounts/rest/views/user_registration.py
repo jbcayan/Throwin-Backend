@@ -7,6 +7,8 @@ from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.response import Response
 
+from django.conf import settings
+
 from accounts.rest.serializers.user_registration import (
     UserRegisterSerializerWithEmail,
     CheckEmailAlreadyExistsSerializer,
@@ -32,20 +34,26 @@ class UserRegistration(generics.CreateAPIView):
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+        temp_user = serializer.save()
 
-        activation_url = generate_email_activation_url(user)
-        print("Activation URL: ", activation_url)
+        activation_url = generate_email_activation_url(temp_user)
 
         # send email
         subject = "Activate Your Account"
-        message = f"Please click the link below to activate your account. {activation_url}"
-        to_email = user.email
+        message = (
+            f"Dear {temp_user.email},\n\n"
+            f"Thank you for registering with {settings.SITE_NAME}! To complete your registration, "
+            "please activate your account within the next 48 hours by clicking the link below:\n\n"
+            f"{activation_url}\n\n"
+            "If you did not initiate this registration, please ignore this email.\n\n"
+            "Best regards,\n"
+            f"The {settings.SITE_NAME} Team"
+        )
+        to_email = temp_user.email
         send_mail_task(subject, message, to_email)
-        print("Email sent!")
 
         return Response({
-            "detail": "User Created Successfully",
+            "msg": "User Created Successfully, Please check your email to activate your account in 48 hours."
         }, status=status.HTTP_201_CREATED)
 
 

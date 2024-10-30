@@ -42,8 +42,9 @@ DJANGO_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
-    'corsheaders',
-    'rest_framework',
+    "corsheaders",
+    "rest_framework",
+    "versatileimagefield",
 ]
 
 PROJECT_APPS = [
@@ -86,6 +87,11 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+if ENABLE_SILK:
+    MIDDLEWARE += [
+        "silk.middleware.SilkyMiddleware",
+    ]
 
 ROOT_URLCONF = 'throwin.urls'
 
@@ -263,11 +269,11 @@ SIMPLE_JWT = {
 }
 
 VERSATILEIMAGEFIELD_RENDITION_KEY_SETS = {
-    "profile_image": [
-        ("full_size", "url"),
-        ("small", "thumbnail__400x400"),
-        ("medium", "600x600"),
-        ("large", "1000x1000")
+    'profile_image': [
+        ('full_size', 'url'),
+        ('thumbnail', 'thumbnail__100x100'),
+        ('medium_square_crop', 'crop__400x400'),
+        ('small_square_crop', 'crop__50x50')
     ]
 }
 
@@ -286,3 +292,6 @@ EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 
 FRONTEND_URL = config("FRONTEND_URL")
+
+
+SITE_NAME = "Throwin"

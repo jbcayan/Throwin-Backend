@@ -8,6 +8,8 @@ from rest_framework import serializers
 from accounts.tasks import send_mail_task
 from accounts.utils import generate_verification_token
 
+from versatileimagefield.serializers import VersatileImageFieldSerializer
+
 User = get_user_model()
 
 
@@ -47,4 +49,3 @@ class EmailChangeRequestSerializer(serializers.Serializer):
             message=f"Please click the link below to verify your email. {verification_url}",
             to_email=new_email,
         )
-
