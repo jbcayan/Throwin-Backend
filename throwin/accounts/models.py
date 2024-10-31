@@ -63,12 +63,14 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
     name = models.CharField(
         max_length=100,
         blank=True,
-        null=True
+        null=True,
+        unique=True
     )
     username = models.CharField(
         max_length=50,
         blank=True,
-        null=True
+        null=True,
+        unique=True
     )
     gender = models.CharField(
         max_length=20,
@@ -138,6 +140,12 @@ class UserProfile(BaseModel):
         null=True
     )  # applicable for consumers
     total_score = models.PositiveIntegerField(default=0)  # Only applicable for staff
+    fun_fact = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Short fun fact about the user (e.g., 'Eating and laughing')"
+    )  # Only applicable for staff
 
     def __str__(self):
         return f"Profile of {self.user.name}"
@@ -166,7 +174,6 @@ class Like(BaseModel):
 
 
 class TemporaryUser(BaseModel):
-
     """Temporary model to store unverified user data."""
     email = models.EmailField(unique=True)
     password = models.CharField(max_length=255)

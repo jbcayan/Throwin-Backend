@@ -10,6 +10,8 @@ from accounts.utils import generate_verification_token
 
 from versatileimagefield.serializers import VersatileImageFieldSerializer
 
+from common.serializers import BaseSerializer
+
 User = get_user_model()
 
 
@@ -20,8 +22,12 @@ class UserNameSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         """Set name for existing user"""
+        name = validated_data["name"]
+        if User.objects.filter(name=name).exists():
+            raise serializers.ValidationError("Name is already in use")
+
         user = self.context["request"].user
-        user.name = validated_data["name"]
+        user.name = name
         user.save()
         return user
 
@@ -49,3 +55,24 @@ class EmailChangeRequestSerializer(serializers.Serializer):
             message=f"Please click the link below to verify your email. {verification_url}",
             to_email=new_email,
         )
+
+
+class StuffDetailForConsumerSerializer(BaseSerializer):
+    """Serializer to represent restaurant stuff details."""
+
+    introduction = serializers.CharField(
+        source="profile.introduction",
+        allow_blank=True,
+        allow_null=True,
+    )
+    score = serializers.IntegerField(
+        source="profile.total_score",
+        default=0
+    )
+    image = VersatileImageFieldSerializer(
+        sizes='profile_image'
+    )
+
+    class Meta(BaseSerializer.Meta):
+        model = User
+        fields = ("uid", "name", "introduction", "score", "image")

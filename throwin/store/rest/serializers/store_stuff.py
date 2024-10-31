@@ -1,26 +1,20 @@
 from django.contrib.auth import get_user_model
+
 from rest_framework import serializers
-from versatileimagefield.serializers import VersatileImageFieldSerializer
+
+from accounts.rest.serializers.user import StuffDetailForConsumerSerializer
 
 User = get_user_model()
 
 
-class StoreStuffListSerializer(serializers.ModelSerializer):
+class StoreStuffListSerializer(StuffDetailForConsumerSerializer):
     """Serializer to represent restaurant stuff list with profile details."""
 
-    introduction = serializers.CharField(
-        source="profile.introduction",
+    fun_fact = serializers.CharField(
+        source="profile.fun_fact",
         allow_blank=True,
         allow_null=True,
     )
-    score = serializers.IntegerField(
-        source="profile.total_score",
-        default=0
-    )
-    image = VersatileImageFieldSerializer(
-        sizes='profile_image'
-    )
 
-    class Meta:
-        model = User
-        fields = ("uid", "name", "introduction", "score", "image")
+    class Meta(StuffDetailForConsumerSerializer.Meta):
+        fields = ("uid", "name", "introduction", "score", "image", "fun_fact")

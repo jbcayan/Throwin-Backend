@@ -19,7 +19,7 @@ from accounts.models import TemporaryUser
 
 from accounts.rest.serializers.user import (
     EmailChangeRequestSerializer,
-    UserNameSerializer,
+    UserNameSerializer, StuffDetailForConsumerSerializer,
 )
 from accounts.utils import email_activation_token
 
@@ -32,7 +32,7 @@ User = get_user_model()
     summary="Set name for existing user",
     request=UserNameSerializer
 )
-class UserName(generics.GenericAPIView):
+class SetUserName(generics.GenericAPIView):
     """View for set name for existing user"""
 
     permission_classes = [IsConsumerUser]
@@ -41,7 +41,7 @@ class UserName(generics.GenericAPIView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+        serializer.save()
 
         return Response({
             "detail": "User Name Updated Successfully",
@@ -65,8 +65,8 @@ class AccountActivation(generics.GenericAPIView):
 
             # check if token is expired
             if (
-                temp_user.created_at + timedelta(hours=TOKEN_EXPIRATION_HOURS)
-                <= timezone.now()
+                    temp_user.created_at + timedelta(hours=TOKEN_EXPIRATION_HOURS)
+                    <= timezone.now()
             ):
                 return Response({
                     "detail": "Token Expired"
@@ -151,3 +151,15 @@ class VerifyEmailChange(generics.GenericAPIView):
                 "detail": "Invalid Token or Expired"
             }, status=status.HTTP_400_BAD_REQUEST)
 
+
+@extend_schema(
+    summary="Get user details for consumer",
+    description="Get user details for consumer",
+    request=StuffDetailForConsumerSerializer
+)
+class StuffDetailForConsumer(generics.RetrieveAPIView):
+    permission_classes = [IsConsumerUser]
+    serializer_class = StuffDetailForConsumerSerializer
+
+    def get_object(self):
+        return User().get_all_actives().get(uid=self.kwargs["uid"])

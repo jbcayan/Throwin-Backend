@@ -3,16 +3,17 @@
 from django.urls import path
 
 from accounts.rest.views.user import (
-    UserName,
+    SetUserName,
     AccountActivation,
     EmailChangeRequest,
     VerifyEmailChange,
+    StuffDetailForConsumer,
 )
 
 urlpatterns = [
     path(
         "/name",
-        UserName.as_view(),
+        SetUserName.as_view(),
         name="user-name"
     ),
     path(
@@ -29,5 +30,10 @@ urlpatterns = [
         "/email-verify",
         VerifyEmailChange.as_view(),
         name="verify-email-change"
+    ),
+    path(
+        "/stuff/<uuid:uid>",
+        StuffDetailForConsumer.as_view(),
+        name="stuff-detail-for-consumer"
     ),
 ]
