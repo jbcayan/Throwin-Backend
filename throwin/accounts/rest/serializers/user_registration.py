@@ -53,4 +53,6 @@ class CheckEmailAlreadyExistsSerializer(serializers.Serializer):
         """Ensure email doesn't already exist."""
         if User.objects.filter(email=attrs["email"]).exists():
             raise serializers.ValidationError({"email": "Email already exists."})
+        if TemporaryUser.objects.filter(email=attrs["email"]).exists():
+            raise serializers.ValidationError({"email": "You already have an account. Please activate it."})
         return attrs
