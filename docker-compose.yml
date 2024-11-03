@@ -1,25 +1,23 @@
 services:
-  db:
-    container_name: postgres_db
-    image: postgres:latest
-    restart: always
-    ports:
-      - "5433:5432"  # Host:Container mapping
-    volumes:
-      - db:/var/lib/postgresql/data
-    environment:
-      POSTGRES_DB: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-
-
+#  db:
+#    container_name: postgres_db
+#    image: postgres:latest
+#    restart: always
+#    ports:
+#      - "5433:5432"  # Host:Container mapping
+#    volumes:
+#      - db:/var/lib/postgresql/data
+#    environment:
+#      POSTGRES_DB: postgres
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: postgres
 
   redis:
     container_name: redis_cache
     image: redis:latest
     restart: always
     ports:
-      - "6379:6379"
+      - "6380:6379"
 
   app:
     container_name: throwin_backend
@@ -33,7 +31,6 @@ services:
     env_file:
       - ./throwin/.env
     depends_on:
-      - db
       - redis
 
 #  celery_worker:
@@ -59,7 +56,7 @@ services:
 #    depends_on:
 #      - db
 #      - redis
-
-volumes:
-  db:
+#
+#volumes:
+#  db:
 

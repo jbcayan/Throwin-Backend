@@ -116,6 +116,7 @@ WSGI_APPLICATION = 'throwin.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
+
 if config("RENDER", cast=bool):
     DATABASES = {
         "default": dj_database_url.parse(config("DATABASE_URL")),
@@ -339,3 +340,11 @@ FRONTEND_URL = config("FRONTEND_URL")
 
 
 SITE_NAME = "Throwin"
+
+# Redis Caching
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379",
+    }
+}

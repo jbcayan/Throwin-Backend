@@ -1,7 +1,9 @@
 """Django Admin Configuration"""
 
 from django.contrib import admin
+
 from accounts.models import User, UserProfile, Like, TemporaryUser
+
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 
@@ -28,6 +30,8 @@ class UserAdmin(BaseUserAdmin):
         "id", "uid", "email", "phone_number", "name",
         "kind", "is_active", "is_staff", "is_superuser"
     ]
+
+    list_filter = ["kind", "is_active", "is_staff", "is_superuser"]
 
     fieldsets = (
         (None,

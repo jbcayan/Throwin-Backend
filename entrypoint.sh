@@ -4,12 +4,12 @@
 set -e
 
 # Wait for the PostgreSQL database to be ready
-echo "Waiting for PostgreSQL to be available..."
-while ! nc -z db 5432; do
-  sleep 1
-done
-
-echo "PostgreSQL is up - continuing..."
+#echo "Waiting for PostgreSQL to be available..."
+#while ! nc -z db 5432; do
+#  sleep 1
+#done
+#
+#echo "PostgreSQL is up - continuing..."
 
 # Navigate to the project directory where manage.py is located
 cd /app/throwin
