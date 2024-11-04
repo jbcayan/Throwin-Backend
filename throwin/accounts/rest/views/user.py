@@ -1,4 +1,7 @@
 """Views for user"""
+from lib2to3.fixes.fix_input import context
+
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from datetime import timedelta
 
@@ -9,17 +12,19 @@ from django.utils.http import urlsafe_base64_decode
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, AllowAny
 from rest_framework.response import Response
 
 from rest_framework_simplejwt.tokens import AccessToken
+from urllib3 import request
 
 from accounts.choices import UserKind
-from accounts.models import TemporaryUser
+from accounts.models import TemporaryUser, Like
 
 from accounts.rest.serializers.user import (
     EmailChangeRequestSerializer,
-    UserNameSerializer, StuffDetailForConsumerSerializer,
+    UserNameSerializer,
+    StuffDetailForConsumerSerializer,
 )
 from accounts.utils import email_activation_token
 
@@ -163,3 +168,72 @@ class StuffDetailForConsumer(generics.RetrieveAPIView):
 
     def get_object(self):
         return User().get_all_actives().get(uid=self.kwargs["uid"])
+
+
+class ConsumerLikeStuffCreateDestroy(generics.GenericAPIView):
+
+    def post(self, request, *args, **kwargs):
+        stuff_uid = str(self.kwargs.get("uid", None))
+        stuff_id = get_object_or_404(
+            User,
+            uid=stuff_uid,
+            is_active=True,
+            kind=UserKind.RESTAURANT_STUFF
+        ).id
+
+        if self.request.user.is_authenticated:
+            like, created = Like.objects.get_or_create(
+                consumer=self.request.user,
+                staff_id=stuff_id
+            )
+            if created:
+                return Response({
+                    "detail": "Stuff member Liked"
+                }, status=status.HTTP_201_CREATED)
+            else:
+                return Response({
+                    "detail": "Stuff member already Liked"
+                }, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            # Add a session for guest user
+            liked_stuff_uids = request.session.get("liked_stuff_uids", [])
+            if stuff_uid not in liked_stuff_uids:
+                liked_stuff_uids.append(stuff_uid)
+                request.session["liked_stuff_uids"] = liked_stuff_uids
+                return Response({
+                    "detail": "Stuff member Liked"
+                }, status=status.HTTP_201_CREATED)
+            else:
+                return Response({
+                    "detail": "Stuff member already Liked"
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+    def delete(self, request, *args, **kwargs):
+        stuff_uid = str(self.kwargs.get("uid", None))
+        stuff_id = get_object_or_404(
+            User,
+            uid=stuff_uid,
+            is_active=True,
+            kind=UserKind.RESTAURANT_STUFF
+        ).id
+
+        if self.request.user.is_authenticated:
+            Like.objects.filter(
+                consumer=self.request.user,
+                stuff_id=stuff_id
+            ).delete()
+            return Response({
+                "detail": "Stuff member Unliked"
+            }, status=status.HTTP_204_NO_CONTENT)
+        else:
+            liked_stuff_uids = request.session.get("liked_stuff_uids", [])
+            if stuff_uid in liked_stuff_uids:
+                liked_stuff_uids.remove(stuff_uid)
+                request.session["liked_stuff_uids"] = liked_stuff_uids
+                return Response({
+                    "detail": "Stuff member Unliked"
+                }, status=status.HTTP_204_NO_CONTENT)
+            else:
+                return Response({
+                    "detail": "Stuff member already Unliked"
+                }, status=status.HTTP_400_BAD_REQUEST)

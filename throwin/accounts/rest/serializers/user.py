@@ -5,6 +5,8 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
 
+from accounts.choices import UserKind
+from accounts.models import Like
 from accounts.tasks import send_mail_task
 from accounts.utils import generate_verification_token
 
@@ -76,3 +78,72 @@ class StuffDetailForConsumerSerializer(BaseSerializer):
     class Meta(BaseSerializer.Meta):
         model = User
         fields = ("uid", "name", "introduction", "score", "image")
+
+
+# class ConsumerLikeStuffSerializer(serializers.Serializer):
+#     """Serializer to handle liking/unliking stuff."""
+#
+#     stuff_uid = serializers.UUIDField(
+#         required=True
+#     )
+#
+#     def validate_stuff_uid(self, value):
+#         """Check that the stuff exists and is of the right kind."""
+#
+#         try:
+#             stuff = User.objects.get(uid=value, kind=UserKind.RESTAURANT_STUFF)
+#         except User.DoesNotExist:
+#             raise serializers.ValidationError("Stuff does not exist")
+#
+#         return value
+#
+#     def create(self, validated_data):
+#         """Create a new like for authenticated user and add a session for guest users."""
+#
+#         request = self.context.get("request")
+#         stuff_uid = validated_data["stuff_uid"]
+#
+#         if request and request.user.is_authenticated:
+#             # Create a new like
+#             like, created = Like.objects.get_or_create(
+#                 consumer=request.user.id,
+#                 staff__uid=stuff_uid
+#             )
+#             return {"detail": "stuff member liked"} if created else {"detail": "Stuff member already liked"}
+#         else:
+#             # Add a session for guest users
+#             liked_stuff_uids = request.session.get("liked_stuff_uids", [])
+#             print("liked_stuff_uids", liked_stuff_uids)
+#             if stuff_uid not in liked_stuff_uids:
+#                 liked_stuff_uids.append(stuff_uid)
+#                 request.session["liked_stuff_uids"] = liked_stuff_uids
+#                 print("added to session", request.session["liked_stuff_uids"])
+#                 request.session.modified = True
+#                 return {"detail": "stuff member liked for the guest user"}
+#             else:
+#                 return {"detail": "Stuff member already liked"}
+#
+#
+#     def delete(self, validated_data):
+#         """Delete a like for authenticated user and remove a session for guest users."""
+#
+#         request = self.context.get("request")
+#         stuff_uid = validated_data["stuff_uid"]
+#
+#         if request and request.user.is_authenticated:
+#             # Delete a like
+#             Like.objects.filter(
+#                 consumer=request.user.id,
+#                 staff__uid=stuff_uid
+#             ).delete()
+#             return {"detail": "stuff member unliked"}
+#         else:
+#             # unlike for gust users, using a session
+#             liked_stuff_uids = request.session.get("liked_stuff_uids", [])
+#             if stuff_uid in liked_stuff_uids:
+#                 liked_stuff_uids.remove(stuff_uid)
+#                 request.session["liked_stuff_uids"] = liked_stuff_uids
+#                 request.session.modified = True
+#                 return {"detail": "stuff member unliked for the guest user"}
+#             else:
+#                 return {"detail": "Stuff member already unliked"}
