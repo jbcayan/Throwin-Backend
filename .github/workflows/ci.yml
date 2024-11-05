@@ -21,7 +21,6 @@ jobs:
           POSTGRES_PASSWORD: your_db_password
         ports:
           - 5432:5432
-        # Wait for the database to be ready before running tests
         options: >-
           --health-cmd="pg_isready -U your_db_user"
           --health-interval=10s
@@ -35,21 +34,24 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.9'  # Specify your Python version
+          python-version: '3.12.0'
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          
+        working-directory: ./Throwin-Backend # Set your correct subdirectory here
+
       - name: Run migrations
         env:
           DATABASE_URL: postgres://your_db_user:your_db_password@localhost/your_db_name
         run: |
           python manage.py migrate
+        working-directory: ./Throwin-Backend # Set your correct subdirectory here
 
       - name: Run tests
         env:
           DATABASE_URL: postgres://your_db_user:your_db_password@localhost/your_db_name
         run: |
           python manage.py test
+        working-directory: ./Throwin-Backend # Set your correct subdirectory here
