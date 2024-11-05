@@ -1,57 +1,34 @@
 """Views for user"""
-from lib2to3.fixes.fix_input import context
 
-from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 
 from drf_spectacular.utils import extend_schema
+
 from rest_framework import generics, status
-
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, AllowAny
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
 from rest_framework_simplejwt.tokens import AccessToken
-from urllib3 import request
 
 from accounts.choices import UserKind
 from accounts.models import TemporaryUser, Like
-
 from accounts.rest.serializers.user import (
     EmailChangeRequestSerializer,
     UserNameSerializer,
     StuffDetailForConsumerSerializer,
 )
-from accounts.utils import email_activation_token
 
-from common.permissions import IsConsumerUser
+from common.permissions import (
+    IsConsumerUser,
+    CheckAnyPermission, IsConsumerOrGuestUser, IsAdminUser, IsRestaurantStuffUser,
+)
 
 User = get_user_model()
-
-
-@extend_schema(
-    summary="Set name for existing user",
-    request=UserNameSerializer
-)
-class SetUserName(generics.GenericAPIView):
-    """View for set name for existing user"""
-
-    permission_classes = [IsConsumerUser]
-    serializer_class = UserNameSerializer
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response({
-            "detail": "User Name Updated Successfully",
-        }, status=status.HTTP_200_OK,
-        )
 
 
 @extend_schema(
@@ -97,6 +74,30 @@ class AccountActivation(generics.GenericAPIView):
             return Response({
                 "detail": "Invalid Token or User"
             }, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    summary="Set name for existing user",
+    request=UserNameSerializer
+)
+class SetUserName(generics.GenericAPIView):
+    """View for set name for existing user"""
+
+    available_permission_classes = (
+        IsConsumerUser,
+    )
+    permission_classes = (CheckAnyPermission,)
+    serializer_class = UserNameSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({
+            "detail": "User Name Updated Successfully",
+        }, status=status.HTTP_200_OK,
+        )
 
 
 @extend_schema(
@@ -163,7 +164,13 @@ class VerifyEmailChange(generics.GenericAPIView):
     request=StuffDetailForConsumerSerializer
 )
 class StuffDetailForConsumer(generics.RetrieveAPIView):
-    permission_classes = [IsConsumerUser]
+    available_permission_classes = (
+        IsConsumerOrGuestUser,
+        IsConsumerUser,
+        IsAdminUser,
+        IsRestaurantStuffUser
+    )
+    permission_classes = (CheckAnyPermission,)
     serializer_class = StuffDetailForConsumerSerializer
 
     def get_object(self):

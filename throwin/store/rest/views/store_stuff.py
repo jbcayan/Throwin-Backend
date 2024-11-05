@@ -1,11 +1,14 @@
 from django.contrib.auth import get_user_model
-from rest_framework import generics, status
-from rest_framework.response import Response
 
 from drf_spectacular.utils import extend_schema
 
+from rest_framework import generics, status
+from rest_framework.response import Response
+
 from accounts.choices import UserKind
-from common.permissions import IsConsumerUser
+
+from common.permissions import IsConsumerUser, CheckAnyPermission, IsConsumerOrGuestUser, IsAdminUser
+
 from store.rest.serializers.store_stuff import StoreStuffListSerializer
 
 User = get_user_model()
@@ -18,7 +21,12 @@ User = get_user_model()
 )
 class StoreStuffList(generics.ListAPIView):
     serializer_class = StoreStuffListSerializer
-    permission_classes = [IsConsumerUser]
+    available_permission_classes = (
+        IsConsumerOrGuestUser,
+        IsConsumerUser,
+        IsAdminUser
+    )
+    permission_classes = (CheckAnyPermission,)
 
     def get_queryset(self):
         if store_code := self.kwargs.get("store_code", None):
