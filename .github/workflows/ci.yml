@@ -3,7 +3,7 @@ name: Django CI
 on:
   push:
     branches:
-      - main  # Change this to your default branch if different
+      - main  # Adjust to your default branch if different
   pull_request:
     branches:
       - main
@@ -21,7 +21,6 @@ jobs:
           POSTGRES_PASSWORD: your_db_password
         ports:
           - 5432:5432
-        # Wait for the database to be ready before running tests
         options: >-
           --health-cmd="pg_isready -U your_db_user"
           --health-interval=10s
@@ -29,27 +28,38 @@ jobs:
           --health-retries=5
 
     steps:
-      - name: Checkout code
+      - name: Check out code
         uses: actions/checkout@v2
 
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.9'  # Specify your Python version
+          python-version: '3.9'
+
+      - name: Cache dependencies
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          
+        shell: bash
+
       - name: Run migrations
         env:
           DATABASE_URL: postgres://your_db_user:your_db_password@localhost/your_db_name
         run: |
-          python manage.py migrate
+          python throwin/manage.py migrate || { echo "Migration failed"; exit 1; }
+        shell: bash
 
       - name: Run tests
         env:
           DATABASE_URL: postgres://your_db_user:your_db_password@localhost/your_db_name
         run: |
-          python manage.py test
+          python throwin/manage.py test || { echo "Tests failed"; exit 1; }
+        shell: bash

@@ -9,6 +9,7 @@ from accounts.rest.views.user import (
     VerifyEmailChange,
     StuffDetailForConsumer,
     ConsumerLikeStuffCreateDestroy,
+    FavoriteStuffList
 )
 
 urlpatterns = [
@@ -41,5 +42,10 @@ urlpatterns = [
         "/stuff/<uuid:uid>/like",
         ConsumerLikeStuffCreateDestroy.as_view(),
         name="consumer-like-stuff"
+    ),
+    path(
+        "/favorite-stuff",
+        FavoriteStuffList.as_view(),
+        name="favorite-stuff"
     ),
 ]

@@ -244,3 +244,25 @@ class ConsumerLikeStuffCreateDestroy(generics.GenericAPIView):
                 return Response({
                     "detail": "Stuff member already Unliked"
                 }, status=status.HTTP_400_BAD_REQUEST)
+
+
+class FavoriteStuffList(generics.ListAPIView):
+    """
+    API endpoint to list all favorite (liked) stuff members for the authenticated consumer.
+    """
+    serializer_class = StuffDetailForConsumerSerializer
+    available_permission_classes = (
+        IsConsumerOrGuestUser,
+        IsConsumerUser,
+    )
+
+    def get_queryset(self):
+        consumer = self.request.user
+        # Ensures only "liked" staff by this consumer are included in the queryset
+        liked_staff_ids = Like.objects.filter(consumer=consumer).values_list("staff", flat=True)
+        return User.objects.filter(id__in=liked_staff_ids, kind=UserKind.RESTAURANT_STUFF)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
