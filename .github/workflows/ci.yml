@@ -49,19 +49,17 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
         shell: bash
-        # Capture any errors in the installation process
-        continue-on-error: false
 
       - name: Run migrations
         env:
           DATABASE_URL: postgres://your_db_user:your_db_password@localhost/your_db_name
         run: |
-          python manage.py migrate || { echo "Migration failed"; exit 1; }
+          python throwin/manage.py migrate || { echo "Migration failed"; exit 1; }
         shell: bash
 
       - name: Run tests
         env:
           DATABASE_URL: postgres://your_db_user:your_db_password@localhost/your_db_name
         run: |
-          python manage.py test || { echo "Tests failed"; exit 1; }
+          python throwin/manage.py test || { echo "Tests failed"; exit 1; }
         shell: bash
