@@ -22,9 +22,7 @@ User = get_user_model()
 @extend_schema(
     summary="Consumer Registration by Email and Password",
     request=UserRegisterSerializerWithEmail,
-    responses={status.HTTP_201_CREATED: {"msg": "User Created Successfully"}},
-    description="Consumer Registration",
-    methods=["POST"],
+    description="Consumer Registration, No Authentication Required",
 )
 class UserRegistration(generics.CreateAPIView):
     """View for user registration"""
@@ -59,9 +57,8 @@ class UserRegistration(generics.CreateAPIView):
 
 @extend_schema(
     summary="Check Email Already Exists",
-    responses={status.HTTP_200_OK: {"detail": "Email Available"}},
-    description="Check Email Already Exists",
-    methods=["POST"],
+    description="Check Email Already Exists, No Authorization Required",
+    request=CheckEmailAlreadyExistsSerializer,
 )
 class CheckEmailAlreadyExists(generics.GenericAPIView):
     """View for check email already exists"""

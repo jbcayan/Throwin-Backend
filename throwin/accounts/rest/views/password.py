@@ -14,9 +14,16 @@ from accounts.rest.serializers.password import (
 from accounts.tasks import send_mail_task
 from accounts.utils import generate_password_reset_token_url
 
+from drf_spectacular.utils import extend_schema
+
 User = get_user_model()
 
 
+@extend_schema(
+    summary="Request password reset",
+    description="Request password reset, No authentication required",
+    request=PasswordResetRequestSerializer
+)
 class PasswordResetRequestView(generics.GenericAPIView):
     serializer_class = PasswordResetRequestSerializer
     permission_classes = []
@@ -47,6 +54,11 @@ class PasswordResetRequestView(generics.GenericAPIView):
         }, status=status.HTTP_200_OK)
 
 
+@extend_schema(
+    summary="Confirm password reset",
+    description="Confirm password reset, No authentication required",
+    request=PasswordChangeConfirmSerializer
+)
 class PasswordResetConfirmView(generics.GenericAPIView):
     serializer_class = PasswordChangeConfirmSerializer
 
