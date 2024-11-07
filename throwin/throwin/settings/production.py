@@ -319,6 +319,18 @@ VERSATILEIMAGEFIELD_RENDITION_KEY_SETS = {
         ('small', 'thumbnail__400x400'),
         ('medium', 'thumbnail__600x600'),
         ('large', 'thumbnail__1000x1000')
+    ],
+    "store_logo": [
+        ('full_size', 'url'),
+        ('small', 'thumbnail__400x400'),
+        ('medium', 'thumbnail__600x600'),
+        ('large', 'thumbnail__1000x1000')
+    ],
+    "store_banner": [
+        ('full_size', 'url'),
+        ('small', 'thumbnail__400x400'),
+        ('medium', 'thumbnail__600x600'),
+        ('large', 'thumbnail__1000x1000')
     ]
 }
 
