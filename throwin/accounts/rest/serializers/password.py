@@ -21,33 +21,16 @@ class PasswordResetRequestSerializer(serializers.Serializer):
 class PasswordChangeConfirmSerializer(serializers.Serializer):
     """Serializer for password change confirmation."""
 
-    uid64 = serializers.CharField()
-    token = serializers.CharField()
     new_password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
 
     def validate(self, attrs):
-        user_id = urlsafe_base64_decode(attrs["uid64"]).decode()
-        token = attrs["token"]
-        try:
-            user = User.objects.get(pk=user_id)
-
-            if not PasswordResetTokenGenerator().check_token(user, token):
-                raise serializers.ValidationError("Token is invalid or expired")
-
-            if attrs["new_password"] != attrs["confirm_password"]:
-                raise serializers.ValidationError("Passwords do not match")
-
-            attrs["user"] = user
-
-        except User.DoesNotExist:
-            raise serializers.ValidationError("User does not exist")
+        if attrs["new_password"] != attrs["confirm_password"]:
+            raise serializers.ValidationError("Passwords do not match")
 
         return attrs
 
-    def save(self, **kwargs):
+    def save(self, user):
         password = self.validated_data["new_password"]
-        user = self.validated_data["user"]
-
         user.set_password(password)
         user.save()

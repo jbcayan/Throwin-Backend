@@ -1,6 +1,8 @@
 """Views for password reset and password change"""
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -48,11 +50,24 @@ class PasswordResetRequestView(generics.GenericAPIView):
 class PasswordResetConfirmView(generics.GenericAPIView):
     serializer_class = PasswordChangeConfirmSerializer
 
-    def post(self, request):
+    def post(self, request, uid64, token):
         """Confirm password reset."""
+        try:
+            user_id = urlsafe_base64_decode(uid64).decode()
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            return Response({
+                "detail": "User does not exist"
+            }, status=status.HTTP_404_NOT_FOUND)
+
+        if not PasswordResetTokenGenerator().check_token(user, token):
+            return Response({
+                "detail": "Token is invalid or expired"
+            }, status=status.HTTP_401_UNAUTHORIZED)
+
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        serializer.save(user=user)
 
         return Response({
             "detail": "Password reset successful"
