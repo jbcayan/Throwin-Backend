@@ -3,7 +3,7 @@ from rest_framework import generics, status
 from rest_framework.response import Response
 
 from store.models import Store
-from store.rest.serializers.store import StoreSerializer
+from store.rest.serializers.stores import StoreSerializer
 
 from common.permissions import (
     IsConsumerOrGuestUser,

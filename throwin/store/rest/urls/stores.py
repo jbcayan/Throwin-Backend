@@ -2,7 +2,7 @@
 
 from django.urls import path
 
-from store.rest.views.store import StoreListCreate, StoreDetailUpdateDestroy
+from store.rest.views.stores import StoreListCreate, StoreDetailUpdateDestroy
 
 
 urlpatterns = [

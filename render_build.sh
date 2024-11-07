@@ -5,7 +5,7 @@ set -o errexit
 echo "no errors"
 
 # install python dependencies
-pip install -r ../requirements.txt
+pip install -r ../requirements_live.txt
 echo "python dependencies installed"
 
 # collect static files

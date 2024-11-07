@@ -95,3 +95,9 @@ def generate_token():
     uuid_part = uuid.uuid4().hex
 
     return f"{prefix}-{uuid_part}"
+
+
+def generate_password_reset_token_url(user):
+    uid64 = urlsafe_base64_encode(force_bytes(user.id))
+    token = PasswordResetTokenGenerator().make_token(user)
+    return f"{settings.FRONTEND_URL}/reset-password/{uid64}/{token}"
