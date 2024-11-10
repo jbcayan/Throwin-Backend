@@ -20,12 +20,12 @@ from accounts.models import TemporaryUser, Like
 from accounts.rest.serializers.user import (
     EmailChangeRequestSerializer,
     UserNameSerializer,
-    StuffDetailForConsumerSerializer,
+    StuffDetailForConsumerSerializer, MeSerializer,
 )
 
 from common.permissions import (
     IsConsumerUser,
-    CheckAnyPermission, IsConsumerOrGuestUser, IsAdminUser, IsRestaurantStuffUser,
+    CheckAnyPermission, IsConsumerOrGuestUser, IsAdminUser, IsRestaurantStuffUser, IsSuperAdminUser,
 )
 
 User = get_user_model()
@@ -266,3 +266,37 @@ class FavoriteStuffList(generics.ListAPIView):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+
+@extend_schema(
+    summary="Get user details",
+    description="Get user details",
+    request=MeSerializer
+)
+class Me(generics.GenericAPIView):
+    serializer_class = MeSerializer
+    available_permission_classes = (
+        IsConsumerUser,
+        IsConsumerOrGuestUser,
+        IsAdminUser,
+        IsRestaurantStuffUser,
+        IsSuperAdminUser
+    )
+    permission_classes = (CheckAnyPermission,)
+
+    def get_object(self):
+        if self.request.user.is_authenticated:
+            # Fetch the user with the related UserProfile to avoid additional queries
+            return User.objects.select_related('profile').get(id=self.request.user.id)
+        else:
+            return None  # This will trigger a response in the `get` method for guests
+
+    def get(self, request, *args, **kwargs):
+        if request.user.is_authenticated:
+            user = self.get_object()
+            return Response(self.serializer_class(user).data)
+        else:
+            guest_name = request.session.get("guest_name", "Anonymous user")
+            return Response({
+                "name": guest_name
+            }, status=status.HTTP_200_OK)

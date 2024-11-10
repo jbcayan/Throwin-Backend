@@ -25,6 +25,15 @@ class UserLogout(APIView):
     def post(self, request, *args, **kwargs):
         serializer = self.serializer_class(data=request.data)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        refresh_token = serializer.validated_data["refresh"]
 
-        return Response(status=status.HTTP_204_NO_CONTENT)
+        try:
+            token = RefreshToken(refresh_token)
+            token.blacklist()
+            return Response({
+                "detail": "Logout successful"
+            }, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({
+                "detail": str(e)
+            }, status=status.HTTP_400_BAD_REQUEST)

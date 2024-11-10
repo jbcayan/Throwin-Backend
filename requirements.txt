@@ -16,6 +16,7 @@ colorama==0.4.6
 dj-database-url==2.3.0
 Django==5.1.2
 django-cors-headers==4.5.0
+django-filter==24.3
 django-silk==5.2.0
 django-versatileimagefield==3.1
 djangorestframework==3.15.2
@@ -34,6 +35,7 @@ inflection==0.5.1
 jsonschema==4.23.0
 jsonschema-specifications==2024.10.1
 kombu==5.4.2
+Markdown==3.7
 packaging==24.1
 pillow==11.0.0
 prompt_toolkit==3.0.48
@@ -48,14 +50,13 @@ pyparsing==3.2.0
 python-dateutil==2.9.0.post0
 python-decouple==3.8
 python-magic==0.4.27
-python-magic-bin==0.4.14
+pytz==2024.2
 PyYAML==6.0.2
 redis==5.2.0
 referencing==0.35.1
 requests==2.32.3
 rpds-py==0.20.0
 rsa==4.9
-setuptools==75.3.0
 six==1.16.0
 sqlparse==0.5.1
 tomli==2.0.2
@@ -65,3 +66,4 @@ uritemplate==4.1.1
 urllib3==2.2.3
 vine==5.1.0
 wcwidth==0.2.13
+python-magic-bin==0.4.14

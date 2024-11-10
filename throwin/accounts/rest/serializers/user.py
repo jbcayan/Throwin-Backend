@@ -84,3 +84,61 @@ class StuffDetailForConsumerSerializer(BaseSerializer):
     class Meta(BaseSerializer.Meta):
         model = User
         fields = ("uid", "name", "introduction", "score", "image", "fun_fact",)
+
+
+class MeSerializer(BaseSerializer):
+    """This serializer is used to represent the current user's details."""
+    image = VersatileImageFieldSerializer(
+        sizes='profile_image',
+    )
+    introduction = serializers.CharField(
+        source="profile.introduction",
+        allow_blank=True,
+        allow_null=True,
+    )
+    address = serializers.CharField(
+        source="profile.address",
+        allow_blank=True,
+        allow_null=True,
+    )
+    total_score = serializers.IntegerField(
+        source="profile.total_score",
+        default=0
+    )
+    fun_fact = serializers.CharField(
+        source="profile.fun_fact",
+        allow_blank=True,
+        allow_null=True,
+        help_text="Short fun fact about the user (e.g., 'Eating and laughing')"
+    )
+
+    class Meta(BaseSerializer.Meta):
+        model = User
+        fields = (
+            "uid",
+            "name",
+            "email",
+            "phone_number",
+            "username",
+            "image",
+            "auth_provider",
+            "kind",
+            "introduction",
+            "address",
+            "total_score",
+            "fun_fact",
+        )
+
+    def to_representation(self, instance):
+        """Customize the fields based on the user kind."""
+        representation = super().to_representation(instance)
+
+        # Check if the user's kind is not RESTAURANT_STAFF
+        if instance.kind != UserKind.RESTAURANT_STUFF:
+            # Keep only the basic fields for non-restaurant staff users
+            fields_to_keep = {
+                "uid", "name", "email", "phone_number", "username", "image", "auth_provider", "kind"
+            }
+            representation = {key: representation[key] for key in fields_to_keep if key in representation}
+
+        return representation
