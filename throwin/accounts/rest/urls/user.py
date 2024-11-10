@@ -9,10 +9,16 @@ from accounts.rest.views.user import (
     VerifyEmailChange,
     StuffDetailForConsumer,
     ConsumerLikeStuffCreateDestroy,
-    FavoriteStuffList
+    FavoriteStuffList,
+    Me,
 )
 
 urlpatterns = [
+    path(
+        "/me",
+        Me.as_view(),
+        name="me"
+    ),
     path(
         "/name",
         SetUserName.as_view(),
@@ -48,4 +54,5 @@ urlpatterns = [
         FavoriteStuffList.as_view(),
         name="favorite-stuff"
     ),
+
 ]

@@ -13,17 +13,10 @@ class UserLogoutSerializer(serializers.Serializer):
 
     refresh = serializers.CharField()
 
-    default_error_messages = {
-        "bad_token": ("Token is expired or invalid")
-    }
-
     def validate(self, attrs):
-        self.token = attrs["refresh"]
+        """
+        Validate that the refresh token is provided
+        """
+        if not attrs["refresh"]:
+            raise serializers.ValidationError("No refresh token provided")
         return attrs
-
-    def save(self, **kwargs):
-        try:
-            token = RefreshToken(self.token)
-            token.blacklist()
-        except TokenError:
-            self.fail("bad_token")
