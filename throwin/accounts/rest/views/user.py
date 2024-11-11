@@ -159,8 +159,8 @@ class VerifyEmailChange(generics.GenericAPIView):
 
 
 @extend_schema(
-    summary="Get user details for consumer",
-    description="Get user details for consumer",
+    summary="Get restaurant stuff details for consumer",
+    description="Get restaurant stuff details for consumer",
     request=StuffDetailForConsumerSerializer
 )
 class StuffDetailForConsumer(generics.RetrieveAPIView):
@@ -174,7 +174,7 @@ class StuffDetailForConsumer(generics.RetrieveAPIView):
     serializer_class = StuffDetailForConsumerSerializer
 
     def get_object(self):
-        return User().get_all_actives().get(uid=self.kwargs["uid"])
+        return User().get_all_actives().get(username=self.kwargs["username"])
 
 
 class ConsumerLikeStuffCreateDestroy(generics.GenericAPIView):

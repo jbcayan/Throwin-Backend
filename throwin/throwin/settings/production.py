@@ -55,6 +55,7 @@ PROJECT_APPS = [
     'common.apps.CommonConfig',
     'accounts.apps.AccountsConfig',
     "store.apps.StoreConfig",
+    "payment_service.apps.PaymentServiceConfig",
 ]
 
 if ENABLE_SILK:

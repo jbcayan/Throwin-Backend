@@ -17,4 +17,13 @@ class StoreStuffListSerializer(StuffDetailForConsumerSerializer):
     )
 
     class Meta(StuffDetailForConsumerSerializer.Meta):
-        fields = ("uid", "name", "introduction", "score", "image", "fun_fact")
+        fields = (
+            "uid",
+            "name",
+            "username",
+            "introduction",
+            "score",
+            "image",
+            "fun_fact",
+        )
+
