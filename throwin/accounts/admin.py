@@ -76,6 +76,7 @@ class UserAdmin(BaseUserAdmin):
             },
         ),
     )
+    ordering = ["-id"]
 
     def get_inlines(self, request, obj=None):
         """Add profile inline for every user, regardless of kind."""
