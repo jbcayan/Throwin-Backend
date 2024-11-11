@@ -3,65 +3,87 @@ name: Django CI
 on:
   push:
     branches:
-      - main  # Adjust to your default branch if different
+      - main
   pull_request:
     branches:
       - main
 
 jobs:
-  test:
+  build-and-test:
     runs-on: ubuntu-latest
-
     services:
-      db:
+      postgres:
         image: postgres:13
         env:
-          POSTGRES_DB: your_db_name
-          POSTGRES_USER: your_db_user
-          POSTGRES_PASSWORD: your_db_password
+          POSTGRES_DB: ${{ secrets.DB_NAME }}
+          POSTGRES_USER: ${{ secrets.DB_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U your_db_user"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
+          --health-cmd "pg_isready -U postgres -d postgres -q -t 1"
+          --health-interval 10s
+          --health-timeout 10s
+          --health-retries 5
 
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+      
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: '3.9'
-
-      - name: Cache dependencies
+          python-version: '3.10'
+      
+      - name: Cache pip packages
         uses: actions/cache@v2
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
+      
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
-        shell: bash
-        # Capture any errors in the installation process
-        continue-on-error: false
-
+          pip install -r ../requirements.txt
+        working-directory: ./throwin  # Ensure this line is correct based on your project structure
+      
+      - name: Set environment variables from secrets
+        run: |
+          echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> $GITHUB_ENV
+          echo "DEBUG=${{ secrets.DEBUG }}" >> $GITHUB_ENV
+          echo "ENABLE_SILK=${{ secrets.ENABLE_SILK }}" >> $GITHUB_ENV
+          echo "ALLOWED_HOSTS=${{ secrets.ALLOWED_HOSTS }}" >> $GITHUB_ENV
+          echo "PRODUCTION=${{ secrets.PRODUCTION }}" >> $GITHUB_ENV
+          echo "DATABASE_TYPE=${{ secrets.DATABASE_TYPE }}" >> $GITHUB_ENV
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> $GITHUB_ENV
+          echo "DB_USER=${{ secrets.DB_USER }}" >> $GITHUB_ENV
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> $GITHUB_ENV
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> $GITHUB_ENV
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> $GITHUB_ENV
+          echo "RENDER=${{ secrets.RENDER }}" >> $GITHUB_ENV
+          echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> $GITHUB_ENV
+          echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> $GITHUB_ENV
+          echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> $GITHUB_ENV
+          echo "SOCIAL_AUTH_PASSWORD=${{ secrets.SOCIAL_AUTH_PASSWORD }}" >> $GITHUB_ENV
+          echo "EMAIL_BACKEND=${{ secrets.EMAIL_BACKEND }}" >> $GITHUB_ENV
+          echo "EMAIL_HOST=${{ secrets.EMAIL_HOST }}" >> $GITHUB_ENV
+          echo "EMAIL_USE_TLS=${{ secrets.EMAIL_USE_TLS }}" >> $GITHUB_ENV
+          echo "EMAIL_PORT=${{ secrets.EMAIL_PORT }}" >> $GITHUB_ENV
+          echo "EMAIL_HOST_USER=${{ secrets.EMAIL_HOST_USER }}" >> $GITHUB_ENV
+          echo "EMAIL_HOST_PASSWORD=${{ secrets.EMAIL_HOST_PASSWORD }}" >> $GITHUB_ENV
+          echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> $GITHUB_ENV
+      
+      
       - name: Run migrations
-        env:
-          DATABASE_URL: postgres://your_db_user:your_db_password@localhost/your_db_name
-        run: |
-          python manage.py migrate || { echo "Migration failed"; exit 1; }
-          python throwin/manage.py migrate || { echo "Migration failed"; exit 1; }
-        shell: bash
-
+        run: python manage.py migrate
+        working-directory: ./throwin  # Corrected directory to manage.py's location
+      
       - name: Run tests
-        env:
-          DATABASE_URL: postgres://your_db_user:your_db_password@localhost/your_db_name
-        run: |
-          python manage.py test || { echo "Tests failed"; exit 1; }
-          python throwin/manage.py test || { echo "Tests failed"; exit 1; }
-        shell: bash
+        run: python manage.py test
+        working-directory: ./throwin  # Corrected directory to manage.py's location
+      
+      - name: Collect static
+        run: python manage.py collectstatic --noinput
+        working-directory: ./throwin  # Corrected directory to manage.py's location
