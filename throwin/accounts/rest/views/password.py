@@ -5,11 +5,13 @@ from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
 
 from rest_framework import generics, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from accounts.rest.serializers.password import (
     PasswordResetRequestSerializer,
-    PasswordChangeConfirmSerializer
+    PasswordResetConfirmSerializer,
+    PasswordChangeSerializer,
 )
 from accounts.tasks import send_mail_task
 from accounts.utils import generate_password_reset_token_url
@@ -57,10 +59,10 @@ class PasswordResetRequestView(generics.GenericAPIView):
 @extend_schema(
     summary="Confirm password reset",
     description="Confirm password reset, No authentication required",
-    request=PasswordChangeConfirmSerializer
+    request=PasswordResetConfirmSerializer
 )
 class PasswordResetConfirmView(generics.GenericAPIView):
-    serializer_class = PasswordChangeConfirmSerializer
+    serializer_class = PasswordResetConfirmSerializer
 
     def post(self, request, uid64, token):
         """Confirm password reset."""
@@ -83,4 +85,23 @@ class PasswordResetConfirmView(generics.GenericAPIView):
 
         return Response({
             "detail": "Password reset successful"
+        }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    summary="Change password",
+    description="Change password, Authentication required",
+    request=PasswordChangeSerializer
+)
+class PasswordChangeView(generics.UpdateAPIView):
+    serializer_class = PasswordChangeSerializer
+    permission_classes = [IsAuthenticated]
+
+    def update(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(user=request.user)
+
+        return Response({
+            "detail": "Password changed successfully"
         }, status=status.HTTP_200_OK)
