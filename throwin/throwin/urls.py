@@ -4,6 +4,10 @@ from django.urls import path, include, re_path
 from django.conf import settings
 from django.conf.urls.static import static
 
+admin.site.site_header = "Throwin Administration"
+admin.site.site_title = "Throwin Admin Portal"
+admin.site.index_title = "Welcome to Throwin Portal"
+
 urlpatterns = [
     path('admin', admin.site.urls),
     path("api/v1/auth", include("accounts.rest.urls")),
