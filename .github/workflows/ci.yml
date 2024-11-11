@@ -87,3 +87,4 @@ jobs:
       - name: Collect static
         run: python manage.py collectstatic --noinput
         working-directory: ./throwin  # Corrected directory to manage.py's location
+        
