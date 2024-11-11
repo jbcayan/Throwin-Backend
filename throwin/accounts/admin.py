@@ -27,7 +27,7 @@ class UserProfileInline(admin.StackedInline):
 class UserAdmin(BaseUserAdmin):
     """User Admin Configuration"""
     list_display = [
-        "id", "uid", "email", "phone_number", "name",
+        "id", "uid", "email", "phone_number", "name", "username",
         "kind", "is_active", "is_staff", "is_superuser"
     ]
 
@@ -42,6 +42,7 @@ class UserAdmin(BaseUserAdmin):
                      "email",
                      "phone_number",
                      "name",
+                     "username",
                      "kind",
                      "gender",
                      "image",

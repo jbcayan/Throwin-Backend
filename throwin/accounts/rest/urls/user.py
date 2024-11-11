@@ -40,7 +40,7 @@ urlpatterns = [
         name="verify-email-change"
     ),
     path(
-        "/stuff/<uuid:uid>",
+        "/stuff/<str:username>",
         StuffDetailForConsumer.as_view(),
         name="stuff-detail-for-consumer"
     ),

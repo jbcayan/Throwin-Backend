@@ -25,8 +25,8 @@ class UserNameSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         """Set name for existing user"""
         name = validated_data["name"]
-        if User.objects.filter(name=name).exists():
-            raise serializers.ValidationError("Name is already in use")
+        # if User.objects.filter(name=name).exists():
+        #     raise serializers.ValidationError("Name is already in use")
 
         user = self.context["request"].user
         user.name = name
@@ -83,7 +83,15 @@ class StuffDetailForConsumerSerializer(BaseSerializer):
 
     class Meta(BaseSerializer.Meta):
         model = User
-        fields = ("uid", "name", "introduction", "score", "image", "fun_fact",)
+        fields = (
+            "uid",
+            "name",
+            "username",
+            "introduction",
+            "score",
+            "image",
+            "fun_fact",
+        )
 
 
 class MeSerializer(BaseSerializer):
