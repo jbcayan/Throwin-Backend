@@ -58,6 +58,12 @@ class EmailChangeRequestSerializer(serializers.Serializer):
             to_email=new_email,
         )
 
+        # send_mail_task.delay(
+        #     subject="Verify Email",
+        #     message=f"Please click the link below to verify your email. {verification_url}",
+        #     to_email=new_email
+        # )
+
 
 class StuffDetailForConsumerSerializer(BaseSerializer):
     """Serializer to represent restaurant stuff details."""
