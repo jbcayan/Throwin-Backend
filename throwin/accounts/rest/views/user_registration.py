@@ -49,6 +49,7 @@ class UserRegistration(generics.CreateAPIView):
         )
         to_email = temp_user.email
         send_mail_task(subject, message, to_email)
+        # send_mail_task.delay(subject, message, to_email)
 
         return Response({
             "msg": "User Created Successfully, Please check your email to activate your account in 48 hours."

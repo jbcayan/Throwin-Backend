@@ -265,7 +265,6 @@ SPECTACULAR_SETTINGS = {
     # OTHER SETTINGS
 }
 
-
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=5),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=15),
@@ -341,12 +340,10 @@ VERSATILEIMAGEFIELD_RENDITION_KEY_SETS = {
     ]
 }
 
-
 GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET")
 
 SOCIAL_AUTH_PASSWORD = config("SOCIAL_AUTH_PASSWORD")
-
 
 EMAIL_BACKEND = config("EMAIL_BACKEND")
 EMAIL_HOST = config("EMAIL_HOST")
@@ -357,9 +354,7 @@ EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 
 FRONTEND_URL = config("FRONTEND_URL")
 
-
 SITE_NAME = "Throwin"
-
 
 # Redis Caching
 # CACHES = {
@@ -368,3 +363,17 @@ SITE_NAME = "Throwin"
 #         "LOCATION": "redis://redis_cache:6379",
 #     }
 # }
+
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.redis.RedisCache",
+        "LOCATION": "redis://127.0.0.1:6379",
+    }
+}
+
+CELERY_BROKER_URL = "redis://127.0.0.1:6379"
+CELERY_ACCEPT_CONTENT = ['application/json']
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'Asia/Dhaka'
+CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379"
