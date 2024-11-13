@@ -14,10 +14,6 @@ def post_save_user(sender, instance, created, **kwargs):
         UserKind.SUPER_ADMIN: {"introduction": "I'm super admin", "address": "", "total_score": 0},
     }
 
-    if not instance.username:
-        byte_code = urlsafe_base64_encode(force_bytes(instance.id))
-        instance.username = byte_code
-
     if created and instance.kind in default_profiles:
         profile_data = default_profiles[instance.kind]
         UserProfile.objects.create(user=instance, **profile_data)
