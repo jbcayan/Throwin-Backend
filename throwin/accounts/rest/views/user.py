@@ -168,6 +168,7 @@ class StuffDetailForConsumer(generics.RetrieveAPIView):
         IsConsumerOrGuestUser,
         IsConsumerUser,
         IsAdminUser,
+        IsSuperAdminUser,
         IsRestaurantStuffUser
     )
     permission_classes = (CheckAnyPermission,)
