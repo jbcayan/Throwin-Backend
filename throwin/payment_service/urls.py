@@ -1,6 +1,13 @@
 from django.urls import path
-from . import views
+from .views import PaymentHistoryView, StaffDisbursementRequestView, AdminDisbursementRequestView
 
 urlpatterns = [
-    path('dummy/', views.dummy_payment_view, name='dummy_payment'),
+    # Payment History Endpoint
+    path('payments/', PaymentHistoryView.as_view(), name='payment-history'),
+
+    # Disbursement Endpoints for Staff (List and Create)
+    path('disbursements/', StaffDisbursementRequestView.as_view(), name='staff-disbursement-list-create'),
+    
+    # Disbursement Management Endpoint for Admin (Retrieve and Update by ID)
+    path('disbursements/<int:pk>/', AdminDisbursementRequestView.as_view(), name='admin-disbursement-manage'),
 ]
