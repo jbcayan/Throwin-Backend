@@ -27,7 +27,7 @@ class UserProfileInline(admin.StackedInline):
 class UserAdmin(BaseUserAdmin):
     """User Admin Configuration"""
     list_display = [
-        "id", "uid", "email", "phone_number", "name", "username",
+        "email", "id", "uid",  "phone_number", "name", "username",
         "kind", "is_active", "is_staff", "is_superuser"
     ]
 
@@ -98,7 +98,7 @@ admin.site.register(Like, LikeAdmin)
 
 class TemporaryUserAdmin(admin.ModelAdmin):
     """Admin configuration for TemporaryUser."""
-    list_display = ["id", "email", "token", "created_at"]
+    list_display = ["email", "id", "uid", "token", "created_at"]
     search_fields = ["email", "token"]
     ordering = ["-created_at"]
 
