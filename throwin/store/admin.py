@@ -5,7 +5,7 @@ from store.models import Store, StoreUser
 
 # Register your models here.
 class StoreAdmin(admin.ModelAdmin):
-    list_display = ["id", "uid", "name", "code", "created_at"]
+    list_display = ["uid", "id", "name", "code", "created_at"]
     search_fields = ["name", "code"]
     list_filter = ["created_at"]
 
