@@ -4,7 +4,6 @@ from accounts.models import UserProfile, Like, TemporaryUser
 from accounts.choices import UserKind
 from django.core.exceptions import ValidationError
 
-
 User = get_user_model()
 
 class UserModelTests(TestCase):
@@ -47,8 +46,10 @@ class UserModelTests(TestCase):
         self.assertEqual(like.consumer, self.consumer_user)
         self.assertEqual(like.staff, self.staff_user)
 
-        with self.assertRaises(Exception):
-            Like.objects.create(consumer=self.consumer_user, staff=self.staff_user)  # Should raise due to unique_together
+        # Attempt to create a duplicate like, which should raise a ValidationError due to the unique constraint
+        duplicate_like = Like(consumer=self.consumer_user, staff=self.staff_user)
+        with self.assertRaises(ValidationError):
+            duplicate_like.full_clean()  # This validates the unique constraint before saving
 
     def test_temporary_user_creation(self):
         temp_user = TemporaryUser.objects.create(
@@ -66,16 +67,16 @@ class UserModelTests(TestCase):
             password="temp_password123"
         )
         self.assertEqual(str(temp_user), "tempuser2@example.com")
-    
+
     def test_email_uniqueness(self):
-        user1 = User.objects.create_user(
+        User.objects.create_user(
             email="unique@example.com",
             password="password123",
             name="Unique User"
         )
+        user2 = User(email="unique@example.com", password="another_password")
         with self.assertRaises(ValidationError):
-            user2 = User(email="unique@example.com", password="another_password")
-            user2.full_clean()
+            user2.full_clean()  # This should raise ValidationError due to unique email constraint
 
 
 class UserProfileTests(TestCase):
@@ -100,4 +101,3 @@ class UserProfileTests(TestCase):
         self.profile.total_score = 10
         self.profile.save()
         self.assertEqual(self.profile.total_score, 10)
-
