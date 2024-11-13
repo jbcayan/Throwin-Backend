@@ -40,6 +40,7 @@ class UserManager(BaseUserManager):
         user.is_staff = True
         user.is_superuser = True
         user.kind = UserKind.SUPER_ADMIN
+        user.is_verified = True
         user.save(using=self._db)
         return user
 

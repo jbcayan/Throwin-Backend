@@ -9,7 +9,7 @@ admin.site.site_title = "Throwin Admin Portal"
 admin.site.index_title = "Welcome to Throwin Portal"
 
 urlpatterns = [
-    path('admin', admin.site.urls),
+    path('admin/', admin.site.urls),
     path("api/v1/auth", include("accounts.rest.urls")),
     path("api/v1/stores", include("store.rest.urls")),
     path('payment_service/', include('payment_service.urls')),

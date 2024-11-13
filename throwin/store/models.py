@@ -21,6 +21,8 @@ class Store(BaseModel):
         max_length=20,
         unique=True,
         db_index=True,
+        blank=True,
+        null=True,
     )  # Unique store code
     description = models.TextField(blank=True, null=True)
     logo = VersatileImageField(
