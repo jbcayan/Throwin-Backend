@@ -41,8 +41,8 @@ class Store(BaseModel):
     def save(self, *args, **kwargs):
         """Generate a unique store code if not provided."""
         if not self.code:
-            while True:
-                self.code = generate_store_code(self.name)
+            self.code = generate_store_code(self.name)
+
         super().save(*args, **kwargs)
 
     def __str__(self):

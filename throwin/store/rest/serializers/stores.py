@@ -1,5 +1,6 @@
 """Serializers for store."""
 
+from rest_framework import serializers
 from common.serializers import BaseSerializer
 
 from store.models import Store
@@ -18,6 +19,10 @@ class StoreSerializer(BaseSerializer):
         sizes="store_banner",
         required=False
     )
+    code = serializers.CharField(
+        max_length=20,
+        required=False
+    )
 
     class Meta(BaseSerializer.Meta):
         model = Store
@@ -30,3 +35,17 @@ class StoreSerializer(BaseSerializer):
             "banner"
         ]
         read_only_fields = ["uid"]
+
+    def create(self, validated_data):
+        instance = super().create(validated_data=validated_data)
+        # instance.user_created = self.context["request"].user
+        # instance.save(update_fields=["user_created"])
+
+        return instance
+
+    def update(self, instance, validated_data):
+        instance = super().update(instance, validated_data=validated_data)
+        # instance.user_updated = self.context["request"].user
+        # instance.save(update_fields=["user_updated"])
+
+        return instance
