@@ -168,7 +168,8 @@ class StuffDetailForConsumer(generics.RetrieveAPIView):
         IsConsumerOrGuestUser,
         IsConsumerUser,
         IsAdminUser,
-        IsRestaurantStuffUser
+        IsRestaurantStuffUser,
+        IsSuperAdminUser
     )
     permission_classes = (CheckAnyPermission,)
     serializer_class = StuffDetailForConsumerSerializer
