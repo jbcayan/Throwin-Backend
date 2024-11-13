@@ -6,6 +6,8 @@ from django.contrib.auth.models import (
 )
 from django.db import models
 from django.db.models.signals import post_save
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
 
 from versatileimagefield.fields import VersatileImageField
 
@@ -110,6 +112,12 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
 
     def __str__(self):
         return self.email or self.phone_number
+
+    def save(self, *args, **kwargs):
+        if self.username is None:
+            byte_code = urlsafe_base64_encode(force_bytes(self.id))
+            self.username = byte_code
+        super().save(*args, **kwargs)
 
     @property
     def get_store(self):
