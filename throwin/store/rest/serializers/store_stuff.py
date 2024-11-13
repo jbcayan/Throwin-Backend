@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from accounts.rest.serializers.user import StuffDetailForConsumerSerializer
+from versatileimagefield.serializers import VersatileImageFieldSerializer
 
 User = get_user_model()
 
@@ -27,3 +28,11 @@ class StoreStuffListSerializer(StuffDetailForConsumerSerializer):
             "fun_fact",
         )
 
+    def get_image(self, obj):
+        try:
+            if obj.image:
+                return VersatileImageFieldSerializer(obj.image, context=self.context).data
+            return None
+        except (FileNotFoundError, ValueError):
+            # Return None if the image file is not found or another error occurs
+            return None
