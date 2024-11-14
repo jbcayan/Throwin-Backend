@@ -1,4 +1,7 @@
 import uuid
+import secrets
+import string
+
 from django.contrib.auth.models import (
     AbstractUser,
     BaseUserManager,
@@ -115,16 +118,18 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
 
     def save(self, *args, **kwargs):
         if self.username is None:
-            byte_code = urlsafe_base64_encode(force_bytes(self.id))
+            # Generate a base unique username with alphanumeric characters
+            base_username = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(10))
 
-            counter = 1
             # Check for username conflicts and create a unique one
-            while User.objects.filter(username=byte_code).exists():
-                byte_code = urlsafe_base64_encode(force_bytes(self.id)) + str(counter)
+            counter = 1
+            unique_username = base_username
+
+            while User.objects.filter(username=unique_username).exists():
+                unique_username = f"{base_username}{counter}"
                 counter += 1
 
-            self.username = byte_code
-
+            self.username = unique_username
         super().save(*args, **kwargs)
 
     @property
