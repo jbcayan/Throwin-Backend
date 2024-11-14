@@ -56,3 +56,25 @@ class CheckEmailAlreadyExistsSerializer(serializers.Serializer):
         if TemporaryUser.objects.filter(email=attrs["email"]).exists():
             raise serializers.ValidationError({"email": "You already have an account. Please activate it."})
         return attrs
+
+
+class ResendActivationEmailSerializer(serializers.Serializer):
+    email = serializers.EmailField(
+        required=True,
+        help_text="Enter the email address associated with your account."
+    )
+
+    class Meta:
+        fields = ("email",)
+
+    def validate_email(self, value):
+        """Ensure email is associated with a user."""
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError(
+                "This email already activated"
+            )
+        if not TemporaryUser.objects.filter(email=value).exists():
+            raise serializers.ValidationError(
+                "No user is associated with this email address"
+            )
+        return value
