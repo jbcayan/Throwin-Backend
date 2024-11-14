@@ -60,6 +60,7 @@ class AccountActivation(generics.GenericAPIView):
                 kind=temp_user.kind,
                 is_verified=True
             )
+
             user.set_password(temp_user.password)
             user.save()
 
@@ -67,7 +68,7 @@ class AccountActivation(generics.GenericAPIView):
             temp_user.delete()
 
             return Response({
-                "detail": "Account Activated Successfully"
+                "detail": "User Activated Successfully"
             }, status=status.HTTP_200_OK)
 
         except Exception:

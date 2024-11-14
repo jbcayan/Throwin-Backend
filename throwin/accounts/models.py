@@ -116,7 +116,15 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
     def save(self, *args, **kwargs):
         if self.username is None:
             byte_code = urlsafe_base64_encode(force_bytes(self.id))
+
+            counter = 1
+            # Check for username conflicts and create a unique one
+            while User.objects.filter(username=byte_code).exists():
+                byte_code = urlsafe_base64_encode(force_bytes(self.id)) + str(counter)
+                counter += 1
+
             self.username = byte_code
+
         super().save(*args, **kwargs)
 
     @property
