@@ -30,7 +30,7 @@ urlpatterns = [
         name="activate-account"
     ),
     path(
-        "/email-change-reqquest",
+        "/email-change-request",
         EmailChangeRequest.as_view(),
         name="email-change-request"
     ),
