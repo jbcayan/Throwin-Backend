@@ -70,7 +70,6 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
         max_length=100,
         blank=True,
         null=True,
-        unique=True
     )
     username = models.CharField(
         max_length=50,
