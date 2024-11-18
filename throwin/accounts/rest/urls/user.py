@@ -6,7 +6,7 @@ from accounts.rest.views.user import (
     SetUserName,
     AccountActivation,
     EmailChangeRequest,
-    VerifyEmailChange,
+    EmailChangeRequestVerify,
     StuffDetailForConsumer,
     ConsumerLikeStuffCreateDestroy,
     FavoriteStuffList,
@@ -35,8 +35,8 @@ urlpatterns = [
         name="email-change-request"
     ),
     path(
-        "/email-verify/<str:token>",
-        VerifyEmailChange.as_view(),
+        "/email-change-request/verify/<str:token>",
+        EmailChangeRequestVerify.as_view(),
         name="verify-email-change"
     ),
     path(

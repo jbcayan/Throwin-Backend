@@ -123,14 +123,12 @@ class EmailChangeRequest(generics.GenericAPIView):
 @extend_schema(
     summary="Verify and change user email",
     description=(
-            "Provide the token as a query parameter to verify and update the user's email.\n\n"
+            "Provide the token in the url path to verify and update the user's email.\n\n"
             "**Example Request:**\n"
-            "`GET /api/v1/auth/email-change/verify/?token=<your_token>`\n\n"
-            "The token should be sent as a query parameter in the URL. This token contains the user's "
-            "ID and new email address, and it must be valid and not expired."
+            "`GET /auth/users/email-change-request/verify/<your_token>`\n\n"
     ),
 )
-class VerifyEmailChange(generics.GenericAPIView):
+class EmailChangeRequestVerify(generics.GenericAPIView):
     """Endpoint to verify and change the user's email."""
     available_permission_classes = (
         IsConsumerUser,
