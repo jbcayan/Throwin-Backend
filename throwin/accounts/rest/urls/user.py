@@ -35,7 +35,7 @@ urlpatterns = [
         name="email-change-request"
     ),
     path(
-        "/email-verify",
+        "/email-verify/<str:token>",
         VerifyEmailChange.as_view(),
         name="verify-email-change"
     ),

@@ -131,32 +131,52 @@ class EmailChangeRequest(generics.GenericAPIView):
     ),
 )
 class VerifyEmailChange(generics.GenericAPIView):
-    def get(self, request):
-        token = request.query_params.get("token", "")
+    """Endpoint to verify and change the user's email."""
+    available_permission_classes = (
+        IsConsumerUser,
+        IsAdminUser,
+        IsSuperAdminUser,
+    )
+    permission_classes = (CheckAnyPermission,)
+
+    def post(self, request, token=None):
 
         if not token:
-            return Response({
-                "detail": "Token is missing"
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Token is missing"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
             access_token = AccessToken(token)
-            user_id = access_token["user_id"]
-            new_email = access_token["new_email"]
+            user_id = access_token.get("user_id")
+            new_email = access_token.get("new_email")
 
-            user = User.objects.get(id=user_id)
-            user.email = new_email  # Update the user's email
-            user.is_verified = True
-            user.save()
+            if not (request.user.is_authenticated and request.user.id == user_id):
+                return Response(
+                    {"detail": "Requested user does not match the authenticated user"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
-            return Response({
-                "detail": "Email Changed Successfully"
-            }, status=status.HTTP_200_OK)
+            request.user.email = new_email
+            request.user.is_verified = True
+            request.user.save(update_fields=["email", "is_verified"])
 
-        except Exception:
-            return Response({
-                "detail": "Invalid Token or Expired"
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Email changed successfully"},
+                status=status.HTTP_200_OK
+            )
+
+        except AccessToken.DoesNotExist:
+            return Response(
+                {"detail": "Invalid token"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 @extend_schema(

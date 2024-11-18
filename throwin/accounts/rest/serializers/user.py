@@ -35,7 +35,8 @@ class UserNameSerializer(serializers.ModelSerializer):
 
 
 class EmailChangeRequestSerializer(serializers.Serializer):
-    new_email = serializers.EmailField()
+    new_email = serializers.EmailField(required=True)
+    password = serializers.CharField(required=True)
 
     def validate_new_email(self, value):
         """Ensure that new email is not already in use"""
@@ -45,6 +46,12 @@ class EmailChangeRequestSerializer(serializers.Serializer):
 
     def save(self, user):
         new_email = self.validated_data["new_email"]
+        password = self.validated_data["password"]
+
+        if not user.check_password(password):
+            raise serializers.ValidationError({
+                "detail": "Incorrect password."
+            })
 
         # generate token for email verification
         token = generate_verification_token(user, new_email)
