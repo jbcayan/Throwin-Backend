@@ -72,7 +72,7 @@ class EmailChangeRequestSerializer(serializers.Serializer):
         # )
 
 
-class StuffDetailForConsumerSerializer(BaseSerializer):
+class StaffDetailForConsumerSerializer(BaseSerializer):
     """Serializer to represent restaurant stuff details."""
 
     introduction = serializers.CharField(
@@ -155,7 +155,7 @@ class MeSerializer(BaseSerializer):
         representation = super().to_representation(instance)
 
         # Check if the user's kind is not RESTAURANT_STAFF
-        if instance.kind != UserKind.RESTAURANT_STUFF:
+        if instance.kind != UserKind.RESTAURANT_STAFF:
             # Keep only the basic fields for non-restaurant staff users
             fields_to_keep = {
                 "uid", "name", "email", "phone_number", "username", "image", "auth_provider", "kind"

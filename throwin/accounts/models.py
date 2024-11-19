@@ -133,7 +133,7 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
 
     @property
     def get_store(self):
-        if self.kind == UserKind.RESTAURANT_STUFF:
+        if self.kind == UserKind.RESTAURANT_STAFF:
             try:
                 return self.storeuser_set.select_related("store").get(is_default=True).store
             except Exception:
@@ -184,7 +184,7 @@ class Like(BaseModel):
         "accounts.User",
         on_delete=models.CASCADE,
         related_name="likes",
-        limit_choices_to={"kind": UserKind.RESTAURANT_STUFF}
+        limit_choices_to={"kind": UserKind.RESTAURANT_STAFF}
     )
 
     class Meta:

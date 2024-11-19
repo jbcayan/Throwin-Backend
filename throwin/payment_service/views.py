@@ -16,7 +16,7 @@ class IsStaffOrAdmin(permissions.BasePermission):
         user = request.user
         if not user.is_authenticated:
             return False
-        if view.__class__.__name__ == 'StaffDisbursementRequestView' and user.kind == UserKind.RESTAURANT_STUFF:
+        if view.__class__.__name__ == 'StaffDisbursementRequestView' and user.kind == UserKind.RESTAURANT_STAFF:
             return True
         if view.__class__.__name__ == 'AdminDisbursementRequestView' and user.is_superuser:
             return True
@@ -39,7 +39,7 @@ class PaymentHistoryView(generics.ListCreateAPIView):
         if user.is_authenticated:
             if user.kind == UserKind.CONSUMER:
                 return PaymentHistory.objects.filter(customer=user)
-            elif user.kind == UserKind.RESTAURANT_STUFF:
+            elif user.kind == UserKind.RESTAURANT_STAFF:
                 return PaymentHistory.objects.filter(staff=user)
         return PaymentHistory.objects.none()
 

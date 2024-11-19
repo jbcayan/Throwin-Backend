@@ -7,9 +7,9 @@ from accounts.rest.views.user import (
     AccountActivation,
     EmailChangeRequest,
     EmailChangeRequestVerify,
-    StuffDetailForConsumer,
-    ConsumerLikeStuffCreateDestroy,
-    FavoriteStuffList,
+    StaffDetailForConsumer,
+    ConsumerLikeStaffCreateDestroy,
+    FavoriteStaffList,
     Me,
 )
 
@@ -41,17 +41,17 @@ urlpatterns = [
     ),
     path(
         "/stuff/<str:username>",
-        StuffDetailForConsumer.as_view(),
+        StaffDetailForConsumer.as_view(),
         name="stuff-detail-for-consumer"
     ),
     path(
         "/stuff/<uuid:uid>/like",
-        ConsumerLikeStuffCreateDestroy.as_view(),
+        ConsumerLikeStaffCreateDestroy.as_view(),
         name="consumer-like-stuff"
     ),
     path(
         "/favorite-stuff",
-        FavoriteStuffList.as_view(),
+        FavoriteStaffList.as_view(),
         name="favorite-stuff"
     ),
 

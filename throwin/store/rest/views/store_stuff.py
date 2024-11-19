@@ -33,7 +33,7 @@ class StoreStuffList(generics.ListAPIView):
         if store_code := self.kwargs.get("store_code", None):
             return User().get_all_actives().filter(
                 store__code=store_code,
-                kind=UserKind.RESTAURANT_STUFF
+                kind=UserKind.RESTAURANT_STAFF
             ).select_related(
                 "profile",
                 "store"

@@ -20,12 +20,12 @@ from accounts.models import TemporaryUser, Like
 from accounts.rest.serializers.user import (
     EmailChangeRequestSerializer,
     UserNameSerializer,
-    StuffDetailForConsumerSerializer, MeSerializer,
+    StaffDetailForConsumerSerializer, MeSerializer,
 )
 
 from common.permissions import (
     IsConsumerUser,
-    CheckAnyPermission, IsConsumerOrGuestUser, IsAdminUser, IsRestaurantStuffUser, IsSuperAdminUser,
+    CheckAnyPermission, IsConsumerOrGuestUser, IsAdminUser, IsRestaurantStaffUser, IsSuperAdminUser,
 )
 
 User = get_user_model()
@@ -178,99 +178,99 @@ class EmailChangeRequestVerify(generics.GenericAPIView):
 
 
 @extend_schema(
-    summary="Get restaurant stuff details for consumer",
-    description="Get restaurant stuff details for consumer",
-    request=StuffDetailForConsumerSerializer
+    summary="Get restaurant staff details for consumer",
+    description="Get restaurant staff details for consumer",
+    request=StaffDetailForConsumerSerializer
 )
-class StuffDetailForConsumer(generics.RetrieveAPIView):
+class StaffDetailForConsumer(generics.RetrieveAPIView):
     available_permission_classes = (
         IsConsumerOrGuestUser,
         IsConsumerUser,
         IsAdminUser,
-        IsRestaurantStuffUser,
+        IsRestaurantStaffUser,
         IsSuperAdminUser
     )
     permission_classes = (CheckAnyPermission,)
-    serializer_class = StuffDetailForConsumerSerializer
+    serializer_class = StaffDetailForConsumerSerializer
 
     def get_object(self):
         return User().get_all_actives().get(username=self.kwargs["username"])
 
 
-class ConsumerLikeStuffCreateDestroy(generics.GenericAPIView):
+class ConsumerLikeStaffCreateDestroy(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
-        stuff_uid = str(self.kwargs.get("uid", None))
-        stuff_id = get_object_or_404(
+        staff_uid = str(self.kwargs.get("uid", None))
+        staff_id = get_object_or_404(
             User,
-            uid=stuff_uid,
+            uid=staff_uid,
             is_active=True,
-            kind=UserKind.RESTAURANT_STUFF
+            kind=UserKind.RESTAURANT_STAFF
         ).id
 
         if self.request.user.is_authenticated:
             like, created = Like.objects.get_or_create(
                 consumer=self.request.user,
-                staff_id=stuff_id
+                staff_id=staff_id
             )
             if created:
                 return Response({
-                    "detail": "Stuff member Liked"
+                    "detail": "Staff member Liked"
                 }, status=status.HTTP_201_CREATED)
             else:
                 return Response({
-                    "detail": "Stuff member already Liked"
+                    "detail": "Staff member already Liked"
                 }, status=status.HTTP_400_BAD_REQUEST)
         else:
             # Add a session for guest user
-            liked_stuff_uids = request.session.get("liked_stuff_uids", [])
-            if stuff_uid not in liked_stuff_uids:
-                liked_stuff_uids.append(stuff_uid)
-                request.session["liked_stuff_uids"] = liked_stuff_uids
+            liked_staff_uids = request.session.get("liked_stuff_uids", [])
+            if staff_uid not in liked_staff_uids:
+                liked_staff_uids.append(staff_uid)
+                request.session["liked_stuff_uids"] = liked_staff_uids
                 return Response({
-                    "detail": "Stuff member Liked"
+                    "detail": "Staff member Liked"
                 }, status=status.HTTP_201_CREATED)
             else:
                 return Response({
-                    "detail": "Stuff member already Liked"
+                    "detail": "Staff member already Liked"
                 }, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, *args, **kwargs):
-        stuff_uid = str(self.kwargs.get("uid", None))
-        stuff_id = get_object_or_404(
+        staff_uid = str(self.kwargs.get("uid", None))
+        staff_id = get_object_or_404(
             User,
-            uid=stuff_uid,
+            uid=staff_uid,
             is_active=True,
-            kind=UserKind.RESTAURANT_STUFF
+            kind=UserKind.RESTAURANT_STAFF
         ).id
 
         if self.request.user.is_authenticated:
             Like.objects.filter(
                 consumer=self.request.user,
-                stuff_id=stuff_id
+                staff_id=staff_id
             ).delete()
             return Response({
-                "detail": "Stuff member Unliked"
+                "detail": "Staff member Unliked"
             }, status=status.HTTP_204_NO_CONTENT)
         else:
-            liked_stuff_uids = request.session.get("liked_stuff_uids", [])
-            if stuff_uid in liked_stuff_uids:
-                liked_stuff_uids.remove(stuff_uid)
-                request.session["liked_stuff_uids"] = liked_stuff_uids
+            liked_staff_uids = request.session.get("liked_stuff_uids", [])
+            if staff_uid in liked_staff_uids:
+                liked_staff_uids.remove(staff_uid)
+                request.session["liked_stuff_uids"] = liked_staff_uids
                 return Response({
-                    "detail": "Stuff member Unliked"
+                    "detail": "Staff member Unliked"
                 }, status=status.HTTP_204_NO_CONTENT)
             else:
                 return Response({
-                    "detail": "Stuff member already Unliked"
+                    "detail": "Staff member already Unliked"
                 }, status=status.HTTP_400_BAD_REQUEST)
 
 
-class FavoriteStuffList(generics.ListAPIView):
+class FavoriteStaffList(generics.ListAPIView):
     """
-    API endpoint to list all favorite (liked) stuff members for the authenticated consumer.
+    API endpoint to list all favorite (liked) staff members for the authenticated consumer.
     """
-    serializer_class = StuffDetailForConsumerSerializer
+    serializer_class = StaffDetailForConsumerSerializer
     available_permission_classes = (
         IsConsumerOrGuestUser,
         IsConsumerUser,
@@ -280,7 +280,7 @@ class FavoriteStuffList(generics.ListAPIView):
         consumer = self.request.user
         # Ensures only "liked" staff by this consumer are included in the queryset
         liked_staff_ids = Like.objects.filter(consumer=consumer).values_list("staff", flat=True)
-        return User.objects.filter(id__in=liked_staff_ids, kind=UserKind.RESTAURANT_STUFF)
+        return User.objects.filter(id__in=liked_staff_ids, kind=UserKind.RESTAURANT_STAFF)
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -299,7 +299,7 @@ class Me(generics.GenericAPIView):
         IsConsumerUser,
         IsConsumerOrGuestUser,
         IsAdminUser,
-        IsRestaurantStuffUser,
+        IsRestaurantStaffUser,
         IsSuperAdminUser
     )
     permission_classes = (CheckAnyPermission,)

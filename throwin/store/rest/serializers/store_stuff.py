@@ -2,13 +2,13 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import serializers
 
-from accounts.rest.serializers.user import StuffDetailForConsumerSerializer
+from accounts.rest.serializers.user import StaffDetailForConsumerSerializer
 from versatileimagefield.serializers import VersatileImageFieldSerializer
 
 User = get_user_model()
 
 
-class StoreStuffListSerializer(StuffDetailForConsumerSerializer):
+class StoreStuffListSerializer(StaffDetailForConsumerSerializer):
     """Serializer to represent restaurant stuff list with profile details."""
 
     fun_fact = serializers.CharField(
@@ -17,7 +17,7 @@ class StoreStuffListSerializer(StuffDetailForConsumerSerializer):
         allow_null=True,
     )
 
-    class Meta(StuffDetailForConsumerSerializer.Meta):
+    class Meta(StaffDetailForConsumerSerializer.Meta):
         fields = (
             "uid",
             "name",
