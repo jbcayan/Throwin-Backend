@@ -17,4 +17,4 @@ python manage.py migrate
 echo "db migrated"
 
 # Run Management Script
-python manage.py coreinit
+#python manage.py coreinit
