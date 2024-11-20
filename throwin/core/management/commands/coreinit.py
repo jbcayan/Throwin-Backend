@@ -2,8 +2,9 @@ from django.core.management.base import BaseCommand, CommandError
 from django.core.management import call_command
 from django.db import transaction
 
+
 class Command(BaseCommand):
-    help = 'Initialize the core setup by running loadstore and loaduser commands in sequence with atomic transactions'
+    help = 'Initialize the core setup by running loadstores and loadusers commands in sequence with atomic transactions'
 
     def handle(self, *args, **options):
         try:
