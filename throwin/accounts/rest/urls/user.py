@@ -11,6 +11,7 @@ from accounts.rest.views.user import (
     ConsumerLikeStaffCreateDestroy,
     FavoriteStaffList,
     Me,
+    DeleteUser,
 )
 
 urlpatterns = [
@@ -54,5 +55,9 @@ urlpatterns = [
         FavoriteStaffList.as_view(),
         name="favorite-stuff"
     ),
-
+    path(
+        "/delete",
+        DeleteUser.as_view(),
+        name="delete-user"
+    ),
 ]

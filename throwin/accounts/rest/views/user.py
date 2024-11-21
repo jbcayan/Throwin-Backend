@@ -320,3 +320,21 @@ class Me(generics.GenericAPIView):
             return Response({
                 "name": guest_name
             }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    summary="Account deletion for registered users",
+    description="Account deletion for registered users",
+)
+class DeleteUser(generics.DestroyAPIView):
+    available_permission_classes = (
+        IsAdminUser,
+        IsSuperAdminUser,
+        IsConsumerUser
+    )
+    permission_classes = (CheckAnyPermission,)
+
+    def delete(self, request, *args, **kwargs):
+        user = self.request.user
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
