@@ -29,10 +29,6 @@ class GoogleSignInSerializer(serializers.Serializer):
                 "detail": "could not verify user."
             }, code="authorization")
 
-        print("="*30)
-        print(google_user_data)
-        print("="*30)
-
         email = google_user_data['email']
         name = google_user_data['given_name'] + ' ' + google_user_data['family_name']
         provider = 'google'
