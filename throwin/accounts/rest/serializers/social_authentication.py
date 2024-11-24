@@ -2,11 +2,11 @@
     Serializer for Social sign in [Google, Facebook, Line, Apple]
 """
 
-from rest_framework import serializers
-from accounts.utils import Google, register_social_user
 from django.conf import settings
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework import status
+
+from rest_framework import serializers
+
+from accounts.utils import Google, register_social_user
 
 
 class GoogleSignInSerializer(serializers.Serializer):
