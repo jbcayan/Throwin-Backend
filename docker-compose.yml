@@ -33,30 +33,25 @@ services:
     depends_on:
       - redis
 
-#  celery_worker:
-#    container_name: throwin_celery_worker
-#    build: .
-#    volumes:
-#      - .:/app
-#    command: celery -A throwin worker -l info
-#    env_file:
-#      - ./throwin/.env
-#    depends_on:
-#      - db
-#      - redis
-#
-#  celery_beat:
-#    container_name: throwin_celery_beat
-#    build: .
-#    volumes:
-#      - .:/app
-#    command: celery -A throwin beat -l info
-#    env_file:
-#      - ./throwin/.env
-#    depends_on:
-#      - db
-#      - redis
-#
-#volumes:
-#  db:
+  celery_worker:
+      container_name: throwin_celery_worker
+      build: .
+      volumes:
+        - .:/app
+      command: sh -c "cd throwin && celery -A throwin worker -l info"
+      env_file:
+        - ./throwin/.env
+      depends_on:
+        - redis
+
+  celery_beat:
+    container_name: throwin_celery_beat
+    build: .
+    volumes:
+      - .:/app
+    command: sh -c "cd throwin && celery -A throwin beat -l info"
+    env_file:
+      - ./throwin/.env
+    depends_on:
+      - redis
 
