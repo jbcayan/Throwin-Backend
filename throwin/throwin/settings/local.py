@@ -49,7 +49,6 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "django_filters",
     "django_celery_beat",
-    # "session_security",
 ]
 
 PROJECT_APPS = [

@@ -37,9 +37,9 @@ app.conf.update(
 
 
 # Define periodic tasks
-app.conf.beat_schedule = {
-    "print-something-every-30-seconds": {
-        "task": "accounts.tasks.print_something",  # Adjust path to your task
-        "schedule": crontab(minute="*"),  # Runs every minute
-    },
-}
+# app.conf.beat_schedule = {
+#     "print-something-every-30-seconds": {
+#         "task": "accounts.tasks.print_something",  # Adjust path to your task
+#         "schedule": crontab(minute="*"),  # Runs every minute
+#     },
+# }

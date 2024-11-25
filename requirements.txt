@@ -16,7 +16,7 @@ colorama==0.4.6
 cron-descriptor==1.4.5
 dj-database-url==2.3.0
 Django==5.1.2
-django-celery-beat==2.7.0
+django-celery-beat
 django-cors-headers==4.5.0
 django-filter==24.3
 django-silk==5.2.0
