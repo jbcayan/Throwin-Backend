@@ -2,11 +2,11 @@
     Serializer for Social sign in [Google, Facebook, Line, Apple]
 """
 
-from rest_framework import serializers
-from accounts.utils import Google, register_social_user
 from django.conf import settings
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework import status
+
+from rest_framework import serializers
+
+from accounts.utils import Google, register_social_user
 
 
 class GoogleSignInSerializer(serializers.Serializer):
@@ -28,10 +28,6 @@ class GoogleSignInSerializer(serializers.Serializer):
             raise serializers.ValidationError({
                 "detail": "could not verify user."
             }, code="authorization")
-
-        print("="*30)
-        print(google_user_data)
-        print("="*30)
 
         email = google_user_data['email']
         name = google_user_data['given_name'] + ' ' + google_user_data['family_name']

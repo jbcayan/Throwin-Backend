@@ -5,10 +5,12 @@ from common.models import BaseModel
 from django.core.exceptions import ValidationError
 import uuid
 
+
 class PaymentStatus(models.TextChoices):
     PENDING = 'pending', 'Pending'
     COMPLETED = 'completed', 'Completed'
     FAILED = 'failed', 'Failed'
+
 
 class DisbursementStatus(models.TextChoices):
     PENDING = 'pending', 'Pending'
@@ -16,9 +18,11 @@ class DisbursementStatus(models.TextChoices):
     COMPLETED = 'completed', 'Completed'
     REJECTED = 'rejected', 'Rejected'
 
+
 class PaymentHistoryManager(models.Manager):
     def completed(self):
         return self.filter(status=PaymentStatus.COMPLETED)
+
 
 class PaymentHistory(BaseModel):
     customer = models.ForeignKey(
@@ -32,7 +36,7 @@ class PaymentHistory(BaseModel):
     staff = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        limit_choices_to={'kind': UserKind.RESTAURANT_STUFF},
+        limit_choices_to={'kind': UserKind.RESTAURANT_STAFF},
         related_name="received_payments"
     )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
@@ -66,11 +70,12 @@ class PaymentHistory(BaseModel):
     def __str__(self):
         return f"Payment of {self.amount} to {self.staff.name} by {self.customer or self.user_nick_name or 'Anonymous'}"
 
+
 class DisbursementRequest(BaseModel):
     staff = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        limit_choices_to={'kind': UserKind.RESTAURANT_STUFF},
+        limit_choices_to={'kind': UserKind.RESTAURANT_STAFF},
         related_name="disbursement_requests"
     )
     amount = models.DecimalField(max_digits=10, decimal_places=2)

@@ -48,6 +48,7 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
     "django_filters",
+    "django_celery_beat",
 ]
 
 PROJECT_APPS = [
@@ -356,24 +357,10 @@ FRONTEND_URL = config("FRONTEND_URL")
 
 SITE_NAME = "Throwin"
 
-# Redis Caching
-# CACHES = {
-#     "default": {
-#         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-#         "LOCATION": "redis://redis_cache:6379",
-#     }
-# }
-
+# For docker Redis Caching
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis://127.0.0.1:6379",
+        "LOCATION": "redis://redis_cache:6379",
     }
 }
-
-CELERY_BROKER_URL = "redis://127.0.0.1:6379"
-CELERY_ACCEPT_CONTENT = ['application/json']
-CELERY_RESULT_SERIALIZER = 'json'
-CELERY_TASK_SERIALIZER = 'json'
-CELERY_TIMEZONE = 'Asia/Dhaka'
-CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379"

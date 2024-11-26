@@ -7,7 +7,7 @@ from rest_framework.response import Response
 
 from accounts.choices import UserKind
 
-from common.permissions import IsConsumerUser, CheckAnyPermission, IsConsumerOrGuestUser, IsAdminUser
+from common.permissions import IsConsumerUser, CheckAnyPermission, IsConsumerOrGuestUser, IsAdminUser, IsSuperAdminUser
 
 from store.rest.serializers.store_stuff import StoreStuffListSerializer
 
@@ -24,7 +24,8 @@ class StoreStuffList(generics.ListAPIView):
     available_permission_classes = (
         IsConsumerOrGuestUser,
         IsConsumerUser,
-        IsAdminUser
+        IsAdminUser,
+        IsSuperAdminUser,
     )
     permission_classes = (CheckAnyPermission,)
 
@@ -32,7 +33,7 @@ class StoreStuffList(generics.ListAPIView):
         if store_code := self.kwargs.get("store_code", None):
             return User().get_all_actives().filter(
                 store__code=store_code,
-                kind=UserKind.RESTAURANT_STUFF
+                kind=UserKind.RESTAURANT_STAFF
             ).select_related(
                 "profile",
                 "store"

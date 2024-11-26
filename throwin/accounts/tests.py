@@ -18,7 +18,7 @@ class UserModelTests(TestCase):
             email="staffuser@example.com",
             password="password123",
             name="Staff User",
-            kind=UserKind.RESTAURANT_STUFF
+            kind=UserKind.RESTAURANT_STAFF
         )
         self.consumer_user = User.objects.create_user(
             email="consumer@example.com",

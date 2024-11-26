@@ -17,13 +17,12 @@ from common.permissions import (
 class StoreListCreate(generics.ListCreateAPIView):
     serializer_class = StoreSerializer
 
-    available_permission_classes = (
-        IsSuperAdminUser
-    )
+    available_permission_classes = ()
 
     def get_permissions(self):
         if self.request.method == "POST":
             self.available_permission_classes = (
+                IsSuperAdminUser,
                 IsAdminUser,
             )
         else:
@@ -31,6 +30,7 @@ class StoreListCreate(generics.ListCreateAPIView):
                 IsConsumerOrGuestUser,
                 IsConsumerUser,
                 IsAdminUser,
+                IsSuperAdminUser,
             )
         return (CheckAnyPermission(),)
 
@@ -42,20 +42,20 @@ class StoreListCreate(generics.ListCreateAPIView):
 class StoreDetailUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = StoreSerializer
 
-    available_permission_classes = (
-        IsSuperAdminUser
-    )
+    available_permission_classes = ()
 
     def get_permissions(self):
         if self.request.method == "PUT":
             self.available_permission_classes = (
                 IsAdminUser,
+                IsSuperAdminUser,
             )
         else:
             self.available_permission_classes = (
                 IsConsumerOrGuestUser,
                 IsConsumerUser,
                 IsAdminUser,
+                IsSuperAdminUser,
             )
         return (CheckAnyPermission(),)
 

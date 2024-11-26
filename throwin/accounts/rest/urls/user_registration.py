@@ -1,5 +1,8 @@
-
-from accounts.rest.views.user_registration import UserRegistration, CheckEmailAlreadyExists
+from accounts.rest.views.user_registration import (
+    UserRegistration,
+    CheckEmailAlreadyExists,
+    ResendActivationEmail
+)
 from django.urls import path
 
 urlpatterns = [
@@ -8,9 +11,14 @@ urlpatterns = [
         UserRegistration.as_view(),
         name="user-registration"
     ),
-    path(""
+    path(
          "/check-email",
          CheckEmailAlreadyExists.as_view(),
          name="check-email"
+    ),
+    path(
+        "/resend-activation-email",
+        ResendActivationEmail.as_view(),
+        name="resend-activation-email"
     ),
 ]

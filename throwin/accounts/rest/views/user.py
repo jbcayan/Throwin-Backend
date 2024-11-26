@@ -20,12 +20,12 @@ from accounts.models import TemporaryUser, Like
 from accounts.rest.serializers.user import (
     EmailChangeRequestSerializer,
     UserNameSerializer,
-    StuffDetailForConsumerSerializer, MeSerializer,
+    StaffDetailForConsumerSerializer, MeSerializer,
 )
 
 from common.permissions import (
     IsConsumerUser,
-    CheckAnyPermission, IsConsumerOrGuestUser, IsAdminUser, IsRestaurantStuffUser, IsSuperAdminUser,
+    CheckAnyPermission, IsConsumerOrGuestUser, IsAdminUser, IsRestaurantStaffUser, IsSuperAdminUser,
 )
 
 User = get_user_model()
@@ -60,6 +60,7 @@ class AccountActivation(generics.GenericAPIView):
                 kind=temp_user.kind,
                 is_verified=True
             )
+
             user.set_password(temp_user.password)
             user.save()
 
@@ -67,7 +68,7 @@ class AccountActivation(generics.GenericAPIView):
             temp_user.delete()
 
             return Response({
-                "detail": "Account Activated Successfully"
+                "detail": "User Activated Successfully"
             }, status=status.HTTP_200_OK)
 
         except Exception:
@@ -122,135 +123,154 @@ class EmailChangeRequest(generics.GenericAPIView):
 @extend_schema(
     summary="Verify and change user email",
     description=(
-            "Provide the token as a query parameter to verify and update the user's email.\n\n"
+            "Provide the token in the url path to verify and update the user's email.\n\n"
             "**Example Request:**\n"
-            "`GET /api/v1/auth/email-change/verify/?token=<your_token>`\n\n"
-            "The token should be sent as a query parameter in the URL. This token contains the user's "
-            "ID and new email address, and it must be valid and not expired."
+            "`GET /auth/users/email-change-request/verify/<your_token>`\n\n"
     ),
 )
-class VerifyEmailChange(generics.GenericAPIView):
-    def get(self, request):
-        token = request.query_params.get("token", "")
+class EmailChangeRequestVerify(generics.GenericAPIView):
+    """Endpoint to verify and change the user's email."""
+    available_permission_classes = (
+        IsConsumerUser,
+        IsAdminUser,
+        IsSuperAdminUser,
+    )
+    permission_classes = (CheckAnyPermission,)
+
+    def post(self, request, token=None):
 
         if not token:
-            return Response({
-                "detail": "Token is missing"
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Token is missing"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
             access_token = AccessToken(token)
-            user_id = access_token["user_id"]
-            new_email = access_token["new_email"]
+            user_id = access_token.get("user_id")
+            new_email = access_token.get("new_email")
 
-            user = User.objects.get(id=user_id)
-            user.email = new_email  # Update the user's email
-            user.is_verified = True
-            user.save()
+            if not (request.user.is_authenticated and request.user.id == user_id):
+                return Response(
+                    {"detail": "Requested user does not match the authenticated user"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
 
-            return Response({
-                "detail": "Email Changed Successfully"
-            }, status=status.HTTP_200_OK)
+            request.user.email = new_email
+            request.user.is_verified = True
+            request.user.save(update_fields=["email", "is_verified"])
 
-        except Exception:
-            return Response({
-                "detail": "Invalid Token or Expired"
-            }, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Email changed successfully"},
+                status=status.HTTP_200_OK
+            )
+
+        except AccessToken.DoesNotExist:
+            return Response(
+                {"detail": "Invalid token"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        except Exception as e:
+            return Response(
+                {"detail": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 @extend_schema(
-    summary="Get restaurant stuff details for consumer",
-    description="Get restaurant stuff details for consumer",
-    request=StuffDetailForConsumerSerializer
+    summary="Get restaurant staff details for consumer",
+    description="Get restaurant staff details for consumer",
+    request=StaffDetailForConsumerSerializer
 )
-class StuffDetailForConsumer(generics.RetrieveAPIView):
+class StaffDetailForConsumer(generics.RetrieveAPIView):
     available_permission_classes = (
         IsConsumerOrGuestUser,
         IsConsumerUser,
         IsAdminUser,
-        IsRestaurantStuffUser
+        IsRestaurantStaffUser,
+        IsSuperAdminUser
     )
     permission_classes = (CheckAnyPermission,)
-    serializer_class = StuffDetailForConsumerSerializer
+    serializer_class = StaffDetailForConsumerSerializer
 
     def get_object(self):
         return User().get_all_actives().get(username=self.kwargs["username"])
 
 
-class ConsumerLikeStuffCreateDestroy(generics.GenericAPIView):
+class ConsumerLikeStaffCreateDestroy(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
-        stuff_uid = str(self.kwargs.get("uid", None))
-        stuff_id = get_object_or_404(
+        staff_uid = str(self.kwargs.get("uid", None))
+        staff_id = get_object_or_404(
             User,
-            uid=stuff_uid,
+            uid=staff_uid,
             is_active=True,
-            kind=UserKind.RESTAURANT_STUFF
+            kind=UserKind.RESTAURANT_STAFF
         ).id
 
         if self.request.user.is_authenticated:
             like, created = Like.objects.get_or_create(
                 consumer=self.request.user,
-                staff_id=stuff_id
+                staff_id=staff_id
             )
             if created:
                 return Response({
-                    "detail": "Stuff member Liked"
+                    "detail": "Staff member Liked"
                 }, status=status.HTTP_201_CREATED)
             else:
                 return Response({
-                    "detail": "Stuff member already Liked"
+                    "detail": "Staff member already Liked"
                 }, status=status.HTTP_400_BAD_REQUEST)
         else:
             # Add a session for guest user
-            liked_stuff_uids = request.session.get("liked_stuff_uids", [])
-            if stuff_uid not in liked_stuff_uids:
-                liked_stuff_uids.append(stuff_uid)
-                request.session["liked_stuff_uids"] = liked_stuff_uids
+            liked_staff_uids = request.session.get("liked_stuff_uids", [])
+            if staff_uid not in liked_staff_uids:
+                liked_staff_uids.append(staff_uid)
+                request.session["liked_stuff_uids"] = liked_staff_uids
                 return Response({
-                    "detail": "Stuff member Liked"
+                    "detail": "Staff member Liked"
                 }, status=status.HTTP_201_CREATED)
             else:
                 return Response({
-                    "detail": "Stuff member already Liked"
+                    "detail": "Staff member already Liked"
                 }, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, *args, **kwargs):
-        stuff_uid = str(self.kwargs.get("uid", None))
-        stuff_id = get_object_or_404(
+        staff_uid = str(self.kwargs.get("uid", None))
+        staff_id = get_object_or_404(
             User,
-            uid=stuff_uid,
+            uid=staff_uid,
             is_active=True,
-            kind=UserKind.RESTAURANT_STUFF
+            kind=UserKind.RESTAURANT_STAFF
         ).id
 
         if self.request.user.is_authenticated:
             Like.objects.filter(
                 consumer=self.request.user,
-                stuff_id=stuff_id
+                staff_id=staff_id
             ).delete()
             return Response({
-                "detail": "Stuff member Unliked"
+                "detail": "Staff member Unliked"
             }, status=status.HTTP_204_NO_CONTENT)
         else:
-            liked_stuff_uids = request.session.get("liked_stuff_uids", [])
-            if stuff_uid in liked_stuff_uids:
-                liked_stuff_uids.remove(stuff_uid)
-                request.session["liked_stuff_uids"] = liked_stuff_uids
+            liked_staff_uids = request.session.get("liked_stuff_uids", [])
+            if staff_uid in liked_staff_uids:
+                liked_staff_uids.remove(staff_uid)
+                request.session["liked_stuff_uids"] = liked_staff_uids
                 return Response({
-                    "detail": "Stuff member Unliked"
+                    "detail": "Staff member Unliked"
                 }, status=status.HTTP_204_NO_CONTENT)
             else:
                 return Response({
-                    "detail": "Stuff member already Unliked"
+                    "detail": "Staff member already Unliked"
                 }, status=status.HTTP_400_BAD_REQUEST)
 
 
-class FavoriteStuffList(generics.ListAPIView):
+class FavoriteStaffList(generics.ListAPIView):
     """
-    API endpoint to list all favorite (liked) stuff members for the authenticated consumer.
+    API endpoint to list all favorite (liked) staff members for the authenticated consumer.
     """
-    serializer_class = StuffDetailForConsumerSerializer
+    serializer_class = StaffDetailForConsumerSerializer
     available_permission_classes = (
         IsConsumerOrGuestUser,
         IsConsumerUser,
@@ -260,7 +280,7 @@ class FavoriteStuffList(generics.ListAPIView):
         consumer = self.request.user
         # Ensures only "liked" staff by this consumer are included in the queryset
         liked_staff_ids = Like.objects.filter(consumer=consumer).values_list("staff", flat=True)
-        return User.objects.filter(id__in=liked_staff_ids, kind=UserKind.RESTAURANT_STUFF)
+        return User.objects.filter(id__in=liked_staff_ids, kind=UserKind.RESTAURANT_STAFF)
 
     def list(self, request, *args, **kwargs):
         queryset = self.get_queryset()
@@ -279,7 +299,7 @@ class Me(generics.GenericAPIView):
         IsConsumerUser,
         IsConsumerOrGuestUser,
         IsAdminUser,
-        IsRestaurantStuffUser,
+        IsRestaurantStaffUser,
         IsSuperAdminUser
     )
     permission_classes = (CheckAnyPermission,)
@@ -300,3 +320,21 @@ class Me(generics.GenericAPIView):
             return Response({
                 "name": guest_name
             }, status=status.HTTP_200_OK)
+
+
+@extend_schema(
+    summary="Account deletion for registered users",
+    description="Account deletion for registered users",
+)
+class DeleteUser(generics.DestroyAPIView):
+    available_permission_classes = (
+        IsAdminUser,
+        IsSuperAdminUser,
+        IsConsumerUser
+    )
+    permission_classes = (CheckAnyPermission,)
+
+    def delete(self, request, *args, **kwargs):
+        user = self.request.user
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)

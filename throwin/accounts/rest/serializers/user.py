@@ -35,7 +35,8 @@ class UserNameSerializer(serializers.ModelSerializer):
 
 
 class EmailChangeRequestSerializer(serializers.Serializer):
-    new_email = serializers.EmailField()
+    new_email = serializers.EmailField(required=True)
+    password = serializers.CharField(required=True)
 
     def validate_new_email(self, value):
         """Ensure that new email is not already in use"""
@@ -45,6 +46,12 @@ class EmailChangeRequestSerializer(serializers.Serializer):
 
     def save(self, user):
         new_email = self.validated_data["new_email"]
+        password = self.validated_data["password"]
+
+        if not user.check_password(password):
+            raise serializers.ValidationError({
+                "detail": "Incorrect password."
+            })
 
         # generate token for email verification
         token = generate_verification_token(user, new_email)
@@ -65,7 +72,7 @@ class EmailChangeRequestSerializer(serializers.Serializer):
         # )
 
 
-class StuffDetailForConsumerSerializer(BaseSerializer):
+class StaffDetailForConsumerSerializer(BaseSerializer):
     """Serializer to represent restaurant stuff details."""
 
     introduction = serializers.CharField(
@@ -148,7 +155,7 @@ class MeSerializer(BaseSerializer):
         representation = super().to_representation(instance)
 
         # Check if the user's kind is not RESTAURANT_STAFF
-        if instance.kind != UserKind.RESTAURANT_STUFF:
+        if instance.kind != UserKind.RESTAURANT_STAFF:
             # Keep only the basic fields for non-restaurant staff users
             fields_to_keep = {
                 "uid", "name", "email", "phone_number", "username", "image", "auth_provider", "kind"

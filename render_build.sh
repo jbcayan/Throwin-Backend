@@ -15,3 +15,6 @@ echo "static files collected"
 # migrate
 python manage.py migrate
 echo "db migrated"
+
+# Run Management Script
+#python manage.py coreinit

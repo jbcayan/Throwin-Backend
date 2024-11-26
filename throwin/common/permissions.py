@@ -34,7 +34,7 @@ class IsConsumerOrGuestUser(BasePermission):
             return True
 
 
-class IsRestaurantStuffUser(BasePermission):
+class IsRestaurantStaffUser(BasePermission):
     """Permission for restaurant stuff"""
 
     def has_permission(self, request, view):
@@ -43,7 +43,7 @@ class IsRestaurantStuffUser(BasePermission):
         if not request.user.is_verified:
             return False
         try:
-            return request.user.kind == UserKind.RESTAURANT_STUFF
+            return request.user.kind == UserKind.RESTAURANT_STAFF
         except Exception:
             return False
 

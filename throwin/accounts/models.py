@@ -1,4 +1,7 @@
 import uuid
+import secrets
+import string
+
 from django.contrib.auth.models import (
     AbstractUser,
     BaseUserManager,
@@ -6,6 +9,8 @@ from django.contrib.auth.models import (
 )
 from django.db import models
 from django.db.models.signals import post_save
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
 
 from versatileimagefield.fields import VersatileImageField
 
@@ -65,7 +70,6 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
         max_length=100,
         blank=True,
         null=True,
-        unique=True
     )
     username = models.CharField(
         max_length=50,
@@ -111,9 +115,25 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
     def __str__(self):
         return self.email or self.phone_number
 
+    def save(self, *args, **kwargs):
+        if self.username is None:
+            # Generate a base unique username with alphanumeric characters
+            base_username = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(10))
+
+            # Check for username conflicts and create a unique one
+            counter = 1
+            unique_username = base_username
+
+            while User.objects.filter(username=unique_username).exists():
+                unique_username = f"{base_username}{counter}"
+                counter += 1
+
+            self.username = unique_username
+        super().save(*args, **kwargs)
+
     @property
     def get_store(self):
-        if self.kind == UserKind.RESTAURANT_STUFF:
+        if self.kind == UserKind.RESTAURANT_STAFF:
             try:
                 return self.storeuser_set.select_related("store").get(is_default=True).store
             except Exception:
@@ -164,7 +184,7 @@ class Like(BaseModel):
         "accounts.User",
         on_delete=models.CASCADE,
         related_name="likes",
-        limit_choices_to={"kind": UserKind.RESTAURANT_STUFF}
+        limit_choices_to={"kind": UserKind.RESTAURANT_STAFF}
     )
 
     class Meta:

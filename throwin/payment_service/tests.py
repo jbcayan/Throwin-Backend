@@ -21,7 +21,7 @@ class PaymentHistoryTests(TestCase):
             email="staff@example.com",
             password="password123",
             name="Staff User",
-            kind=UserKind.RESTAURANT_STUFF
+            kind=UserKind.RESTAURANT_STAFF
         )
 
     def test_payment_creation(self):
@@ -84,7 +84,7 @@ class DisbursementRequestTests(TestCase):
             email="staff@example.com",
             password="password123",
             name="Staff User",
-            kind=UserKind.RESTAURANT_STUFF
+            kind=UserKind.RESTAURANT_STAFF
         )
         self.admin = User.objects.create_user(
             email="admin@example.com",

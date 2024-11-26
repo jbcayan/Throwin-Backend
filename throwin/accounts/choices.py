@@ -10,7 +10,7 @@ class GenderChoices(TextChoices):
 class UserKind(TextChoices):
     SUPER_ADMIN = "super_admin", "Super Admin"
     ADMIN = "admin", "Admin"
-    RESTAURANT_STUFF = "restaurant_stuff", "Restaurant Stuff"
+    RESTAURANT_STAFF = "restaurant_staff", "Restaurant Staff"
     CONSUMER = "consumer", "Consumer"
     UNDEFINED = "undefined", "Undefined"
 

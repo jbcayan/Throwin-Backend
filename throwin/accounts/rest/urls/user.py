@@ -6,11 +6,12 @@ from accounts.rest.views.user import (
     SetUserName,
     AccountActivation,
     EmailChangeRequest,
-    VerifyEmailChange,
-    StuffDetailForConsumer,
-    ConsumerLikeStuffCreateDestroy,
-    FavoriteStuffList,
+    EmailChangeRequestVerify,
+    StaffDetailForConsumer,
+    ConsumerLikeStaffCreateDestroy,
+    FavoriteStaffList,
     Me,
+    DeleteUser,
 )
 
 urlpatterns = [
@@ -30,29 +31,33 @@ urlpatterns = [
         name="activate-account"
     ),
     path(
-        "/email-change-reqquest",
+        "/email-change-request",
         EmailChangeRequest.as_view(),
         name="email-change-request"
     ),
     path(
-        "/email-verify",
-        VerifyEmailChange.as_view(),
+        "/email-change-request/verify/<str:token>",
+        EmailChangeRequestVerify.as_view(),
         name="verify-email-change"
     ),
     path(
         "/stuff/<str:username>",
-        StuffDetailForConsumer.as_view(),
+        StaffDetailForConsumer.as_view(),
         name="stuff-detail-for-consumer"
     ),
     path(
         "/stuff/<uuid:uid>/like",
-        ConsumerLikeStuffCreateDestroy.as_view(),
+        ConsumerLikeStaffCreateDestroy.as_view(),
         name="consumer-like-stuff"
     ),
     path(
         "/favorite-stuff",
-        FavoriteStuffList.as_view(),
+        FavoriteStaffList.as_view(),
         name="favorite-stuff"
     ),
-
+    path(
+        "/delete",
+        DeleteUser.as_view(),
+        name="delete-user"
+    ),
 ]
