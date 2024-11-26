@@ -1,0 +1,48 @@
+name: Deploy Django App
+
+on:
+  push:
+    branches:
+      - main  # Trigger deployment on pushes to the main branch
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Step 1: Checkout the Repository
+    - name: Checkout Repository
+      uses: actions/checkout@v3
+
+    # Step 2: Configure AWS Credentials
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-northeast-1  # Update to your region
+
+    # Step 3: Copy SSH Key for EC2 Access
+    - name: Setup SSH Key
+      env:
+        SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      run: |
+        echo "$SSH_PRIVATE_KEY" > ec2-key.pem
+        chmod 600 ec2-key.pem
+
+    # Step 4: Deploy Application to EC2
+    - name: Deploy to EC2
+      run: |
+        ssh -i ec2-key.pem -o StrictHostKeyChecking=no ubuntu@54.238.181.96 << 'EOF'
+        echo "Deploying application..."
+        cd ~/Throwin-Backend
+        git pull origin main
+        docker-compose down
+        docker-compose up --build -d
+        echo "Deployment complete."
+        EOF
+
+    # Step 5: Cleanup SSH Key
+    - name: Remove SSH Key
+      run: |
+        rm -f ec2-key.pem
