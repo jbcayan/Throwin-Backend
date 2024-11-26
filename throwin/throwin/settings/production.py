@@ -122,7 +122,7 @@ WSGI_APPLICATION = 'throwin.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 
-if config("RENDER", cast=bool):
+if config("RENDER", cast=bool, default=False):
     DATABASES = {
         "default": dj_database_url.parse(config("DATABASE_URL")),
     }
