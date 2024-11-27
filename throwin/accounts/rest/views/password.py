@@ -49,8 +49,8 @@ class PasswordResetRequestView(generics.GenericAPIView):
             f"The {settings.SITE_NAME} Team"
         )
         to_email = user.email
-        send_mail_task(subject, message, to_email)
-        # send_mail_task.delay(subject, message, to_email)
+        # send_mail_task(subject, message, to_email)
+        send_mail_task.delay(subject, message, to_email)
 
         return Response({
             "detail": "Password reset link sent"
