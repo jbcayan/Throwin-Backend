@@ -1,23 +1,11 @@
 services:
-#  db:
-#    container_name: postgres_db
-#    image: postgres:latest
-#    restart: always
-#    ports:
-#      - "5433:5432"  # Host:Container mapping
-#    volumes:
-#      - db:/var/lib/postgresql/data
-#    environment:
-#      POSTGRES_DB: postgres
-#      POSTGRES_USER: postgres
-#      POSTGRES_PASSWORD: postgres
-
-  redis:
-    container_name: redis_cache
+  redis_cache:
     image: redis:latest
-    restart: always
+    container_name: redis_cache
     ports:
-      - "6380:6379"
+      - "6379:6379"
+    networks:
+      - app_network
 
   app:
     container_name: throwin_backend
@@ -31,18 +19,25 @@ services:
     env_file:
       - ./throwin/.env
     depends_on:
-      - redis
+      - redis_cache  # Fixed this to redis_cache
+    networks:
+      - app_network
+    environment:
+      - CELERY_BROKER_URL=redis://redis_cache:6379
+      - CELERY_RESULT_BACKEND=redis://redis_cache:6379
 
   celery_worker:
-      container_name: throwin_celery_worker
-      build: .
-      volumes:
-        - .:/app
-      command: sh -c "cd throwin && celery -A throwin worker -l info"
-      env_file:
-        - ./throwin/.env
-      depends_on:
-        - redis
+    container_name: throwin_celery_worker
+    build: .
+    volumes:
+      - .:/app
+    command: sh -c "cd throwin && celery -A throwin worker -l info"
+    env_file:
+      - ./throwin/.env
+    depends_on:
+      - redis_cache  # Fixed this to redis_cache
+    networks:
+      - app_network
 
   celery_beat:
     container_name: throwin_celery_beat
@@ -53,5 +48,10 @@ services:
     env_file:
       - ./throwin/.env
     depends_on:
-      - redis
+      - redis_cache  # Fixed this to redis_cache
+    networks:
+      - app_network
 
+networks:
+  app_network:
+    driver: bridge
