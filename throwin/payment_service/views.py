@@ -30,7 +30,7 @@ class PaymentHistoryView(generics.ListCreateAPIView):
     serializer_class = PaymentHistorySerializer
     permission_classes = [permissions.AllowAny]
     filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
-    filterset_fields = ['staff', 'status', 'customer']
+    filterset_fields = ['staff__id', 'status', 'customer__id']  # Updated for UUIDs
     ordering_fields = ['created_at', 'amount']
     pagination_class = StandardResultsPagination
 
@@ -38,9 +38,9 @@ class PaymentHistoryView(generics.ListCreateAPIView):
         user = self.request.user
         if user.is_authenticated:
             if user.kind == UserKind.CONSUMER:
-                return PaymentHistory.objects.filter(customer=user)
+                return PaymentHistory.objects.filter(customer__id=user.id)
             elif user.kind == UserKind.RESTAURANT_STAFF:
-                return PaymentHistory.objects.filter(staff=user)
+                return PaymentHistory.objects.filter(staff__id=user.id)
         return PaymentHistory.objects.none()
 
     def perform_create(self, serializer):
@@ -52,10 +52,10 @@ class StaffDisbursementRequestView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated, IsStaffOrAdmin]
 
     def get_queryset(self):
-        return DisbursementRequest.objects.filter(staff=self.request.user).select_related('processed_by')
+        return DisbursementRequest.objects.filter(staff__id=self.request.user.id).select_related('processed_by')
 
     def perform_create(self, serializer):
-        # Automatically set the staff field to the authenticated user
+        # Automatically set the staff field to the authenticated user's UUID
         serializer.save(staff=self.request.user)
 
 class AdminDisbursementRequestView(generics.ListAPIView, generics.RetrieveUpdateAPIView):
@@ -65,6 +65,7 @@ class AdminDisbursementRequestView(generics.ListAPIView, generics.RetrieveUpdate
     queryset = DisbursementRequest.objects.select_related('staff', 'processed_by')
     serializer_class = DisbursementRequestSerializer
     permission_classes = [permissions.IsAuthenticated, IsStaffOrAdmin]
+    lookup_field = 'id'  # Use UUID instead of the default `pk`
 
     def perform_update(self, serializer):
         # Only allow admin to update the status and set processed_by field

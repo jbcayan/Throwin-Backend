@@ -8,6 +8,6 @@ urlpatterns = [
     # Disbursement Endpoints for Staff (List and Create)
     path('disbursements/', StaffDisbursementRequestView.as_view(), name='staff-disbursement-list-create'),
     
-    # Disbursement Management Endpoint for Admin (Retrieve and Update by ID)
-    path('disbursements/<int:pk>/', AdminDisbursementRequestView.as_view(), name='admin-disbursement-manage'),
+    # Disbursement Management Endpoint for Admin (Retrieve and Update by UUID)
+    path('disbursements/<uuid:id>/', AdminDisbursementRequestView.as_view(), name='admin-disbursement-manage'),
 ]
