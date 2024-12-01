@@ -23,9 +23,17 @@ python manage.py migrate
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
+# Start Celery worker in the background
+echo "Starting Celery worker..."
+celery -A throwin worker --loglevel=info &
+
+# Start Celery beat in the background
+echo "Starting Celery beat..."
+celery -A throwin beat --loglevel=info &
+
 # Start the Django development server
 echo "Starting Django development server..."
-python manage.py runserver 0.0.0.0:8000
+exec python manage.py runserver 0.0.0.0:8000
 
 # Start the Gunicorn server
 #echo "Starting Gunicorn..."
