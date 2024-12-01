@@ -136,6 +136,7 @@ class MeSerializer(BaseSerializer):
     class Meta(BaseSerializer.Meta):
         model = User
         fields = (
+            "id",
             "uid",
             "name",
             "email",
@@ -152,13 +153,14 @@ class MeSerializer(BaseSerializer):
 
     def to_representation(self, instance):
         """Customize the fields based on the user kind."""
+        print("I am here")
         representation = super().to_representation(instance)
 
         # Check if the user's kind is not RESTAURANT_STAFF
         if instance.kind != UserKind.RESTAURANT_STAFF:
             # Keep only the basic fields for non-restaurant staff users
             fields_to_keep = {
-                "uid", "name", "email", "phone_number", "username", "image", "auth_provider", "kind"
+                "id", "uid", "name", "email", "phone_number", "username", "image", "auth_provider", "kind"
             }
             representation = {key: representation[key] for key in fields_to_keep if key in representation}
 
