@@ -3,6 +3,8 @@ from .models import PaymentHistory, DisbursementRequest
 from django.db import models
 
 class PaymentHistorySerializer(serializers.ModelSerializer):
+    customer_uuid = serializers.UUIDField(source='customer.id', read_only=True)
+    staff_uuid = serializers.UUIDField(source='staff.id', read_only=True)
     customer_email = serializers.EmailField(read_only=True)
     customer_username = serializers.CharField(read_only=True)
     customer_phone = serializers.CharField(read_only=True)
@@ -11,9 +13,10 @@ class PaymentHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentHistory
         fields = [
-            'id', 'customer', 'staff', 'amount', 'transaction_id', 'status',
-            'payment_method', 'anonymous', 'customer_email', 'customer_username',
-            'customer_phone', 'user_nick_name', 'created_at', 'updated_at'
+            'id', 'customer', 'staff', 'customer_uuid', 'staff_uuid', 'amount',
+            'transaction_id', 'status', 'payment_method', 'anonymous',
+            'customer_email', 'customer_username', 'customer_phone', 'user_nick_name',
+            'created_at', 'updated_at'
         ]
         read_only_fields = ['transaction_id', 'status', 'created_at', 'updated_at']
 
@@ -23,12 +26,16 @@ class PaymentHistorySerializer(serializers.ModelSerializer):
         return data
 
 class DisbursementRequestSerializer(serializers.ModelSerializer):
-    processed_by = serializers.CharField(source='processed_by.username', read_only=True)
+    staff_uuid = serializers.UUIDField(source='staff.id', read_only=True)
+    processed_by_uuid = serializers.UUIDField(source='processed_by.id', read_only=True)
 
     class Meta:
         model = DisbursementRequest
-        fields = ['id', 'staff', 'amount', 'status', 'processed_by', 'created_at', 'updated_at']
-        read_only_fields = ['staff', 'processed_by', 'created_at', 'updated_at']  # Set 'staff' as read-only
+        fields = [
+            'id', 'staff', 'staff_uuid', 'amount', 'status', 'processed_by',
+            'processed_by_uuid', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['staff', 'processed_by', 'created_at', 'updated_at']
 
     def validate_amount(self, value):
         staff = self.context['request'].user
