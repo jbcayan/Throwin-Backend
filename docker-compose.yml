@@ -1,5 +1,5 @@
 services:
-  redis_cache:
+  redis:
     image: redis:latest
     container_name: redis_cache
     ports:
@@ -19,7 +19,7 @@ services:
     env_file:
       - ./throwin/.env
     depends_on:
-      - redis_cache  # Fixed this to redis_cache
+      - redis  # Fixed this to redis_cache
     networks:
       - app_network
     environment:
@@ -35,7 +35,7 @@ services:
     env_file:
       - ./throwin/.env
     depends_on:
-      - redis_cache  # Fixed this to redis_cache
+      - redis  # Fixed this to redis_cache
     networks:
       - app_network
 
@@ -48,7 +48,7 @@ services:
     env_file:
       - ./throwin/.env
     depends_on:
-      - redis_cache  # Fixed this to redis_cache
+      - redis  # Fixed this to redis_cache
     networks:
       - app_network
 
