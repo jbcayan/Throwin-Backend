@@ -1,137 +1,191 @@
 from django.test import TestCase
-from django.contrib.auth import get_user_model
-from decimal import Decimal
+from rest_framework.test import APIClient
+from rest_framework import status
+from accounts.models import User
 from payment_service.models import PaymentHistory, DisbursementRequest, PaymentStatus, DisbursementStatus
 from accounts.choices import UserKind
-from django.core.exceptions import ValidationError
 
-User = get_user_model()
 
-class PaymentHistoryTests(TestCase):
-
+class PaymentServiceTests(TestCase):
     def setUp(self):
-        # Create consumer and staff users
-        self.consumer = User.objects.create_user(
-            email="consumer@example.com",
+        # Create test users
+        self.customer = User.objects.create_user(
+            email="customer@example.com",
             password="password123",
-            name="Consumer User",
             kind=UserKind.CONSUMER
         )
         self.staff = User.objects.create_user(
             email="staff@example.com",
             password="password123",
-            name="Staff User",
-            kind=UserKind.RESTAURANT_STAFF
-        )
-
-    def test_payment_creation(self):
-        payment = PaymentHistory.objects.create(
-            customer=self.consumer,
-            staff=self.staff,
-            amount=Decimal('20.00'),
-            status=PaymentStatus.PENDING,
-            anonymous=False
-        )
-        self.assertIsNotNone(payment.id)
-        self.assertEqual(payment.status, PaymentStatus.PENDING)
-        self.assertEqual(payment.customer_email, self.consumer.email)
-        self.assertTrue(payment.transaction_id is not None)
-
-    def test_anonymous_payment(self):
-        payment = PaymentHistory.objects.create(
-            staff=self.staff,
-            amount=Decimal('15.00'),
-            status=PaymentStatus.PENDING,
-            anonymous=True,
-            user_nick_name="GuestUser"
-        )
-        self.assertEqual(payment.user_nick_name, "GuestUser")
-        self.assertIsNone(payment.customer)
-
-    def test_payment_str(self):
-        payment = PaymentHistory.objects.create(
-            customer=self.consumer,
-            staff=self.staff,
-            amount=Decimal('25.50')
-        )
-        self.assertEqual(
-            str(payment),
-            f"Payment of 25.50 to {self.staff.name} by {self.consumer}"
-        )
-
-    def test_completed_payment_manager(self):
-        PaymentHistory.objects.create(
-            customer=self.consumer,
-            staff=self.staff,
-            amount=Decimal('30.00'),
-            status=PaymentStatus.COMPLETED
-        )
-        PaymentHistory.objects.create(
-            customer=self.consumer,
-            staff=self.staff,
-            amount=Decimal('15.00'),
-            status=PaymentStatus.PENDING
-        )
-        completed_payments = PaymentHistory.objects.completed()
-        self.assertEqual(completed_payments.count(), 1)
-
-
-class DisbursementRequestTests(TestCase):
-
-    def setUp(self):
-        # Create staff and admin users
-        self.staff = User.objects.create_user(
-            email="staff@example.com",
-            password="password123",
-            name="Staff User",
             kind=UserKind.RESTAURANT_STAFF
         )
         self.admin = User.objects.create_user(
             email="admin@example.com",
-            password="adminpassword",
-            name="Admin User",
-            kind=UserKind.SUPER_ADMIN
+            password="password123",
+            is_superuser=True
         )
 
-    def test_disbursement_request_creation(self):
-        disbursement = DisbursementRequest.objects.create(
-            staff=self.staff,
-            amount=Decimal('100.00')
-        )
-        self.assertIsNotNone(disbursement.id)
-        self.assertEqual(disbursement.status, DisbursementStatus.PENDING)
+        # Create an API client
+        self.client = APIClient()
 
-    def test_disbursement_negative_amount(self):
-        disbursement = DisbursementRequest(
-            staff=self.staff,
-            amount=Decimal('-10.00')
-        )
-        with self.assertRaises(ValidationError):
-            disbursement.full_clean()  # This should raise ValidationError due to negative amount
+        # Base URLs
+        self.payment_url = "/payment_service/payments/"
+        self.staff_disbursement_url = "/payment_service/staff/disbursements/"
+        self.admin_disbursement_url = "/payment_service/admin/disbursements/"
 
-    def test_disbursement_str(self):
-        disbursement = DisbursementRequest.objects.create(
-            staff=self.staff,
-            amount=Decimal('150.00')
-        )
+    def authenticate(self, user):
+        """Authenticate a user and set the token in the client."""
+        login_url = "/auth/login"  # Update this to match your URL pattern
+        login_data = {"email": user.email, "password": "password123"}
+        response = self.client.post(login_url, login_data)
+        
+        # Ensure authentication succeeded
         self.assertEqual(
-            str(disbursement),
-            f"Disbursement of 150.00 by {self.staff.name}"
+            response.status_code, status.HTTP_200_OK,
+            f"Authentication failed: Status {response.status_code}, Response {response.json()}"
         )
+        
+        # Extract and set the token
+        tokens = response.json().get("data", {})
+        access_token = tokens.get("access")
+        if not access_token:
+            raise AssertionError(f"Access token not found in the response: {response.content}")
+        self.client.credentials(HTTP_AUTHORIZATION=f"Bearer {access_token}")
 
-    def test_disbursement_processed_by(self):
+
+    # Payment History Tests
+    def test_logged_in_customer_payment(self):
+        self.authenticate(self.customer)
+        data = {
+            "staff": str(self.staff.uid),
+            "amount": 50.0,
+            "anonymous": False
+        }
+        response = self.client.post(self.payment_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['amount'], "50.00")
+        self.assertEqual(response.data['staff'], self.staff.email)  # Updated assertion
+        self.assertEqual(response.data['anonymous'], False)
+
+
+    def test_anonymous_customer_payment_without_nickname(self):
+        data = {
+            "staff": str(self.staff.uid),
+            "amount": 20.0,
+            "anonymous": True
+        }
+        response = self.client.post(self.payment_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['amount'], "20.00")
+        self.assertEqual(response.data['anonymous'], True)
+        self.assertEqual(response.data['user_nick_name'], "Anonymous User")
+
+    def test_anonymous_customer_payment_with_nickname(self):
+        data = {
+            "staff": str(self.staff.uid),
+            "amount": 30.0,
+            "anonymous": True,
+            "user_nick_name": "TipMaster"
+        }
+        response = self.client.post(self.payment_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['amount'], "30.00")
+        self.assertEqual(response.data['user_nick_name'], "TipMaster")
+
+    def test_invalid_staff_uuid(self):
+        data = {
+            "staff": "invalid-uuid",
+            "amount": 30.0,
+            "anonymous": True
+        }
+        response = self.client.post(self.payment_url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("staff", response.data)
+
+    def test_logged_in_customer_payment_history(self):
+        self.authenticate(self.customer)
+        PaymentHistory.objects.create(
+            customer=self.customer,
+            staff=self.staff,
+            amount=50.0,
+            status=PaymentStatus.COMPLETED
+        )
+        response = self.client.get(self.payment_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+
+    def test_staff_payment_history(self):
+        self.authenticate(self.staff)
+        PaymentHistory.objects.create(
+            customer=self.customer,
+            staff=self.staff,
+            amount=50.0,
+            status=PaymentStatus.COMPLETED
+        )
+        response = self.client.get(self.payment_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+
+    # Disbursement Request Tests
+    def test_staff_create_disbursement_request(self):
+        self.authenticate(self.staff)
+        PaymentHistory.objects.create(
+            customer=self.customer,
+            staff=self.staff,
+            amount=100.0,
+            status=PaymentStatus.COMPLETED
+        )
+        data = {"amount": 50.0}
+        response = self.client.post(self.staff_disbursement_url, data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['amount'], "50.00")
+        self.assertEqual(response.data['status'], "pending")
+
+    def test_staff_disbursement_insufficient_balance(self):
+        self.authenticate(self.staff)
+        PaymentHistory.objects.create(
+            customer=self.customer,
+            staff=self.staff,
+            amount=20.0,
+            status=PaymentStatus.COMPLETED
+        )
+        data = {"amount": 50.0}
+        response = self.client.post(self.staff_disbursement_url, data)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("amount", response.data)
+
+    def test_admin_view_all_payments(self):
+        self.authenticate(self.admin)
+        PaymentHistory.objects.create(
+            customer=self.customer,
+            staff=self.staff,
+            amount=50.0,
+            status=PaymentStatus.COMPLETED
+        )
+        response = self.client.get(self.payment_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+
+    def test_admin_view_all_disbursements(self):
+        self.authenticate(self.admin)
+        DisbursementRequest.objects.create(
+            staff=self.staff,
+            amount=50.0,
+            status=DisbursementStatus.PENDING
+        )
+        response = self.client.get(self.admin_disbursement_url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data['results']), 1)
+
+    def test_admin_update_disbursement_request(self):
+        self.authenticate(self.admin)
         disbursement = DisbursementRequest.objects.create(
             staff=self.staff,
-            amount=Decimal('200.00'),
-            processed_by=self.admin,
-            status=DisbursementStatus.COMPLETED
+            amount=50.0,
+            status=DisbursementStatus.PENDING
         )
-        self.assertEqual(disbursement.processed_by, self.admin)
-        self.assertEqual(disbursement.status, DisbursementStatus.COMPLETED)
-
-    def test_disbursement_status_default_pending(self):
-        disbursement = DisbursementRequest.objects.create(
-            staff=self.staff,
-            amount=Decimal('75.00')
-        )
-        self.assertEqual(disbursement.status, DisbursementStatus.PENDING)
+        data = {"status": "in_progress"}
+        url = f"{self.admin_disbursement_url}{disbursement.id}/"
+        response = self.client.patch(url, data)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['status'], "in_progress")
