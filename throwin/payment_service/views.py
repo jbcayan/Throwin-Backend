@@ -83,7 +83,7 @@ class StaffDisbursementRequestView(generics.ListCreateAPIView):
     pagination_class = StandardResultsPagination
 
     def get_queryset(self):
-        return DisbursementRequest.objects.filter(staff__id=self.request.user.id).select_related('processed_by')
+        return DisbursementRequest.objects.filter(staff=self.request.user).select_related('processed_by')
 
     def perform_create(self, serializer):
         serializer.save(staff=self.request.user)

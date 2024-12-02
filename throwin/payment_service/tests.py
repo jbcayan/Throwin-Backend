@@ -35,7 +35,7 @@ class PaymentServiceTests(TestCase):
 
     def authenticate(self, user):
         """Authenticate a user and set the token in the client."""
-        login_url = "/auth/login"  # Update this to match your URL pattern
+        login_url = "/auth/"  # Update this to match your URL pattern
         login_data = {"email": user.email, "password": "password123"}
         response = self.client.post(login_url, login_data)
         
@@ -66,7 +66,6 @@ class PaymentServiceTests(TestCase):
         self.assertEqual(response.data['amount'], "50.00")
         self.assertEqual(response.data['staff'], self.staff.email)  # Updated assertion
         self.assertEqual(response.data['anonymous'], False)
-
 
     def test_anonymous_customer_payment_without_nickname(self):
         data = {

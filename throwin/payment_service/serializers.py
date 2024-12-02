@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import PaymentHistory, DisbursementRequest, DisbursementStatus  
+from .models import PaymentHistory, DisbursementRequest, DisbursementStatus
 from accounts.models import User
 from accounts.choices import UserKind
 from django.db.models import Sum
@@ -11,10 +11,9 @@ class PaymentHistorySerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentHistory
         fields = [
-            'id', 'customer', 'staff', 'customer_uuid', 'staff_uuid', 'amount',
-            'transaction_id', 'status', 'payment_method', 'anonymous',
-            'customer_email', 'customer_username', 'customer_phone', 'user_nick_name',
-            'created_at', 'updated_at'
+            'id', 'customer', 'staff', 'amount', 'transaction_id', 'status',
+            'payment_method', 'anonymous', 'customer_email', 'customer_username',
+            'customer_phone', 'user_nick_name', 'created_at', 'updated_at'
         ]
         read_only_fields = ['transaction_id', 'status', 'created_at', 'updated_at']
 
@@ -36,8 +35,7 @@ class PaymentHistorySerializer(serializers.ModelSerializer):
 
 
 class DisbursementRequestSerializer(serializers.ModelSerializer):
-    staff_uuid = serializers.UUIDField(source='staff.id', read_only=True)
-    processed_by_uuid = serializers.UUIDField(source='processed_by.id', read_only=True)
+    processed_by = serializers.CharField(source='processed_by.username', read_only=True)
 
     class Meta:
         model = DisbursementRequest
