@@ -20,7 +20,8 @@ RUN apk --update add --no-cache \
     gcc \
     libffi-dev \
     bash \
-    gettext && \
+    gettext \
+    curl && \
     adduser -D -h /app -u 1000 appuser
 
 # Ensure staticfiles directory exists with correct permissions
@@ -35,7 +36,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application source code
 COPY . /app/
 
-# Use a non-root user
+# Copy entrypoint script and set permissions
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod 755 /app/entrypoint.sh &&  \
+    chown appuser:appuser /app/entrypoint.sh
+
+
+# Switch to non-root user
 USER appuser
 
 # Expose port for application
