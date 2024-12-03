@@ -3,25 +3,27 @@
 # Exit immediately if a command exits with a non-zero status
 set -e
 
-# Wait for the PostgreSQL database to be ready
-#echo "Waiting for PostgreSQL to be available..."
-#while ! nc -z db 5432; do
-#  sleep 1
-#done
-#
-#echo "PostgreSQL is up - continuing..."
-
-# Navigate to the project directory where manage.py is located
+# Navigate to the project directory
 cd /app/throwin
 
+# Wait for Redis to be ready
+echo "Waiting for Redis..."
+while ! nc -z redis_cache 6379; do
+  sleep 1
+done
+echo "Redis is up!"
 
 # Apply database migrations
 echo "Applying migrations..."
-python manage.py migrate
+python manage.py migrate --noinput
 
-# Collect static files (optional, for production)
+# Ensure staticfiles directory exists
+echo "Ensuring staticfiles directory exists..."
+mkdir -p /app/staticfiles
+
+# Collect static files
 echo "Collecting static files..."
-python manage.py collectstatic --noinput
+python manage.py collectstatic --noinput || echo "Static files collection failed but continuing."
 
 # Start Celery worker in the background
 echo "Starting Celery worker..."
@@ -31,10 +33,6 @@ celery -A throwin worker --loglevel=info &
 echo "Starting Celery beat..."
 celery -A throwin beat --loglevel=info &
 
-# Start the Django development server
-echo "Starting Django development server..."
-exec python manage.py runserver 0.0.0.0:8000
-
-# Start the Gunicorn server
-#echo "Starting Gunicorn..."
-#exec gunicorn throwin.wsgi:application --bind 0.0.0.0:8000
+# Start Gunicorn for production
+echo "Starting Gunicorn..."
+exec gunicorn throwin.wsgi:application --bind 0.0.0.0:8000 --workers 3

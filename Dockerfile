@@ -1,15 +1,15 @@
 # Use Python 3.10 base image
 FROM python:3.10-alpine as base
 
-# Set environment variables to disable buffering and bytecode creation
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# Set the working directory for the app
+# Set working directory
 WORKDIR /app
 
 # Install system dependencies
-RUN apk --update add \
+RUN apk --update add --no-cache \
     build-base \
     postgresql-dev \
     python3-dev \
@@ -19,21 +19,30 @@ RUN apk --update add \
     musl-dev \
     gcc \
     libffi-dev \
-    bash
+    bash \
+    gettext && \
+    adduser -D -h /app -u 1000 appuser
 
-# Copy the requirements and install them
+# Ensure staticfiles directory exists with correct permissions
+RUN mkdir -p /app/staticfiles && \
+    chmod -R 755 /app/staticfiles && \
+    chown -R appuser:appuser /app/staticfiles
+
+# Copy requirements and install dependencies
 COPY requirements.txt /app/
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the rest of the project files
+# Copy application source code
 COPY . /app/
 
-# Copy and make entrypoint script executable
-COPY entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+# Use a non-root user
+USER appuser
 
-# Expose port 8000 for the app
+# Expose port for application
 EXPOSE 8000
 
-# Set the entrypoint to your script
-ENTRYPOINT ["/entrypoint.sh"]
+# Healthcheck to verify container health
+HEALTHCHECK CMD curl --fail http://localhost:8000/health/ || exit 1
+
+# Entrypoint script
+ENTRYPOINT ["/app/entrypoint.sh"]

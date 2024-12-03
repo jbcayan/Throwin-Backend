@@ -2,56 +2,60 @@ services:
   redis_cache:
     image: redis:latest
     container_name: redis_cache
-    ports:
-      - "6379:6379"
     networks:
       - app_network
 
   app:
     container_name: throwin_backend
-    image: app:throwin_backend
-    build: .
+    build:
+      context: .
     volumes:
-      - .:/app
+      - .:/app:cached
+      - staticfiles:/app/staticfiles
     ports:
       - "8000:8000"
-    command: sh /entrypoint.sh
+    command: sh /app/entrypoint.sh
     env_file:
       - ./throwin/.env
     depends_on:
-      - redis_cache  # Fixed this to redis_cache
+      - redis_cache
     networks:
       - app_network
     environment:
-      - CELERY_BROKER_URL=redis://redis_cache:6379
-      - CELERY_RESULT_BACKEND=redis://redis_cache:6379
+      - CELERY_BROKER_URL=redis://redis_cache:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis_cache:6379/0
 
   celery_worker:
     container_name: throwin_celery_worker
-    build: .
+    build:
+      context: .
     volumes:
-      - .:/app
-    command: sh -c "cd throwin && celery -A throwin worker -l info"
+      - .:/app:cached
+    command: celery -A throwin worker --loglevel=info
     env_file:
       - ./throwin/.env
     depends_on:
-      - redis_cache  # Fixed this to redis_cache
+      - redis_cache
     networks:
       - app_network
 
   celery_beat:
     container_name: throwin_celery_beat
-    build: .
+    build:
+      context: .
     volumes:
-      - .:/app
-    command: sh -c "cd throwin && celery -A throwin beat -l info"
+      - .:/app:cached
+    command: celery -A throwin beat --loglevel=info
     env_file:
       - ./throwin/.env
     depends_on:
-      - redis_cache  # Fixed this to redis_cache
+      - redis_cache
     networks:
       - app_network
 
 networks:
   app_network:
     driver: bridge
+
+volumes:
+  staticfiles:
