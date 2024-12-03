@@ -365,4 +365,3 @@ CACHES = {
         "LOCATION": "redis://redis_cache:6379",
     }
 }
-
