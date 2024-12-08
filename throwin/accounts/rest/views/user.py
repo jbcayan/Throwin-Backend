@@ -196,6 +196,30 @@ class StaffDetailForConsumer(generics.RetrieveAPIView):
     def get_object(self):
         return User().get_all_actives().get(username=self.kwargs["username"])
 
+    def get(self, request, *args, **kwargs):
+        # Retrieve the staff
+        staff = self.get_object()
+
+        # Serialize the staff
+        serializer = self.serializer_class(staff)
+        data = serializer.data
+
+        # Add Liked field
+        liked = False
+        if request.user.is_authenticated:
+            # Add is_liked field for authenticated consumer
+            liked = Like.objects.filter(
+                consumer=request.user,
+                staff_id=staff.id
+            ).exists()
+        else:
+            # Add a session for guest user
+            liked = request.session.get("liked_stuff_uids", []).count(staff.uid) > 0
+
+        data["liked"] = liked
+
+        return Response(data, status=status.HTTP_200_OK)
+
 
 class ConsumerLikeStaffCreateDestroy(generics.GenericAPIView):
 
