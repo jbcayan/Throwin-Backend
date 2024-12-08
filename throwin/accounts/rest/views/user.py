@@ -8,6 +8,8 @@ from django.utils import timezone
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 
+from django_filters.rest_framework import DjangoFilterBackend
+
 from drf_spectacular.utils import extend_schema
 
 from rest_framework import generics, status
@@ -16,17 +18,25 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
 from accounts.choices import UserKind
+from accounts.filters import UserFilter
 from accounts.models import TemporaryUser, Like
 from accounts.rest.serializers.user import (
     EmailChangeRequestSerializer,
     UserNameSerializer,
-    StaffDetailForConsumerSerializer, MeSerializer,
+    StaffDetailForConsumerSerializer,
+    MeSerializer,
 )
 
 from common.permissions import (
     IsConsumerUser,
-    CheckAnyPermission, IsConsumerOrGuestUser, IsAdminUser, IsRestaurantStaffUser, IsSuperAdminUser,
+    CheckAnyPermission,
+    IsConsumerOrGuestUser,
+    IsAdminUser,
+    IsRestaurantStaffUser,
+    IsSuperAdminUser,
 )
+
+from store.rest.serializers.store_stuff import StoreStuffListSerializer
 
 User = get_user_model()
 
@@ -196,6 +206,30 @@ class StaffDetailForConsumer(generics.RetrieveAPIView):
     def get_object(self):
         return User().get_all_actives().get(username=self.kwargs["username"])
 
+    def get(self, request, *args, **kwargs):
+        # Retrieve the staff
+        staff = self.get_object()
+
+        # Serialize the staff
+        serializer = self.serializer_class(staff)
+        data = serializer.data
+
+        # Add Liked field
+        liked = False
+        if request.user.is_authenticated:
+            # Add is_liked field for authenticated consumer
+            liked = Like.objects.filter(
+                consumer=request.user,
+                staff_id=staff.id
+            ).exists()
+        else:
+            # Add a session for guest user
+            liked = request.session.get("liked_stuff_uids", []).count(staff.uid) > 0
+
+        data["liked"] = liked
+
+        return Response(data, status=status.HTTP_200_OK)
+
 
 class ConsumerLikeStaffCreateDestroy(generics.GenericAPIView):
 
@@ -338,3 +372,23 @@ class DeleteUser(generics.DestroyAPIView):
         user = self.request.user
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class StaffList(generics.ListAPIView):
+    """
+    API endpoint to list all staff members for the authenticated consumer.
+    """
+    serializer_class = StoreStuffListSerializer
+    available_permission_classes = (
+        IsConsumerOrGuestUser,
+        IsConsumerUser,
+        IsAdminUser,
+        IsSuperAdminUser,
+        IsRestaurantStaffUser
+    )
+    permission_classes = (CheckAnyPermission,)
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = UserFilter
+
+    def get_queryset(self):
+        return User().get_all_actives().filter(kind=UserKind.RESTAURANT_STAFF)
