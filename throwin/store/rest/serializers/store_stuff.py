@@ -9,7 +9,7 @@ User = get_user_model()
 
 
 class StoreStuffListSerializer(StaffDetailForConsumerSerializer):
-    """Serializer to represent restaurant stuff list with profile details."""
+    """Serializer to represent a restaurant stuff list with profile details."""
 
     fun_fact = serializers.CharField(
         source="profile.fun_fact",

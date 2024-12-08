@@ -12,6 +12,7 @@ from accounts.rest.views.user import (
     FavoriteStaffList,
     Me,
     DeleteUser,
+    StaffList,
 )
 
 urlpatterns = [
@@ -59,5 +60,10 @@ urlpatterns = [
         "/delete",
         DeleteUser.as_view(),
         name="delete-user"
+    ),
+    path(
+        "/staff-list",
+        StaffList.as_view(),
+        name="staff-list"
     ),
 ]

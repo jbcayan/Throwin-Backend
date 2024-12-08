@@ -8,6 +8,8 @@ from django.utils import timezone
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 
+from django_filters.rest_framework import DjangoFilterBackend
+
 from drf_spectacular.utils import extend_schema
 
 from rest_framework import generics, status
@@ -16,17 +18,25 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import AccessToken
 
 from accounts.choices import UserKind
+from accounts.filters import UserFilter
 from accounts.models import TemporaryUser, Like
 from accounts.rest.serializers.user import (
     EmailChangeRequestSerializer,
     UserNameSerializer,
-    StaffDetailForConsumerSerializer, MeSerializer,
+    StaffDetailForConsumerSerializer,
+    MeSerializer,
 )
 
 from common.permissions import (
     IsConsumerUser,
-    CheckAnyPermission, IsConsumerOrGuestUser, IsAdminUser, IsRestaurantStaffUser, IsSuperAdminUser,
+    CheckAnyPermission,
+    IsConsumerOrGuestUser,
+    IsAdminUser,
+    IsRestaurantStaffUser,
+    IsSuperAdminUser,
 )
+
+from store.rest.serializers.store_stuff import StoreStuffListSerializer
 
 User = get_user_model()
 
@@ -362,3 +372,23 @@ class DeleteUser(generics.DestroyAPIView):
         user = self.request.user
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class StaffList(generics.ListAPIView):
+    """
+    API endpoint to list all staff members for the authenticated consumer.
+    """
+    serializer_class = StoreStuffListSerializer
+    available_permission_classes = (
+        IsConsumerOrGuestUser,
+        IsConsumerUser,
+        IsAdminUser,
+        IsSuperAdminUser,
+        IsRestaurantStaffUser
+    )
+    permission_classes = (CheckAnyPermission,)
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = UserFilter
+
+    def get_queryset(self):
+        return User().get_all_actives().filter(kind=UserKind.RESTAURANT_STAFF)
