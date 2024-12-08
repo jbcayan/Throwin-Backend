@@ -41,17 +41,17 @@ urlpatterns = [
         name="verify-email-change"
     ),
     path(
-        "/stuff/<str:username>",
+        "/staff/<str:username>",
         StaffDetailForConsumer.as_view(),
         name="stuff-detail-for-consumer"
     ),
     path(
-        "/stuff/<uuid:uid>/like",
+        "/staff/<uuid:uid>/like",
         ConsumerLikeStaffCreateDestroy.as_view(),
         name="consumer-like-stuff"
     ),
     path(
-        "/favorite-stuff",
+        "/favorite-staff",
         FavoriteStaffList.as_view(),
         name="favorite-stuff"
     ),

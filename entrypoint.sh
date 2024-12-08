@@ -33,6 +33,9 @@ celery -A throwin worker --loglevel=info &
 echo "Starting Celery beat..."
 celery -A throwin beat --loglevel=info &
 
-# Start Gunicorn for production
-echo "Starting Gunicorn..."
-exec gunicorn throwin.wsgi:application --bind 0.0.0.0:8000 --workers 3
+echo "Starting Django development server..."
+#python manage.py runserver 0.0.0.0:8000
+
+# Start the Gunicorn server
+#echo "Starting Gunicorn..."
+exec gunicorn throwin.wsgi:application --bind 0.0.0.0:8000
