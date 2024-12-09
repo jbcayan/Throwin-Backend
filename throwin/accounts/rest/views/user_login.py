@@ -27,7 +27,7 @@ class UserLogin(generics.GenericAPIView):
             "msg": "Login Successful",
             "data": {
                 "email": user.email,
-                "name": user.name if user.name else "",
+                "name": user.name or "",
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
             },
