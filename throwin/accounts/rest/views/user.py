@@ -309,6 +309,7 @@ class FavoriteStaffList(generics.ListAPIView):
         IsConsumerOrGuestUser,
         IsConsumerUser,
     )
+    permission_classes = (CheckAnyPermission,)
 
     def get_queryset(self):
         consumer = self.request.user
