@@ -24,6 +24,14 @@ app.conf.update(
     timezone="Asia/Dhaka",  # Set the timezone for Celery tasks
 )
 
+# Deleting old temporary users
+app.conf.beat_schedule = {
+    "delete-old-temporary-users-every-day": {
+        "task": "accounts.tasks.delete_old_temporary_users",
+        "schedule": crontab(hour=0, minute=0),  # For production: Run at midnight
+    },
+}
+
 # Define periodic tasks in Celery Beat schedule
 app.conf.beat_schedule = {
     "print-something-every-30-seconds": {
