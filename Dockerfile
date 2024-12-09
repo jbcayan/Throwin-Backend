@@ -48,8 +48,5 @@ USER appuser
 # Expose port for application
 EXPOSE 8000
 
-# Healthcheck to verify container health
-HEALTHCHECK CMD curl --fail http://localhost:8000/health/ || exit 1
-
 # Entrypoint script
 ENTRYPOINT ["/app/entrypoint.sh"]

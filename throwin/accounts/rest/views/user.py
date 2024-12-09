@@ -224,7 +224,7 @@ class StaffDetailForConsumer(generics.RetrieveAPIView):
             ).exists()
         else:
             # Add a session for guest user
-            liked = request.session.get("liked_stuff_uids", []).count(staff.uid) > 0
+            liked = request.session.get("liked_staff_uids", []).count(staff.uid) > 0
 
         data["liked"] = liked
 
@@ -257,10 +257,10 @@ class ConsumerLikeStaffCreateDestroy(generics.GenericAPIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
         else:
             # Add a session for guest user
-            liked_staff_uids = request.session.get("liked_stuff_uids", [])
+            liked_staff_uids = request.session.get("liked_staff_uids", [])
             if staff_uid not in liked_staff_uids:
                 liked_staff_uids.append(staff_uid)
-                request.session["liked_stuff_uids"] = liked_staff_uids
+                request.session["liked_staff_uids"] = liked_staff_uids
                 return Response({
                     "detail": "Staff member Liked"
                 }, status=status.HTTP_201_CREATED)
@@ -287,10 +287,10 @@ class ConsumerLikeStaffCreateDestroy(generics.GenericAPIView):
                 "detail": "Staff member Unliked"
             }, status=status.HTTP_204_NO_CONTENT)
         else:
-            liked_staff_uids = request.session.get("liked_stuff_uids", [])
+            liked_staff_uids = request.session.get("liked_staff_uids", [])
             if staff_uid in liked_staff_uids:
                 liked_staff_uids.remove(staff_uid)
-                request.session["liked_stuff_uids"] = liked_staff_uids
+                request.session["liked_staff_uids"] = liked_staff_uids
                 return Response({
                     "detail": "Staff member Unliked"
                 }, status=status.HTTP_204_NO_CONTENT)
@@ -312,8 +312,19 @@ class FavoriteStaffList(generics.ListAPIView):
 
     def get_queryset(self):
         consumer = self.request.user
-        # Ensures only "liked" staff by this consumer are included in the queryset
-        liked_staff_ids = Like.objects.filter(consumer=consumer).values_list("staff", flat=True)
+
+        if consumer.is_authenticated:
+            # Get liked staff for authenticated consumer
+            liked_staff_ids = Like.objects.filter(consumer=consumer).values_list("staff", flat=True)
+        else:
+            # Get liked staff for guest
+            liked_staff_uids = self.request.session.get("liked_staff_uids", [])
+            liked_staff_ids = User.objects.filter(
+                uid__in=liked_staff_uids,
+                kind=UserKind.RESTAURANT_STAFF
+            ).values_list("id", flat=True)
+            return User.objects.filter(id__in=liked_staff_ids)
+
         return User.objects.filter(id__in=liked_staff_ids, kind=UserKind.RESTAURANT_STAFF)
 
     def list(self, request, *args, **kwargs):
