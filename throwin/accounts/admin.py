@@ -10,6 +10,8 @@ from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 class UserProfileInline(admin.StackedInline):
     """User Profile Inline for User Admin."""
     model = UserProfile
+    fk_name = "user"
+    extra = 0
     can_delete = False
     verbose_name_plural = "Profile"
     readonly_fields = ["total_score"]  # Total score is not editable
