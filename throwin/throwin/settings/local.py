@@ -57,6 +57,7 @@ PROJECT_APPS = [
     'accounts.apps.AccountsConfig',
     "store.apps.StoreConfig",
     "payment_service.apps.PaymentServiceConfig",
+    "notification.apps.NotificationConfig",
 ]
 
 if ENABLE_SILK:
@@ -227,6 +228,8 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8000",
     "https://throwin-backend.onrender.com"
 ]
+
+SESSION_COOKIE_SECURE = False
 
 CORS_ALLOW_CREDENTIALS = True
 CSRF_USE_SESSIONS = True
