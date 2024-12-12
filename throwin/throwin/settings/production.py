@@ -227,9 +227,10 @@ CSRF_TRUSTED_ORIGINS = [
     "http://throwin-frontend-react.s3-website-ap-northeast-1.amazonaws.com",
 ]
 
-SESSION_COOKIE_SECURE = False
-
+SESSION_COOKIE_SAMESITE = None
+SESSION_COOKIE_SECURE = False  # For development only; set True in production with HTTPS
 CORS_ALLOW_CREDENTIALS = True
+
 CSRF_USE_SESSIONS = True
 CSRF_COOKIE_DOMAIN = None
 # CSRF_COOKIE_DOMAIN = 'localhost:5173'
