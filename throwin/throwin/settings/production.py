@@ -57,6 +57,7 @@ PROJECT_APPS = [
     'accounts.apps.AccountsConfig',
     "store.apps.StoreConfig",
     "payment_service.apps.PaymentServiceConfig",
+    "notification.apps.NotificationConfig",
 ]
 
 if ENABLE_SILK:
@@ -222,12 +223,16 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "https://throwin-backend.onrender.com"
+    "https://throwin-backend.onrender.com",
+    "http://throwin-frontend-react.s3-website-ap-northeast-1.amazonaws.com",
 ]
+
+SESSION_COOKIE_SECURE = False
 
 CORS_ALLOW_CREDENTIALS = True
 CSRF_USE_SESSIONS = True
-CSRF_COOKIE_DOMAIN = 'localhost:5173'
+CSRF_COOKIE_DOMAIN = None
+# CSRF_COOKIE_DOMAIN = 'localhost:5173'
 # CSRF_COOKIE_DOMAIN = 'core-sm.online'
 
 REST_FRAMEWORK = {
@@ -262,7 +267,6 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
     # OTHER SETTINGS
 }
-
 
 SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=5),
@@ -339,12 +343,10 @@ VERSATILEIMAGEFIELD_RENDITION_KEY_SETS = {
     ]
 }
 
-
 GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET")
 
 SOCIAL_AUTH_PASSWORD = config("SOCIAL_AUTH_PASSWORD")
-
 
 EMAIL_BACKEND = config("EMAIL_BACKEND")
 EMAIL_HOST = config("EMAIL_HOST")
@@ -354,7 +356,6 @@ EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 
 FRONTEND_URL = config("FRONTEND_URL")
-
 
 SITE_NAME = "Throwin"
 
