@@ -257,7 +257,9 @@ class ConsumerLikeStaffCreateDestroy(generics.GenericAPIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
         else:
             # Add a session for guest user
-            print("I am a guest user")
+            if not request.session.session_key:
+                request.session.create()  # Ensure session is created
+
             liked_staff_uids = request.session.get("liked_staff_uids", [])
             if staff_uid not in liked_staff_uids:
                 liked_staff_uids.append(staff_uid)
@@ -320,6 +322,7 @@ class FavoriteStaffList(generics.ListAPIView):
             liked_staff_ids = Like.objects.filter(consumer=consumer).values_list("staff", flat=True)
         else:
             print("Hi I'm a guest user")
+            print("Cookie and session ID", self.request.session.session_key)
             # Get liked staff for guest
             liked_staff_uids = self.request.session.get("liked_staff_uids", [])
             liked_staff_ids = User.objects.filter(
