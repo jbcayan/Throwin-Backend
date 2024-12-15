@@ -233,6 +233,8 @@ CORS_ALLOW_CREDENTIALS = True
 CSRF_USE_SESSIONS = True
 CSRF_COOKIE_DOMAIN = "115.127.159.140"
 
+SESSION_COOKIE_SAMESITE = None
+
 
 CSRF_COOKIE_HTTPONLY = False  # Allow JS to read CSRF cookies, if needed
 SESSION_COOKIE_HTTPONLY = True  # Keep session cookie secure
