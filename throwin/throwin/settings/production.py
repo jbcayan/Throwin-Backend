@@ -227,20 +227,18 @@ CSRF_TRUSTED_ORIGINS = [
     "http://throwin-frontend-react.s3-website-ap-northeast-1.amazonaws.com",
 ]
 
+SESSION_COOKIE_SECURE = False
 CORS_ALLOW_CREDENTIALS = True
 
 CSRF_USE_SESSIONS = True
-CSRF_COOKIE_DOMAIN = "localhost:5173"
-
-# SESSION_COOKIE_SAMESITE = None
-# CSRF_COOKIE_SAMESITE = None
-SESSION_COOKIE_SECURE = False   # If not using HTTPS locally
-CSRF_COOKIE_SECURE = False      # If not using HTTPS locally
-
-
-# CSRF_COOKIE_HTTPONLY = False  # Allow JS to read CSRF cookies, if needed
-# SESSION_COOKIE_HTTPONLY = True  # Keep session cookie secure
+# CSRF_COOKIE_DOMAIN = 'localhost:5173'
 # CSRF_COOKIE_DOMAIN = 'core-sm.online'
+CSRF_COOKIE_DOMAIN = None  # Defaults to the current domain
+
+
+# SESSION_COOKIE_SAMESITE = "Lax"  # Allows cookies for cross-origin GET requests
+# CSRF_COOKIE_SAMESITE = "Lax"     # Ensures cookies are sent for cross-origin requests
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

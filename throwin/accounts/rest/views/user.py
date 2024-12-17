@@ -417,8 +417,3 @@ class StaffList(generics.ListAPIView):
 
     def get_queryset(self):
         return User().get_all_actives().filter(kind=UserKind.RESTAURANT_STAFF)
-
-
-def get_csrf_token(request):
-    csrf_token = get_token(request)
-    return JsonResponse({"csrfToken": csrf_token})
