@@ -5,9 +5,10 @@ from datetime import timedelta
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
+from django.utils.decorators import method_decorator
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
-
+from django.views.decorators.csrf import csrf_exempt
 from django_filters.rest_framework import DjangoFilterBackend
 
 from drf_spectacular.utils import extend_schema
@@ -231,6 +232,7 @@ class StaffDetailForConsumer(generics.RetrieveAPIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class ConsumerLikeStaffCreateDestroy(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
@@ -303,6 +305,7 @@ class ConsumerLikeStaffCreateDestroy(generics.GenericAPIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
 
 
+@method_decorator(csrf_exempt, name="dispatch")
 class FavoriteStaffList(generics.ListAPIView):
     """
     API endpoint to list all favorite (liked) staff members for the authenticated consumer.
@@ -311,6 +314,8 @@ class FavoriteStaffList(generics.ListAPIView):
     available_permission_classes = (
         IsConsumerOrGuestUser,
         IsConsumerUser,
+        IsAdminUser,
+        IsSuperAdminUser
     )
     permission_classes = (CheckAnyPermission,)
 
