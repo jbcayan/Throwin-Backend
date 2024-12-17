@@ -230,16 +230,16 @@ CSRF_TRUSTED_ORIGINS = [
 CORS_ALLOW_CREDENTIALS = True
 
 CSRF_USE_SESSIONS = True
-CSRF_COOKIE_DOMAIN = "115.127.159.140"
+CSRF_COOKIE_DOMAIN = "localhost:3000"
 
-SESSION_COOKIE_SAMESITE = None
-CSRF_COOKIE_SAMESITE = None
+# SESSION_COOKIE_SAMESITE = None
+# CSRF_COOKIE_SAMESITE = None
 SESSION_COOKIE_SECURE = False   # If not using HTTPS locally
 CSRF_COOKIE_SECURE = False      # If not using HTTPS locally
 
 
-CSRF_COOKIE_HTTPONLY = False  # Allow JS to read CSRF cookies, if needed
-SESSION_COOKIE_HTTPONLY = True  # Keep session cookie secure
+# CSRF_COOKIE_HTTPONLY = False  # Allow JS to read CSRF cookies, if needed
+# SESSION_COOKIE_HTTPONLY = True  # Keep session cookie secure
 # CSRF_COOKIE_DOMAIN = 'core-sm.online'
 
 REST_FRAMEWORK = {
