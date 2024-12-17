@@ -232,7 +232,6 @@ class StaffDetailForConsumer(generics.RetrieveAPIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
-@method_decorator(csrf_exempt, name="dispatch")
 class ConsumerLikeStaffCreateDestroy(generics.GenericAPIView):
 
     def post(self, request, *args, **kwargs):
@@ -305,7 +304,6 @@ class ConsumerLikeStaffCreateDestroy(generics.GenericAPIView):
                 }, status=status.HTTP_400_BAD_REQUEST)
 
 
-@method_decorator(csrf_exempt, name="dispatch")
 class FavoriteStaffList(generics.ListAPIView):
     """
     API endpoint to list all favorite (liked) staff members for the authenticated consumer.
