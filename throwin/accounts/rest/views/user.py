@@ -3,13 +3,14 @@
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from django.utils.decorators import method_decorator
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django_filters.rest_framework import DjangoFilterBackend
+from django.middleware.csrf import get_token
 
 from drf_spectacular.utils import extend_schema
 
@@ -243,6 +244,10 @@ class ConsumerLikeStaffCreateDestroy(generics.GenericAPIView):
             kind=UserKind.RESTAURANT_STAFF
         ).id
 
+        print("="*30)
+        print("request cookie session", request.session.session_key)
+        print("="*30)
+
         if self.request.user.is_authenticated:
             like, created = Like.objects.get_or_create(
                 consumer=self.request.user,
@@ -412,3 +417,8 @@ class StaffList(generics.ListAPIView):
 
     def get_queryset(self):
         return User().get_all_actives().filter(kind=UserKind.RESTAURANT_STAFF)
+
+
+def get_csrf_token(request):
+    csrf_token = get_token(request)
+    return JsonResponse({"csrfToken": csrf_token})

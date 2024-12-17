@@ -233,8 +233,14 @@ SESSION_COOKIE_SECURE = False
 CORS_ALLOW_CREDENTIALS = True
 
 CSRF_USE_SESSIONS = True
-CSRF_COOKIE_DOMAIN = 'localhost:5173'
+# CSRF_COOKIE_DOMAIN = 'localhost:5173'
 # CSRF_COOKIE_DOMAIN = 'core-sm.online'
+CSRF_COOKIE_DOMAIN = None  # Defaults to the current domain
+
+
+# SESSION_COOKIE_SAMESITE = "Lax"  # Allows cookies for cross-origin GET requests
+# CSRF_COOKIE_SAMESITE = "Lax"     # Ensures cookies are sent for cross-origin requests
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
