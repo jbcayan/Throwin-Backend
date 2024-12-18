@@ -15,19 +15,26 @@ class NotificationListSerializer(BaseSerializer):
 
 
 class NotificationDetailSerializer(BaseSerializer):
+
     class Meta(BaseSerializer.Meta):
         model = Notification
         fields = ["uid", "title", "body"]
 
 
 class NotificationDetailAdminSerializer(NotificationDetailSerializer):
+    created_by = serializers.CharField(read_only=True)
+    updated_by = serializers.CharField(read_only=True)
+
     class Meta(NotificationDetailSerializer.Meta):
         fields = NotificationDetailSerializer.Meta.fields + ["created_by", "updated_by"]
 
     def create(self, validated_data):
         instance = super().create(validated_data=validated_data)
+        print("I am here")
         instance.created_by = self.context["request"].user
+        print("Instance created by", instance.created_by)
         instance.save(update_fields=["created_by"])
+        print("Instance created by", instance.created_by)
 
         return instance
 
