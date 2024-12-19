@@ -26,6 +26,7 @@ class NotificationList(generics.ListCreateAPIView):
     """List all notifications."""
 
     def get_permissions(self):
+        # Set different permission classes based on the HTTP method
         if self.request.method == 'GET':
             self.available_permission_classes = (
                 IsAdminUser,
@@ -42,12 +43,14 @@ class NotificationList(generics.ListCreateAPIView):
         return super().get_permissions()
 
     def get_serializer_class(self):
+        # Set different serializer classes based on the HTTP method
         if self.request.method == 'POST':
             return NotificationDetailAdminSerializer
         else:
             return NotificationListSerializer
 
     def get_queryset(self):
+        # Get all active notifications and annotate is_read
         if self.request.user.is_authenticated:
             user_id_str = str(self.request.user.id)  # Cast user ID to string
             return Notification.objects.filter(status=Status.ACTIVE).annotate(
@@ -58,6 +61,7 @@ class NotificationList(generics.ListCreateAPIView):
                 )
             )
         else:
+            # If user is not authenticated, return all active notifications with is_read set to False
             return Notification().get_all_actives().annotate(
                 is_read=Value(False)
             )
@@ -67,6 +71,7 @@ class NotificationDetail(generics.RetrieveUpdateDestroyAPIView):
     """Retrieve, update or delete a notification."""
 
     def get_permissions(self):
+        # Set different permission classes based on the HTTP method
         if self.request.method == 'GET':
             self.available_permission_classes = (
                 IsAdminUser,
@@ -83,13 +88,14 @@ class NotificationDetail(generics.RetrieveUpdateDestroyAPIView):
         return super().get_permissions()
 
     def get_serializer_class(self):
+        # Set different serializer classes based on the HTTP method
         if self.request.method == 'GET':
             return NotificationDetailSerializer
         else:
             return NotificationDetailAdminSerializer
 
     def get_object(self, *args, **kwargs):
-        # Here
+        # Retrieve the notification by UID
         uid = self.kwargs.get('uid')
         return get_object_or_404(
             Notification,
