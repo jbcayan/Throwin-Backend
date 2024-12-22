@@ -17,11 +17,20 @@ class Command(BaseCommand):
     help = 'Create users with Japanese names and English emails'
 
     names = japanese_names
+    default_image_url = "https://all-images.ai/wp-content/uploads/2024/02/ai-face-generator.png"
 
     def handle(self, *args, **options):
         stores = Store().get_all_actives()
 
         with tqdm(total=len(self.names), desc='Creating Users', unit='user') as pbar:
+            # Create a superuser
+            User.objects.create_superuser(
+                email="admin@gmail.com",
+                password="123456",
+                name="Super Admin",
+            )
+            self.stdout.write(f"Created superuser: Admin\n")
+
             for english_name, japanese_name in self.names:
                 email = f"{english_name.split()[0].lower()}@example.com"
 
@@ -37,6 +46,7 @@ class Command(BaseCommand):
                         is_verified=True,
                         auth_provider=AuthProvider.EMAIL,
                         store=store,
+                        image=self.default_image_url
                     )
                     self.stdout.write(f"Created user: {english_name}\n")
                 else:

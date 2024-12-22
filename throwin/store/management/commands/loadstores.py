@@ -15,6 +15,8 @@ class Command(BaseCommand):
     help = """Create stores with Japanese names"""
 
     names = japanese_stores
+    default_store_logo = "https://static.vecteezy.com/system/resources/thumbnails/027/787/274/small/3d-store-icon-useful-for-online-shop-png.png"
+    default_store_banner = "https://img.freepik.com/premium-psd/futuristic-store-front-with-big-logo_23-2150889292.jpg"
 
     def handle(self, *args, **options):
 
@@ -23,6 +25,8 @@ class Command(BaseCommand):
                 store, created = Store.objects.get_or_create(
                     name=japanese_name,
                     description="私たちは世界最高の食品を提供します",
+                    logo=self.default_store_logo,
+                    banner=self.default_store_banner
                 )
                 if created:
                     self.stdout.write(f"Created store: {english_name}\n")
