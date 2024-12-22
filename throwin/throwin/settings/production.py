@@ -196,9 +196,9 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3001",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "http://api-dev.throwin-glow.com"
-    # "https://sub.example.com",
+    "https://api-dev.throwin-glow.com",  # Use HTTPS if frontend runs on HTTPS
 ]
+
 
 CORS_ALLOW_METHODS = (
     "DELETE",
@@ -219,13 +219,13 @@ CORS_ALLOW_HEADERS = (
 )
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:5173"
+    "http://localhost:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "http://api-dev.throwin-glow.com",
     "http://throwin-frontend-react.s3-website-ap-northeast-1.amazonaws.com",
+    "https://api-dev.throwin-glow.com",
 ]
 
 SESSION_COOKIE_SECURE = False

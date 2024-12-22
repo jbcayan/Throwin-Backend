@@ -15,8 +15,8 @@ class Command(BaseCommand):
     help = """Create stores with Japanese names"""
 
     names = japanese_stores
-    default_store_logo = "https://static.vecteezy.com/system/resources/thumbnails/027/787/274/small/3d-store-icon-useful-for-online-shop-png.png"
-    default_store_banner = "https://img.freepik.com/premium-psd/futuristic-store-front-with-big-logo_23-2150889292.jpg"
+    default_store_logo = "https://placehold.co/600x400"
+    default_store_banner = "https://placehold.co/600x400?text=Store+Banner"
 
     def handle(self, *args, **options):
 
