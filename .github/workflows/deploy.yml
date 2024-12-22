@@ -33,7 +33,7 @@ jobs:
     # Step 4: Deploy Application to EC2
     - name: Deploy to EC2
       run: |
-        ssh -i ec2-key.pem -o StrictHostKeyChecking=no ubuntu@176.34.7.102 << 'EOF'
+        ssh -i ec2-key.pem -o StrictHostKeyChecking=no ubuntu@3.7.252.55 << 'EOF'
         echo "Deploying application..."
         cd ~/Throwin-Backend
         git pull origin main
