@@ -85,8 +85,8 @@ DEBUG_TOOLBAR_PANELS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -228,7 +228,6 @@ CSRF_TRUSTED_ORIGINS = [
     "https://api-dev.throwin-glow.com",
 ]
 
-
 CSRF_COOKIE_SECURE = False
 CORS_ALLOW_CREDENTIALS = True
 # CSRF_COOKIE_DOMAIN = 'core-sm.online'
@@ -238,7 +237,6 @@ CSRF_COOKIE_SAMESITE = "None"  # Required for cross-origin CSRF
 
 SESSION_COOKIE_SAMESITE = "None"  # Required for cross-origin requests
 SESSION_COOKIE_SECURE = False
-
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
