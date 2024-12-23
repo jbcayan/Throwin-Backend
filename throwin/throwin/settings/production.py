@@ -228,7 +228,7 @@ CSRF_TRUSTED_ORIGINS = [
     "https://api-dev.throwin-glow.com",
 ]
 
-CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = True
 CORS_ALLOW_CREDENTIALS = True
 # CSRF_COOKIE_DOMAIN = 'core-sm.online'
 CSRF_COOKIE_DOMAIN = None  # Defaults to the current domain
@@ -236,7 +236,7 @@ CSRF_USE_SESSIONS = True
 CSRF_COOKIE_SAMESITE = "None"  # Required for cross-origin CSRF
 
 SESSION_COOKIE_SAMESITE = "None"  # Required for cross-origin requests
-SESSION_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = True
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

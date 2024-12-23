@@ -263,6 +263,9 @@ class ConsumerLikeStaffToggle(generics.GenericAPIView):
         else:
             # For guest users
             print("Cookie and session ID", request.session.session_key)
+            if not request.session.session_key:
+                request.session.create()  # Ensure session is initialized
+
             liked_staff_uids = request.session.get("liked_staff_uids", [])
             if staff_uid in liked_staff_uids:
                 liked_staff_uids.remove(staff_uid)
