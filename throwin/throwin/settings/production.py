@@ -186,7 +186,7 @@ AUTH_USER_MODEL = "accounts.User"
 
 APPEND_SLASH = False
 
-CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_ALL_ORIGINS = True
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
@@ -198,7 +198,6 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8000",
     "https://api-dev.throwin-glow.com",  # Use HTTPS if frontend runs on HTTPS
 ]
-
 
 CORS_ALLOW_METHODS = (
     "DELETE",
@@ -220,6 +219,7 @@ CORS_ALLOW_HEADERS = (
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:8000",
@@ -228,17 +228,16 @@ CSRF_TRUSTED_ORIGINS = [
     "https://api-dev.throwin-glow.com",
 ]
 
-SESSION_COOKIE_SECURE = False
-CORS_ALLOW_CREDENTIALS = True
 
-CSRF_USE_SESSIONS = True
-# CSRF_COOKIE_DOMAIN = 'localhost:5173'
+CSRF_COOKIE_SECURE = False
+CORS_ALLOW_CREDENTIALS = True
 # CSRF_COOKIE_DOMAIN = 'core-sm.online'
 CSRF_COOKIE_DOMAIN = None  # Defaults to the current domain
+CSRF_USE_SESSIONS = True
+CSRF_COOKIE_SAMESITE = "None"  # Required for cross-origin CSRF
 
-
-# SESSION_COOKIE_SAMESITE = "Lax"  # Allows cookies for cross-origin GET requests
-# CSRF_COOKIE_SAMESITE = "Lax"     # Ensures cookies are sent for cross-origin requests
+SESSION_COOKIE_SAMESITE = "None"  # Required for cross-origin requests
+SESSION_COOKIE_SECURE = False
 
 
 REST_FRAMEWORK = {
