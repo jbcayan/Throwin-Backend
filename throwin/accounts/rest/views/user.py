@@ -233,80 +233,52 @@ class StaffDetailForConsumer(generics.RetrieveAPIView):
         return Response(data, status=status.HTTP_200_OK)
 
 
-class ConsumerLikeStaffCreateDestroy(generics.GenericAPIView):
+class ConsumerLikeStaffToggle(generics.GenericAPIView):
+    """
+    Toggle 'like' status for a staff member by the consumer.
+    """
 
     def post(self, request, *args, **kwargs):
         staff_uid = str(self.kwargs.get("uid", None))
-        staff_id = get_object_or_404(
+        staff = get_object_or_404(
             User,
             uid=staff_uid,
             is_active=True,
             kind=UserKind.RESTAURANT_STAFF
-        ).id
-
-        print("="*30)
-        print("request cookie session", request.session.session_key)
-        print("="*30)
+        )
 
         if self.request.user.is_authenticated:
+            # For authenticated users
             like, created = Like.objects.get_or_create(
                 consumer=self.request.user,
-                staff_id=staff_id
+                staff=staff
             )
             if created:
-                return Response({
-                    "detail": "Staff member Liked"
-                }, status=status.HTTP_201_CREATED)
+                message = "Staff member Liked"
+                status_code = status.HTTP_201_CREATED
             else:
-                return Response({
-                    "detail": "Staff member already Liked"
-                }, status=status.HTTP_400_BAD_REQUEST)
+                like.delete()
+                message = "Staff member Unliked"
+                status_code = status.HTTP_200_OK
         else:
-            # Add a session for guest user
-            if not request.session.session_key:
-                request.session.create()  # Ensure session is created
-
-            liked_staff_uids = request.session.get("liked_staff_uids", [])
-            if staff_uid not in liked_staff_uids:
-                liked_staff_uids.append(staff_uid)
-                request.session["liked_staff_uids"] = liked_staff_uids
-                return Response({
-                    "detail": "Staff member Liked"
-                }, status=status.HTTP_201_CREATED)
-            else:
-                return Response({
-                    "detail": "Staff member already Liked"
-                }, status=status.HTTP_400_BAD_REQUEST)
-
-    def delete(self, request, *args, **kwargs):
-        staff_uid = str(self.kwargs.get("uid", None))
-        staff_id = get_object_or_404(
-            User,
-            uid=staff_uid,
-            is_active=True,
-            kind=UserKind.RESTAURANT_STAFF
-        ).id
-
-        if self.request.user.is_authenticated:
-            Like.objects.filter(
-                consumer=self.request.user,
-                staff_id=staff_id
-            ).delete()
-            return Response({
-                "detail": "Staff member Unliked"
-            }, status=status.HTTP_204_NO_CONTENT)
-        else:
+            # For guest users
+            print("Cookie and session ID", request.session.session_key)
             liked_staff_uids = request.session.get("liked_staff_uids", [])
             if staff_uid in liked_staff_uids:
                 liked_staff_uids.remove(staff_uid)
-                request.session["liked_staff_uids"] = liked_staff_uids
-                return Response({
-                    "detail": "Staff member Unliked"
-                }, status=status.HTTP_204_NO_CONTENT)
+                message = "Staff member Unliked"
+                status_code = status.HTTP_200_OK
             else:
-                return Response({
-                    "detail": "Staff member already Unliked"
-                }, status=status.HTTP_400_BAD_REQUEST)
+                liked_staff_uids.append(staff_uid)
+                message = "Staff member Liked"
+                status_code = status.HTTP_201_CREATED
+
+            # Update session
+            request.session["liked_staff_uids"] = liked_staff_uids
+
+        return Response({
+            "detail": message
+        }, status=status_code)
 
 
 class FavoriteStaffList(generics.ListAPIView):

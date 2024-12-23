@@ -8,11 +8,11 @@ from accounts.rest.views.user import (
     EmailChangeRequest,
     EmailChangeRequestVerify,
     StaffDetailForConsumer,
-    ConsumerLikeStaffCreateDestroy,
     FavoriteStaffList,
     Me,
     DeleteUser,
     StaffList,
+    ConsumerLikeStaffToggle,
 )
 
 urlpatterns = [
@@ -48,7 +48,7 @@ urlpatterns = [
     ),
     path(
         "/staff/<uuid:uid>/like",
-        ConsumerLikeStaffCreateDestroy.as_view(),
+        ConsumerLikeStaffToggle.as_view(),
         name="consumer-like-stuff"
     ),
     path(
