@@ -17,7 +17,6 @@ class Command(BaseCommand):
     help = 'Create users with Japanese names and English emails'
 
     names = japanese_names
-    default_image_url = "https://all-images.ai/wp-content/uploads/2024/02/ai-face-generator.png"
 
     def handle(self, *args, **options):
         stores = Store().get_all_actives()
@@ -46,7 +45,6 @@ class Command(BaseCommand):
                         is_verified=True,
                         auth_provider=AuthProvider.EMAIL,
                         store=store,
-                        image=self.default_image_url
                     )
                     self.stdout.write(f"Created user: {english_name}\n")
                 else:

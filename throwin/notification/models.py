@@ -7,6 +7,13 @@ from common.models import BaseModel
 
 # Create your models here.
 class Notification(BaseModel):
+    restaurant = models.ForeignKey(
+        "store.Restaurant",
+        on_delete=models.CASCADE,
+        related_name="notifications",
+        blank=True,
+        null=True
+    )
     title = models.CharField(max_length=255)
     body = models.TextField()
     read_by = JSONField(

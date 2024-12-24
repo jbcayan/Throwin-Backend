@@ -347,7 +347,19 @@ VERSATILEIMAGEFIELD_RENDITION_KEY_SETS = {
         ('small', 'thumbnail__400x400'),
         ('medium', 'thumbnail__600x600'),
         ('large', 'thumbnail__1000x1000')
-    ]
+    ],
+    "restaurant_logo": [
+        ('full_size', 'url'),
+        ('small', 'thumbnail__400x400'),
+        ('medium', 'thumbnail__600x600'),
+        ('large', 'thumbnail__1000x1000')
+    ],
+    "restaurant_banner": [
+        ('full_size', 'url'),
+        ('small', 'thumbnail__400x400'),
+        ('medium', 'thumbnail__600x600'),
+        ('large', 'thumbnail__1000x1000')
+    ],
 }
 
 GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID")

@@ -1,12 +1,12 @@
-from django.core.management.base import BaseCommand
-
-from accounts.choices import UserKind
-from store.models import Store
-from store.management.commands.base_store import japanese_stores
+import random
 
 from django.contrib.auth import get_user_model
+from django.core.management.base import BaseCommand
 
 from tqdm import tqdm
+
+from store.management.commands.base_store import japanese_stores
+from store.models import Store, Restaurant
 
 User = get_user_model()
 
@@ -15,18 +15,18 @@ class Command(BaseCommand):
     help = """Create stores with Japanese names"""
 
     names = japanese_stores
-    default_store_logo = "https://placehold.co/600x400"
-    default_store_banner = "https://placehold.co/600x400?text=Store+Banner"
 
     def handle(self, *args, **options):
+        restaurants = Restaurant().get_all_actives()
 
         with tqdm(total=len(self.names), desc='Creating Stores', unit='store') as pbar:
             for english_name, japanese_name in self.names:
+                restaurant = random.choice(restaurants)
+
                 store, created = Store.objects.get_or_create(
                     name=japanese_name,
                     description="私たちは世界最高の食品を提供します",
-                    logo=self.default_store_logo,
-                    banner=self.default_store_banner
+                    restaurant=restaurant,
                 )
                 if created:
                     self.stdout.write(f"Created store: {english_name}\n")
