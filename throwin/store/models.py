@@ -1,6 +1,5 @@
 from django.db import models
 from django.db.models import UniqueConstraint
-from django.utils.text import slugify
 
 from versatileimagefield.fields import VersatileImageField
 
@@ -14,7 +13,10 @@ from core.utils import (
 )
 
 from store.choices import StoreUserRole
-from store.utils import generate_store_code
+from store.utils import (
+    generate_store_code,
+    generate_unique_slug
+)
 
 
 class Restaurant(BaseModel):
@@ -38,18 +40,8 @@ class Restaurant(BaseModel):
     def save(self, *args, **kwargs):
         # Generate slug from the restaurant name if it's not already set
         if not self.slug:
-            self.slug = self.generate_unique_slug(self.name)
+            self.slug = generate_unique_slug(self.name)
         super(Restaurant, self).save(*args, **kwargs)
-
-    def generate_unique_slug(self, name):
-        # Generate a slug from the restaurant name and ensure it's unique
-        slug = slugify(name)
-        unique_slug = slug
-        num = 1
-        while Restaurant.objects.filter(slug=unique_slug).exists():
-            unique_slug = f"{slug}-{num}"
-            num += 1
-        return unique_slug
 
     def __str__(self):
         return self.name
@@ -61,7 +53,9 @@ class Store(BaseModel):
     restaurant = models.ForeignKey(
         "store.Restaurant",
         on_delete=models.CASCADE,
-        related_name="stores"
+        related_name="stores",
+        blank=True,
+        null=True,
     )
     name = models.CharField(max_length=100)
     code = models.CharField(
