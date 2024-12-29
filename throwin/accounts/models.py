@@ -100,6 +100,12 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
         choices=UserKind.choices,
         default=UserKind.UNDEFINED
     )
+    restaurant = models.ForeignKey(
+        "store.Restaurant",
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True
+    )
     store = models.ForeignKey(
         "store.Store",
         on_delete=models.CASCADE,

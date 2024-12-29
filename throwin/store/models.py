@@ -1,5 +1,3 @@
-import random
-
 from django.db import models
 from django.db.models import UniqueConstraint
 
@@ -7,15 +5,58 @@ from versatileimagefield.fields import VersatileImageField
 
 from common.models import BaseModel
 
-from core.utils import get_store_banner_file_prefix, get_store_logo_file_prefix
+from core.utils import (
+    get_restaurant_logo_file_prefix,
+    get_restaurant_banner_file_prefix,
+    get_store_logo_file_prefix,
+    get_store_banner_file_prefix
+)
 
 from store.choices import StoreUserRole
-from store.utils import generate_store_code
+from store.utils import (
+    generate_store_code,
+    generate_unique_slug
+)
+
+
+class Restaurant(BaseModel):
+    """Model to represent a restaurant"""
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(unique=True, blank=True, null=True)
+    description = models.TextField(blank=True, null=True)
+    logo = VersatileImageField(
+        "restaurant logo",
+        upload_to=get_restaurant_logo_file_prefix,
+        blank=True,
+        null=True
+    )
+    banner = VersatileImageField(
+        "restaurant banner",
+        upload_to=get_restaurant_banner_file_prefix,
+        blank=True,
+        null=True
+    )
+
+    def save(self, *args, **kwargs):
+        # Generate slug from the restaurant name if it's not already set
+        if not self.slug:
+            self.slug = generate_unique_slug(self.name)
+        super(Restaurant, self).save(*args, **kwargs)
+
+    def __str__(self):
+        return self.name
 
 
 # Create your models here.
 class Store(BaseModel):
     """Model to represent a store/restaurant."""
+    restaurant = models.ForeignKey(
+        "store.Restaurant",
+        on_delete=models.CASCADE,
+        related_name="stores",
+        blank=True,
+        null=True,
+    )
     name = models.CharField(max_length=100)
     code = models.CharField(
         max_length=20,
@@ -32,7 +73,7 @@ class Store(BaseModel):
         null=True
     )
     banner = VersatileImageField(
-        "Banner image",
+        "Store Banner",
         upload_to=get_store_banner_file_prefix,
         blank=True,
         null=True

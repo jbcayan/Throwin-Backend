@@ -12,3 +12,9 @@ japanese_stores = [
     ("Tsushima City", "津島市"),
 ]
 
+japaness_restaurants = [
+    ("Arva Italian Restaurant", "アルヴァ イタリアン レストラン"),
+    ("Sushi House", "すしハウス"),
+    ("Koyama Japanese Restaurant", "コイマ ジャパン レストラン"),
+]
+

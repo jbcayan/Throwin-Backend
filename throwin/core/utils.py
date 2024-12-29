@@ -18,6 +18,16 @@ def get_store_logo_file_prefix(instance, filename):
     return f"stores/logos/{instance.name}_{filename}"
 
 
+def get_restaurant_banner_file_prefix(instance, filename):
+    """Return the file path prefix for a store's banner file."""
+    return f"restaurants/banners/{instance.name}_{filename}"
+
+
+def get_restaurant_logo_file_prefix(instance, filename):
+    """Return the file path prefix for a store's logo file."""
+    return f"restaurants/logos/{instance.name}_{filename}"
+
+
 def is_valid_japanese_phone_number(phone_number: str):
     # Regular expression for Japanese mobile numbers
     # Supports optional +81 for country code
