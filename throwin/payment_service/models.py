@@ -1,10 +1,11 @@
 from django.db import models
+from django.core.exceptions import ValidationError
+from django.db.models import F
+from decimal import Decimal
+import uuid
 from accounts.models import User
 from accounts.choices import UserKind
 from common.models import BaseModel
-from django.core.exceptions import ValidationError
-from django.db.models import Sum
-import uuid
 
 
 class PaymentStatus(models.TextChoices):
@@ -22,6 +23,7 @@ class DisbursementStatus(models.TextChoices):
 
 class PaymentHistoryManager(models.Manager):
     def completed(self):
+        """Filter payments that are marked as completed."""
         return self.filter(status=PaymentStatus.COMPLETED)
 
 
@@ -57,13 +59,12 @@ class PaymentHistory(BaseModel):
     objects = PaymentHistoryManager()
 
     def save(self, *args, **kwargs):
-        # Populate customer details if not anonymous
+        """Override save method to populate customer details for non-anonymous payments."""
         if self.customer and not self.anonymous:
             self.customer_email = self.customer.email
             self.customer_username = self.customer.username
             self.customer_phone = self.customer.phone_number
             self.user_nick_name = self.customer.username
-        # Set default nickname if anonymous and not provided
         elif self.anonymous and not self.user_nick_name:
             self.user_nick_name = "Anonymous User"
         super().save(*args, **kwargs)
@@ -73,7 +74,66 @@ class PaymentHistory(BaseModel):
         return f"Payment of {self.amount} to {self.staff.name} by {customer_info}"
 
     class Meta:
-        ordering = ['-created_at']  # Orders by newest payments first
+        ordering = ['-created_at']
+
+
+class Balance(BaseModel):
+    staff = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        limit_choices_to={'kind': UserKind.RESTAURANT_STAFF},
+        related_name="balance"
+    )
+    total_earned = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    total_disbursed = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    management_balance = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    glow_share = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    sales_agency_share = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+    franchise_share = models.DecimalField(max_digits=12, decimal_places=2, default=Decimal('0.00'))
+
+    def update_balance(self, payment):
+        """
+        Update balances based on the payment received.
+        Handles PayPal fees, staff shares, and management share splits.
+        """
+        paypal_fee_percentage = Decimal("0.036")
+        fixed_paypal_fee = Decimal("40.00")
+        staff_share_percentage = Decimal("0.75")
+        management_share_percentage = Decimal("0.25")
+        glow_share_percentage = Decimal("0.30")
+        sales_agency_share_percentage = Decimal("0.40")
+        franchise_share_percentage = Decimal("0.30")
+
+        try:
+            # Calculate balances
+            paypal_fee = (payment.amount * paypal_fee_percentage) + fixed_paypal_fee
+            remaining_balance = payment.amount - paypal_fee
+            staff_share = remaining_balance * staff_share_percentage
+            management_share = remaining_balance * management_share_percentage
+
+            # Management splits
+            glow_share = management_share * glow_share_percentage
+            sales_agency_share = management_share * sales_agency_share_percentage
+            franchise_share = management_share * franchise_share_percentage
+
+            # Use F expressions for atomic updates
+            self.total_earned = F('total_earned') + staff_share
+            self.management_balance = F('management_balance') + management_share
+            self.glow_share = F('glow_share') + glow_share
+            self.sales_agency_share = F('sales_agency_share') + sales_agency_share
+            self.franchise_share = F('franchise_share') + franchise_share
+            self.save()
+            self.refresh_from_db()  # Refresh the object to retrieve the updated values
+
+        except Exception as e:
+            raise ValidationError(f"Error updating balance: {str(e)}")
+
+    def get_available_balance(self):
+        """Return the available balance for disbursements."""
+        return self.total_earned - self.total_disbursed
+
+    def __str__(self):
+        return f"Balance for {self.staff.name}"
 
 
 class DisbursementRequest(BaseModel):
@@ -98,23 +158,15 @@ class DisbursementRequest(BaseModel):
     )
 
     def clean(self):
-        # Validate disbursement amount
+        """Ensure the disbursement amount is valid and within available balance."""
         if self.amount <= 0:
             raise ValidationError("Disbursement amount must be positive.")
-
-        # Calculate balances
-        total_received = self.staff.received_payments.completed().aggregate(
-            total=Sum('amount')
-        )['total'] or 0
-
-        total_requested = self.staff.disbursement_requests.filter(
-            status__in=[DisbursementStatus.PENDING, DisbursementStatus.IN_PROGRESS]
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        available_balance = total_received - total_requested
-
-        if self.amount > available_balance:
-            raise ValidationError("Insufficient balance for this disbursement request.")
+        try:
+            available_balance = self.staff.balance.get_available_balance()
+            if self.amount > available_balance:
+                raise ValidationError("Insufficient balance for this disbursement request.")
+        except AttributeError:
+            raise ValidationError("Staff balance record is missing. Please contact support.")
 
     def __str__(self):
         return f"Disbursement of {self.amount} by {self.staff.name}"
