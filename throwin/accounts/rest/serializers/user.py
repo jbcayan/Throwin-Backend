@@ -34,6 +34,14 @@ class UserNameSerializer(serializers.ModelSerializer):
         return user
 
 
+class GuestNameSerializer(serializers.Serializer):
+    name = serializers.CharField(
+        required=False,
+        allow_blank=True,
+        max_length=100,
+    )
+
+
 class EmailChangeRequestSerializer(serializers.Serializer):
     new_email = serializers.EmailField(required=True)
     password = serializers.CharField(required=True)

@@ -13,6 +13,7 @@ from accounts.rest.views.user import (
     DeleteUser,
     StaffList,
     ConsumerLikeStaffToggle,
+    SetGuestName,
 )
 
 urlpatterns = [
@@ -25,6 +26,11 @@ urlpatterns = [
         "/name",
         SetUserName.as_view(),
         name="user-name"
+    ),
+    path(
+        "/guest-name",
+        SetGuestName.as_view(),
+        name="guest-name"
     ),
     path(
         "/acivate/<str:uidb64>/<str:token>",

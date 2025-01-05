@@ -27,6 +27,7 @@ from accounts.rest.serializers.user import (
     UserNameSerializer,
     StaffDetailForConsumerSerializer,
     MeSerializer,
+    GuestNameSerializer,
 )
 
 from common.permissions import (
@@ -110,6 +111,37 @@ class SetUserName(generics.GenericAPIView):
         return Response({
             "detail": "User Name Updated Successfully",
         }, status=status.HTTP_200_OK,
+        )
+
+
+@extend_schema(
+    summary="Set name for guest user using session",
+)
+class SetGuestName(generics.GenericAPIView):
+    """View for set name for guest user"""
+
+    available_permission_classes = (
+        IsConsumerOrGuestUser,
+    )
+    permission_classes = (CheckAnyPermission,)
+    serializer_class = GuestNameSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # Extract the name from the validated data
+        name = serializer.validated_data.get("name", "").strip()
+
+        # Set "Anonymous user" if name is empty or blank
+        if not name:
+            request.session["guest_name"] = "Anonymous user"
+        else:
+            request.session["guest_name"] = name
+
+        return Response(
+            {"detail": "Guest Name Updated Successfully"},
+            status=status.HTTP_200_OK
         )
 
 
