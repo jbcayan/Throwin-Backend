@@ -31,11 +31,8 @@ class StoreStuffList(generics.ListAPIView):
 
     def get_queryset(self):
         """
-        Retrieve the active restaurant staff members for a specified store.
-
-        This method filters users based on the store code provided in the URL
-        kwargs. It returns users that are active and of kind RESTAURANT_STAFF,
-        with related profile and store data pre-fetched for optimization.
+        Get store stuff list based on store code or restaurant slug
+        :return: List of store stuff
         """
         if not (code := self.kwargs.get("code", None)):
             return Response({
