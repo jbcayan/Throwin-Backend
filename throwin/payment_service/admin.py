@@ -1,49 +1,81 @@
 from django.contrib import admin
-from .models import PaymentHistory, DisbursementRequest
-
+from .models import PaymentHistory
 
 @admin.register(PaymentHistory)
 class PaymentHistoryAdmin(admin.ModelAdmin):
-    """
-    Admin configuration for PaymentHistory model.
-    """
     list_display = (
-        'transaction_id', 'customer', 'staff', 'amount', 'status', 
-        'anonymous', 'created_at'
+        "transaction_id",
+        "customer",
+        "nickname",
+        "staff",
+        "amount",
+        "currency",
+        "status",
+        "is_distributed",
+        "payment_date",
+        "payment_method",
+        "service_fee",
+        "net_amount",
     )
-    list_filter = ('status', 'anonymous', 'created_at')
-    search_fields = ('transaction_id', 'customer__email', 'staff__email', 'user_nick_name')
-    ordering = ('-created_at',)
-    readonly_fields = ('transaction_id', 'created_at', 'updated_at')
-    fieldsets = (
-        (None, {
-            'fields': (
-                'transaction_id', 'customer', 'staff', 'amount', 'status', 
-                'anonymous', 'payment_method', 'user_nick_name', 
-                'customer_email', 'customer_username', 'customer_phone'
-            )
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at'),
-        }),
+    list_filter = (
+        "status",
+        "is_distributed",
+        "payment_method",
+        "currency",
+        "payment_date",
     )
-
-
-@admin.register(DisbursementRequest)
-class DisbursementRequestAdmin(admin.ModelAdmin):
-    """
-    Admin configuration for DisbursementRequest model.
-    """
-    list_display = ('staff', 'amount', 'status', 'processed_by', 'created_at')
-    list_filter = ('status', 'created_at')
-    search_fields = ('staff__email', 'processed_by__email')
-    ordering = ('-created_at',)
-    readonly_fields = ('created_at', 'updated_at')
+    search_fields = (
+        "transaction_id",
+        "customer__name",
+        "customer__email",
+        "nickname",
+        "staff__name",
+        "staff__email",
+    )
+    ordering = ("-payment_date",)
+    readonly_fields = (
+        "transaction_id",
+        "customer",
+        "staff",
+        "amount",
+        "currency",
+        "payment_date",
+        "payment_method",
+        "service_fee",
+        "net_amount",
+    )
     fieldsets = (
-        (None, {
-            'fields': ('staff', 'amount', 'status', 'processed_by')
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at'),
-        }),
+        (
+            "Payment Details",
+            {
+                "fields": (
+                    "transaction_id",
+                    "customer",
+                    "nickname",
+                    "staff",
+                    "amount",
+                    "currency",
+                    "payment_date",
+                )
+            },
+        ),
+        (
+            "Payment Status",
+            {
+                "fields": (
+                    "status",
+                    "is_distributed",
+                )
+            },
+        ),
+        (
+            "Additional Details",
+            {
+                "fields": (
+                    "payment_method",
+                    "service_fee",
+                    "net_amount",
+                )
+            },
+        ),
     )

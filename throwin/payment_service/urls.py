@@ -1,36 +1,20 @@
 from django.urls import path
 from .views import (
-    PaymentHistoryView,
-    StaffDisbursementRequestView,
-    AdminDisbursementRequestView,
+    MakePaymentView,
+    PayPalSuccessView,
+    PayPalCancelView,
+    CustomerPaymentHistoryView,
+    StaffPaymentHistoryView,
+    AdminPaymentHistoryView,
 )
 
 urlpatterns = [
-    # Payment History Endpoint
-    path(
-        'payments/',
-        PaymentHistoryView.as_view(),
-        name='payment-history'
-    ),
+    path("make-payment/", MakePaymentView.as_view(), name="make_payment"),
 
-    # Disbursement Endpoints for Staff (List and Create)
-    path(
-        'staff/disbursements/',
-        StaffDisbursementRequestView.as_view(),
-        name='staff-disbursement-list-create'
-    ),
-
-    # Disbursement Management Endpoint for Admin
-    path(
-        'admin/disbursements/<int:pk>/',
-        AdminDisbursementRequestView.as_view(),
-        name='admin-disbursement-manage'
-    ),
-
-    # Disbursement List Endpoint for Admin
-    path(
-        'admin/disbursements/',
-        AdminDisbursementRequestView.as_view(),
-        name='admin-disbursement-list'
-    ),
+    path("paypal-success/", PayPalSuccessView.as_view(), name="paypal_success"),
+    path("paypal-cancel/", PayPalCancelView.as_view(), name="paypal_cancel"),
+    
+    path("customer-payments/", CustomerPaymentHistoryView.as_view(), name="customer_payments"),
+    path("staff-payments/", StaffPaymentHistoryView.as_view(), name="staff_payments"),
+    path("admin-payments/", AdminPaymentHistoryView.as_view(), name="admin_payments"),
 ]

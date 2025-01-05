@@ -1,95 +1,126 @@
 from rest_framework import serializers
-from .models import PaymentHistory, DisbursementRequest, DisbursementStatus
+from .models import PaymentHistory
 from accounts.models import User
 from accounts.choices import UserKind
-from django.db.models import Sum
 
 
-class PaymentHistorySerializer(serializers.ModelSerializer):
-    staff = serializers.UUIDField()
+class MakePaymentSerializer(serializers.ModelSerializer):
+    staff_uid = serializers.UUIDField(write_only=True)  # For referencing staff by UID
 
     class Meta:
         model = PaymentHistory
-        fields = [
-            'id', 'customer', 'staff', 'amount', 'transaction_id', 'status',
-            'payment_method', 'anonymous', 'customer_email', 'customer_username',
-            'customer_phone', 'user_nick_name', 'created_at', 'updated_at'
-        ]
-        read_only_fields = ['transaction_id', 'status', 'created_at', 'updated_at']
+        fields = ["staff_uid", "nickname", "amount", "currency", "payment_method"]
 
-    def validate_staff(self, value):
+    def validate_staff_uid(self, value):
         """
-        Ensure the staff exists and is a valid restaurant staff user.
+        Validate that the staff UID corresponds to a valid restaurant staff user.
         """
-        if not User.objects.filter(uid=value, kind=UserKind.RESTAURANT_STAFF).exists():
-            raise serializers.ValidationError("Invalid staff UUID or user is not a restaurant staff member.")
+        try:
+            staff = User.objects.get(uid=value, kind=UserKind.RESTAURANT_STAFF)
+            return staff  # Return the staff instance for use in `create`
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Invalid staff UID: Staff does not exist or is not a restaurant staff.")
+
+    def validate_amount(self, value):
+        """
+        Ensure the payment amount is greater than zero.
+        """
+        if value <= 0:
+            raise serializers.ValidationError("Payment amount must be greater than zero.")
         return value
 
     def validate(self, data):
         """
-        Cross-field validation for anonymous payments.
+        Ensure nickname is provided for unauthenticated customers.
         """
-        if data.get("anonymous") and data.get("customer"):
-            raise serializers.ValidationError("Anonymous payments cannot have an associated customer.")
+        request_user = self.context["request"].user
+        if not request_user.is_authenticated and not data.get("nickname"):
+            raise serializers.ValidationError("Nickname is required for unauthenticated customers.")
         return data
-
-
-class DisbursementRequestSerializer(serializers.ModelSerializer):
-    processed_by = serializers.CharField(source='processed_by.username', read_only=True)
-
-    class Meta:
-        model = DisbursementRequest
-        fields = ['id', 'staff', 'amount', 'status', 'processed_by', 'created_at', 'updated_at']
-        read_only_fields = ['staff', 'processed_by', 'created_at', 'updated_at']
-
-    def validate_amount(self, value):
-        """
-        Validate that the disbursement amount is positive and within the available balance.
-        """
-        staff = self.context['request'].user
-        balance = self.get_balance(staff)
-        if value <= 0:
-            raise serializers.ValidationError("Disbursement amount must be positive.")
-        if value > balance:
-            raise serializers.ValidationError("Insufficient balance for this disbursement request.")
-        return value
-
-    def validate_status(self, value):
-        """
-        Validate the status transition rules.
-        """
-        request_user = self.context['request'].user
-        current_status = self.instance.status if self.instance else None
-
-        # Only admins can mark requests as in-progress or rejected
-        if value in [DisbursementStatus.IN_PROGRESS, DisbursementStatus.REJECTED] and not request_user.is_superuser:
-            raise serializers.ValidationError("Only admins can mark requests as in-progress or rejected.")
-
-        # Only in-progress requests can be marked as completed or failed
-        if value == DisbursementStatus.COMPLETED and current_status != DisbursementStatus.IN_PROGRESS:
-            raise serializers.ValidationError("Only in-progress requests can be marked as completed.")
-        if value == DisbursementStatus.REJECTED and current_status != DisbursementStatus.IN_PROGRESS:
-            raise serializers.ValidationError("Only in-progress requests can be marked as rejected.")
-
-        return value
-
-    def get_balance(self, staff):
-        """
-        Calculate the available balance for a staff member.
-        """
-        total_received = staff.received_payments.completed().aggregate(
-            total=Sum('amount')
-        )['total'] or 0
-
-        total_requested = staff.disbursement_requests.filter(
-            status__in=[DisbursementStatus.PENDING, DisbursementStatus.IN_PROGRESS]
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        return total_received - total_requested
 
     def create(self, validated_data):
         """
-        Automatically set the status to 'pending' during creation.
+        Create a payment history record with the given validated data.
         """
-        validated_data['status'] = DisbursementStatus.PENDING
-        return super().create(validated_data)
+        # Extract the staff instance from validated data
+        staff = validated_data.pop("staff_uid")
+
+        # Handle customer details
+        request_user = self.context["request"].user
+        if request_user.is_authenticated:
+            validated_data["customer"] = request_user
+            validated_data["nickname"] = request_user.username
+        else:
+            validated_data["nickname"] = validated_data.get("nickname", "Anonymous")
+
+        # Create and return the payment history object
+        return PaymentHistory.objects.create(
+            staff=staff,
+            **validated_data,
+        )
+
+
+
+class PaymentHistorySerializer(serializers.ModelSerializer):
+    staff_name = serializers.CharField(source="staff.name", read_only=True)
+    customer_name = serializers.CharField(source="customer.username", read_only=True)
+    service_fee = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    net_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = PaymentHistory
+        fields = [
+            "transaction_id",
+            "nickname",
+            "staff_name",
+            "customer_name",
+            "amount",
+            "currency",
+            "status",
+            "payment_date",
+            "payment_method",
+            "service_fee",
+            "net_amount",
+        ]
+
+
+class StaffPaymentHistorySerializer(serializers.ModelSerializer):
+    customer_name = serializers.CharField(source="customer.username", read_only=True)
+    nickname = serializers.CharField(read_only=True)
+
+    class Meta:
+        model = PaymentHistory
+        fields = [
+            "transaction_id",
+            "customer_name",
+            "nickname",
+            "amount",
+            "currency",
+            "status",
+            "payment_date",
+            "payment_method",
+        ]
+
+
+class AdminPaymentHistorySerializer(serializers.ModelSerializer):
+    staff_name = serializers.CharField(source="staff.name", read_only=True)
+    customer_name = serializers.CharField(source="customer.username", read_only=True)
+    service_fee = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    net_amount = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+
+    class Meta:
+        model = PaymentHistory
+        fields = [
+            "transaction_id",
+            "customer_name",
+            "nickname",
+            "staff_name",
+            "amount",
+            "currency",
+            "status",
+            "payment_date",
+            "payment_method",
+            "service_fee",
+            "net_amount",
+            "is_distributed",
+        ]

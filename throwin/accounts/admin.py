@@ -33,6 +33,7 @@ class UserAdmin(BaseUserAdmin):
         "kind", "is_active", "is_staff", "is_superuser"
     ]
 
+    search_fields = ["uid", "id"]
     list_filter = ["kind", "is_active", "is_staff", "is_superuser"]
 
     fieldsets = (

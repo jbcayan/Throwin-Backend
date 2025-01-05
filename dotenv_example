@@ -13,3 +13,7 @@ GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 
 SOCIAL_AUTH_PASSWORD=
+
+PAYPAL_CLIENT_ID=YourSandboxClientID
+PAYPAL_CLIENT_SECRET=YourSandboxClientSecret
+PAYPAL_MODE=sandbox  # Use 'live' for production
