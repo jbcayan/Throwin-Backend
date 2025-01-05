@@ -30,15 +30,38 @@ class StoreStuffList(generics.ListAPIView):
     permission_classes = (CheckAnyPermission,)
 
     def get_queryset(self):
-        if store_code := self.kwargs.get("store_code", None):
-            return User().get_all_actives().filter(
-                store__code=store_code,
+        """
+        Retrieve the active restaurant staff members for a specified store.
+
+        This method filters users based on the store code provided in the URL
+        kwargs. It returns users that are active and of kind RESTAURANT_STAFF,
+        with related profile and store data pre-fetched for optimization.
+        """
+        if not (code := self.kwargs.get("code", None)):
+            return Response({
+                    "detail": "No code provided"
+                }, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            print("Code: ", code)
+            query_sets = User().get_all_actives().filter(
+                store__code=code,
                 kind=UserKind.RESTAURANT_STAFF
             ).select_related(
                 "profile",
-                "store"
+                "store",
+                "restaurant"
             )
-        else:
+            if not query_sets.exists():
+                query_sets = User().get_all_actives().filter(
+                    restaurant__slug=code,
+                    kind=UserKind.RESTAURANT_STAFF
+                ).select_related(
+                    "profile",
+                    "store",
+                    "restaurant"
+                )
+            return query_sets
+        except Exception as e:
             return Response({
-                "detail": "Store code is required"
+                "detail": "Invalid code provided"
             }, status=status.HTTP_400_BAD_REQUEST)
