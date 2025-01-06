@@ -1,28 +1,8 @@
+from decimal import Decimal
 from django.db import models
+from common.models import BaseModel
 from accounts.models import User
 from accounts.choices import UserKind
-from common.models import BaseModel
-from django.core.exceptions import ValidationError
-from django.db.models import Sum
-import uuid
-
-
-class PaymentStatus(models.TextChoices):
-    PENDING = 'pending', 'Pending'
-    COMPLETED = 'completed', 'Completed'
-    FAILED = 'failed', 'Failed'
-
-
-class DisbursementStatus(models.TextChoices):
-    PENDING = 'pending', 'Pending'
-    IN_PROGRESS = 'in_progress', 'In Progress'
-    COMPLETED = 'completed', 'Completed'
-    REJECTED = 'rejected', 'Rejected'
-
-
-class PaymentHistoryManager(models.Manager):
-    def completed(self):
-        return self.filter(status=PaymentStatus.COMPLETED)
 
 
 class PaymentHistory(BaseModel):
@@ -31,93 +11,109 @@ class PaymentHistory(BaseModel):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
-        limit_choices_to={'kind': UserKind.CONSUMER},
-        related_name="payments"
+        related_name="payments",
+        limit_choices_to={"kind": UserKind.CONSUMER},
+        help_text="Authenticated customer making the payment (nullable for anonymous)"
     )
-    staff = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        limit_choices_to={'kind': UserKind.RESTAURANT_STAFF},
-        related_name="received_payments"
-    )
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    transaction_id = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
-    status = models.CharField(
+    nickname = models.CharField(
         max_length=50,
-        choices=PaymentStatus.choices,
-        default=PaymentStatus.PENDING
+        blank=True,
+        null=True,
+        help_text="Nickname for the customer (anonymous or user-provided)"
     )
-    payment_method = models.CharField(max_length=50, blank=True, null=True)
-    anonymous = models.BooleanField(default=False)
-    customer_email = models.EmailField(blank=True, null=True)
-    customer_username = models.CharField(max_length=50, blank=True, null=True)
-    customer_phone = models.CharField(max_length=15, blank=True, null=True)
-    user_nick_name = models.CharField(max_length=50, blank=True, null=True)
-
-    objects = PaymentHistoryManager()
-
-    def save(self, *args, **kwargs):
-        # Populate customer details if not anonymous
-        if self.customer and not self.anonymous:
-            self.customer_email = self.customer.email
-            self.customer_username = self.customer.username
-            self.customer_phone = self.customer.phone_number
-            self.user_nick_name = self.customer.username
-        # Set default nickname if anonymous and not provided
-        elif self.anonymous and not self.user_nick_name:
-            self.user_nick_name = "Anonymous User"
-        super().save(*args, **kwargs)
-
-    def __str__(self):
-        customer_info = self.customer or self.user_nick_name or "Anonymous"
-        return f"Payment of {self.amount} to {self.staff.name} by {customer_info}"
-
-    class Meta:
-        ordering = ['-created_at']  # Orders by newest payments first
-
-
-class DisbursementRequest(BaseModel):
     staff = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        limit_choices_to={'kind': UserKind.RESTAURANT_STAFF},
-        related_name="disbursement_requests"
+        related_name="received_payments",
+        limit_choices_to={"kind": UserKind.RESTAURANT_STAFF},
+        help_text="The staff receiving the payment"
     )
-    amount = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(
-        max_length=20,
-        choices=DisbursementStatus.choices,
-        default=DisbursementStatus.PENDING
+    amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text="Payment amount in the selected currency"
     )
-    processed_by = models.ForeignKey(
-        User,
-        on_delete=models.SET_NULL,
+    currency = models.CharField(
+        max_length=10,
+        default="JPY",
+        help_text="Currency of the payment"
+    )
+    transaction_id = models.CharField(
+        max_length=255,
+        unique=True,
         null=True,
         blank=True,
-        related_name="processed_disbursements"
+        help_text="Unique identifier for the transaction from PayPal"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=[
+            ("pending", "Pending"),
+            ("success", "Success"),
+            ("failed", "Failed"),
+            ("canceled", "Canceled"),
+        ],
+        default="pending",
+        help_text="Payment transaction status"
+    )
+    is_distributed = models.BooleanField(
+        default=False,
+        help_text="Indicates whether the payment has been distributed to the staff"
+    )
+    payment_date = models.DateTimeField(
+        auto_now_add=True,
+        help_text="Date and time of the payment initiation"
+    )
+    payment_method = models.CharField(
+        max_length=50,
+        choices=[
+            ("paypal", "PayPal"),
+            ("stripe", "Stripe"),
+            ("cash", "Cash"),
+        ],
+        default="paypal",
+        help_text="Payment method used by the customer"
+    )
+    service_fee = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal("0.0"),
+        help_text="Transaction fee deducted by the payment gateway"
+    )
+    net_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text="Net amount received after deducting service fees"
     )
 
+    def save(self, *args, **kwargs):
+        """
+        Override the save method to calculate service fee and net amount.
+        """
+        service_fee_rate = Decimal("0.036")  # 3.6%
+        fixed_fee = Decimal("40")  # 40 JPY
+
+        if not self.service_fee:  # Calculate service fee only if not set
+            self.service_fee = (self.amount * service_fee_rate) + fixed_fee
+
+        if not self.net_amount:  # Calculate net amount only if not set
+            self.net_amount = self.amount - self.service_fee
+
+        super().save(*args, **kwargs)
+
     def clean(self):
-        # Validate disbursement amount
+        """
+        Validate that the payment amount is positive.
+        """
+        from django.core.exceptions import ValidationError
         if self.amount <= 0:
-            raise ValidationError("Disbursement amount must be positive.")
-
-        # Calculate balances
-        total_received = self.staff.received_payments.completed().aggregate(
-            total=Sum('amount')
-        )['total'] or 0
-
-        total_requested = self.staff.disbursement_requests.filter(
-            status__in=[DisbursementStatus.PENDING, DisbursementStatus.IN_PROGRESS]
-        ).aggregate(total=Sum('amount'))['total'] or 0
-
-        available_balance = total_received - total_requested
-
-        if self.amount > available_balance:
-            raise ValidationError("Insufficient balance for this disbursement request.")
+            raise ValidationError("Payment amount must be greater than zero.")
+        super().clean()
 
     def __str__(self):
-        return f"Disbursement of {self.amount} by {self.staff.name}"
+        return f"{self.transaction_id or 'Pending'} - {self.amount} {self.currency}"
 
     class Meta:
-        ordering = ['-created_at']
+        ordering = ["-payment_date"]
+        verbose_name = "Payment History"
+        verbose_name_plural = "Payment Histories"
