@@ -1,4 +1,3 @@
-import uuid
 import secrets
 import string
 
@@ -9,12 +8,15 @@ from django.contrib.auth.models import (
 )
 from django.db import models
 from django.db.models.signals import post_save
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
 
 from versatileimagefield.fields import VersatileImageField
 
-from accounts.choices import GenderChoices, UserKind, AuthProvider
+from accounts.choices import (
+    GenderChoices,
+    UserKind,
+    AuthProvider,
+    PublicStatus
+)
 from accounts.signals import post_save_user
 
 from common.models import BaseModel
@@ -100,18 +102,10 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
         choices=UserKind.choices,
         default=UserKind.UNDEFINED
     )
-    restaurant = models.ForeignKey(
-        "store.Restaurant",
-        on_delete=models.CASCADE,
-        blank=True,
-        null=True
-    )
-    store = models.ForeignKey(
-        "store.Store",
-        on_delete=models.CASCADE,
-        blank=True,
-        null=True,
-        default=None
+    public_status = models.CharField(
+        max_length=20,
+        choices=PublicStatus.choices,
+        default=PublicStatus.PUBLIC
     )
 
     objects = UserManager()
@@ -138,10 +132,45 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
         super().save(*args, **kwargs)
 
     @property
-    def get_store(self):
+    def get_staff_stores(self):
+        """Retrieve all the stores where the user has the role 'RESTAURANT_STAFF'"""
         if self.kind == UserKind.RESTAURANT_STAFF:
             try:
-                return self.storeuser_set.select_related("store").get(is_default=True).store
+                store_users = self.user_stores.filter(role=UserKind.RESTAURANT_STAFF)
+                stores = [store_user.store for store_user in store_users]
+                return stores or None  # Return the list of stores or None if no stores
+            except Exception:
+                return None
+        return None  # Return None if the user is not a RESTAURANT_STAFF
+
+    @property
+    def get_agent_restaurants(self):
+        """Retrieve all the restaurants where the user has the role 'SALES_AGENT'"""
+        if self.kind == UserKind.SALES_AGENT:
+            try:
+                restaurant_users = self.user_restaurants.filter(role=UserKind.SALES_AGENT)
+                restaurants = [restaurant_user.restaurant for restaurant_user in restaurant_users]
+                return restaurants or None
+            except Exception:
+                return None
+        return None
+
+    @property
+    def get_restaurant_owner_restaurant(self):
+        """Retrieve the restaurant where the user has the role 'RESTAURANT_OWNER'"""
+        if self.kind == UserKind.RESTAURANT_OWNER:
+            try:
+                return self.user_restaurants.filter(role=UserKind.RESTAURANT_OWNER).first().restaurant
+            except Exception:
+                return None
+        return None
+
+    @property
+    def get_staff_restaurant(self):
+        """Retrieve the restaurant where the user has the role 'RESTAURANT_STAFF'"""
+        if self.kind == UserKind.RESTAURANT_STAFF:
+            try:
+                return self.user_restaurants.filter(role=UserKind.RESTAURANT_STAFF).first().restaurant
             except Exception:
                 return None
         return None
@@ -151,7 +180,7 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
         verbose_name_plural = "Users"
 
 
-class UserProfile(BaseModel):
+class UserProfile(models.Model):
     """Profile for additional stuff information (e.g., staff introduction, scores)."""
     user = models.OneToOneField(
         "accounts.User",
@@ -172,7 +201,7 @@ class UserProfile(BaseModel):
         blank=True,
         null=True,
         help_text="Short fun fact about the user (e.g., 'Eating and laughing')"
-    )  # Only applicable for staff
+    )
 
     def __str__(self):
         return f"Profile of {self.user.name}"

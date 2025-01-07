@@ -1,4 +1,5 @@
 from django.core.management.base import BaseCommand
+import random
 
 from accounts.choices import UserKind
 from store.models import Restaurant
@@ -17,11 +18,16 @@ class Command(BaseCommand):
     names = japaness_restaurants
 
     def handle(self, *args, **options):
+        owners = User.objects.filter(kind=UserKind.RESTAURANT_OWNER)
+
         with tqdm(total=len(self.names), desc='Creating Restaurants', unit='restaurant') as pbar:
             for english_name, japanese_name in self.names:
+                owner = random.choice(owners)
+
                 restaurant, created = Restaurant.objects.get_or_create(
                     name=japanese_name,
                     description="私たちは世界最高の食品を提供します",
+                    restaurant_owner=owner,
                 )
                 if created:
                     self.stdout.write(f"Created restaurant: {english_name}\n")

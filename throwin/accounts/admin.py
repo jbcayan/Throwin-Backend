@@ -50,8 +50,6 @@ class UserAdmin(BaseUserAdmin):
                      "gender",
                      "image",
                      "auth_provider",
-                     "restaurant",
-                     "store",
                  )
          }
          ),

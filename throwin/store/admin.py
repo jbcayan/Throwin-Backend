@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from store.models import Store, Restaurant
+from store.models import Store, Restaurant, StoreUser, RestaurantUser
 
 
 # Register your models here.
@@ -13,6 +13,15 @@ class RestaurantAdmin(admin.ModelAdmin):
 admin.site.register(Restaurant, RestaurantAdmin)
 
 
+class RestaurantUserAdmin(admin.ModelAdmin):
+    list_display = ["restaurant", "user", "role"]
+    search_fields = ["restaurant__name", "user__name", "user__email"]
+    list_filter = ["role"]
+
+
+admin.site.register(RestaurantUser, RestaurantUserAdmin)
+
+
 class StoreAdmin(admin.ModelAdmin):
     list_display = ["uid", "id", "name", "code", "created_at"]
     search_fields = ["name", "code"]
@@ -20,11 +29,3 @@ class StoreAdmin(admin.ModelAdmin):
 
 
 admin.site.register(Store, StoreAdmin)
-
-# class StoreUserAdmin(admin.ModelAdmin):
-#     list_display = ["id", "uid", "user", "store", "role", "is_default", "created_at"]
-#     search_fields = ["user__email", "store__name", "store__code"]
-#     list_filter = ["created_at", "role", "is_default"]
-#
-#
-# admin.site.register(StoreUser, StoreUserAdmin)

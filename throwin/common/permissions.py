@@ -34,21 +34,7 @@ class IsConsumerOrGuestUser(BasePermission):
             return True
 
 
-class IsRestaurantStaffUser(BasePermission):
-    """Permission for restaurant stuff"""
-
-    def has_permission(self, request, view):
-        if not request.user.is_authenticated:
-            return False
-        if not request.user.is_verified:
-            return False
-        try:
-            return request.user.kind == UserKind.RESTAURANT_STAFF
-        except Exception:
-            return False
-
-
-class IsAdminUser(BasePermission):
+class IsGlowAdminUser(BasePermission):
     """Permission for admin"""
 
     def has_permission(self, request, view):
@@ -57,7 +43,35 @@ class IsAdminUser(BasePermission):
         if not request.user.is_verified:
             return False
         try:
-            return request.user.kind == UserKind.ADMIN
+            return request.user.kind == UserKind.GLOW_ADMIN
+        except Exception:
+            return False
+
+
+class IsFCAdminUser(BasePermission):
+    """Permission for super admin"""
+
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        if not request.user.is_verified:
+            return False
+        try:
+            return request.user.kind == UserKind.FC_ADMIN
+        except Exception:
+            return False
+
+
+class IsRestaurantOwnerUser(BasePermission):
+    """Permission for restaurant owner"""
+
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        if not request.user.is_verified:
+            return False
+        try:
+            return request.user.kind == UserKind.RESTAURANT_OWNER
         except Exception:
             return False
 
@@ -76,6 +90,20 @@ class IsSuperAdminUser(BasePermission):
             return False
 
 
+class IsRestaurantStaffUser(BasePermission):
+    """Permission for restaurant stuff"""
+
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        if not request.user.is_verified:
+            return False
+        try:
+            return request.user.kind == UserKind.RESTAURANT_STAFF
+        except Exception:
+            return False
+
+
 class CheckAnyPermission(BasePermission):
     """
     Custom permission to check if any of the permissions in `available_permission_classes` are met.
@@ -83,9 +111,8 @@ class CheckAnyPermission(BasePermission):
 
     def has_permission(self, request, view):
 
-        for permission_class in getattr(view, 'available_permission_classes', []):
+        for permission_class in getattr(view, "available_permission_classes", []):
             if permission_class().has_permission(request, view):
                 return True
 
         return False
-    

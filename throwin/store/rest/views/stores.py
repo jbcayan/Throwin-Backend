@@ -8,8 +8,8 @@ from store.rest.serializers.stores import StoreSerializer
 from common.permissions import (
     IsConsumerOrGuestUser,
     IsConsumerUser,
-    IsAdminUser,
-    IsSuperAdminUser,
+    IsGlowAdminUser,
+    IsFCAdminUser,
     CheckAnyPermission
 )
 
@@ -22,15 +22,15 @@ class StoreListCreate(generics.ListCreateAPIView):
     def get_permissions(self):
         if self.request.method == "POST":
             self.available_permission_classes = (
-                IsSuperAdminUser,
-                IsAdminUser,
+                IsFCAdminUser,
+                IsGlowAdminUser,
             )
         else:
             self.available_permission_classes = (
                 IsConsumerOrGuestUser,
                 IsConsumerUser,
-                IsAdminUser,
-                IsSuperAdminUser,
+                IsGlowAdminUser,
+                IsFCAdminUser,
             )
         return (CheckAnyPermission(),)
 
@@ -47,15 +47,15 @@ class StoreDetailUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     def get_permissions(self):
         if self.request.method == "PUT":
             self.available_permission_classes = (
-                IsAdminUser,
-                IsSuperAdminUser,
+                IsGlowAdminUser,
+                IsFCAdminUser,
             )
         else:
             self.available_permission_classes = (
                 IsConsumerOrGuestUser,
                 IsConsumerUser,
-                IsAdminUser,
-                IsSuperAdminUser,
+                IsGlowAdminUser,
+                IsFCAdminUser,
             )
         return (CheckAnyPermission(),)
 
