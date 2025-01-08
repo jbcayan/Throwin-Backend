@@ -11,6 +11,8 @@ from common.permissions import IsConsumerUser, CheckAnyPermission, IsConsumerOrG
 
 from store.rest.serializers.store_stuff import StoreStuffListSerializer
 
+from store.models import Store, StoreUser, Restaurant, RestaurantUser
+
 User = get_user_model()
 
 
@@ -31,34 +33,27 @@ class StoreStuffList(generics.ListAPIView):
 
     def get_queryset(self):
         """
-        Get store stuff list based on store code or restaurant slug
-        :return: List of store stuff
+        Get users associated with a specific store based on the store code
+        via StoreUser model.
         """
-        if not (code := self.kwargs.get("code", None)):
+        code = self.kwargs.get("code", None)
+        if not code:
             return Response({
-                    "detail": "No code provided"
-                }, status=status.HTTP_400_BAD_REQUEST)
+                "detail": "No code provided"
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         try:
             print("Code: ", code)
-            query_sets = User().get_all_actives().filter(
+            # Filter StoreUser objects and fetch related User objects
+            store_users = StoreUser.objects.filter(
                 store__code=code,
-                kind=UserKind.RESTAURANT_STAFF
-            ).select_related(
-                "profile",
-                "store",
-                "restaurant"
-            )
-            if not query_sets.exists():
-                query_sets = User().get_all_actives().filter(
-                    restaurant__slug=code,
-                    kind=UserKind.RESTAURANT_STAFF
-                ).select_related(
-                    "profile",
-                    "store",
-                    "restaurant"
-                )
-            return query_sets
+                role=UserKind.RESTAURANT_STAFF
+            ).select_related("user", "store")
+
+            # Extract and return associated User instances
+            return User.objects.filter(id__in=store_users.values_list("user_id", flat=True)).distinct()
         except Exception as e:
             return Response({
-                "detail": "Invalid code provided"
+                "detail": "Invalid code provided",
+                "error": str(e)
             }, status=status.HTTP_400_BAD_REQUEST)

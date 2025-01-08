@@ -61,7 +61,7 @@ PROJECT_APPS = [
 ]
 
 if ENABLE_SILK:
-    THIRD_PARTY_APPS += ["silk"]
+    THIRD_PARTY_APPS += ["silk", "django_extensions"]
 
 if DEBUG:
     THIRD_PARTY_APPS += ["drf_spectacular"]
@@ -382,7 +382,7 @@ SITE_NAME = "Throwin"
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        "LOCATION": "redis://localhost:6379",
-        # "LOCATION": "redis://redis_cache:6379",
+        # "LOCATION": "redis://localhost:6379",
+        "LOCATION": "redis://redis_cache:6379",
     }
 }
