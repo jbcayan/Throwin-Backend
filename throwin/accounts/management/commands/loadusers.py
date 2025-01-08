@@ -8,7 +8,7 @@ from tqdm import tqdm
 from accounts.choices import UserKind, AuthProvider
 from accounts.management.commands.base_users import japanese_names
 
-from store.models import Store
+from store.models import Store, StoreUser, Restaurant, RestaurantUser
 
 User = get_user_model()
 
@@ -23,12 +23,12 @@ class Command(BaseCommand):
 
         with tqdm(total=len(self.names), desc='Creating Users', unit='user') as pbar:
             # Create a superuser
-            User.objects.create_superuser(
-                email="admin@gmail.com",
-                password="123456",
-                name="Super Admin",
-            )
-            self.stdout.write(f"Created superuser: Admin\n")
+            # User.objects.create_superuser(
+            #     email="admin@gmail.com",
+            #     password="123456",
+            #     name="Super Admin",
+            # )
+            # self.stdout.write(f"Created superuser: Admin\n")
 
             for english_name, japanese_name in self.names:
                 email = f"{english_name.split()[0].lower()}@example.com"
@@ -44,9 +44,23 @@ class Command(BaseCommand):
                         is_active=True,
                         is_verified=True,
                         auth_provider=AuthProvider.EMAIL,
-                        store=store,
                     )
                     self.stdout.write(f"Created user: {english_name}\n")
+
+                    RestaurantUser.objects.create(
+                        restaurant=store.restaurant,
+                        user=user,
+                        role=UserKind.RESTAURANT_STAFF,
+                    )
+                    self.stdout.write(f"Added user to restaurant: {store.restaurant.name}\n")
+
+                    StoreUser.objects.create(
+                        store=store,
+                        user=user,
+                        role=UserKind.RESTAURANT_STAFF,
+                    )
+                    self.stdout.write(f"Added user to store: {store.name}\n")
+
                 else:
                     self.stdout.write(f"User already exists: {english_name}\n")
 

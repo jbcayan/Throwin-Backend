@@ -4,33 +4,34 @@ from django.db import transaction
 
 
 class Command(BaseCommand):
-    help = 'Initialize the core setup by running loadstores and loadusers commands in sequence with atomic transactions'
+    help = 'Initialize the core setup by running commands in sequence with atomic transactions'
 
     def handle(self, *args, **options):
+        # List of commands to execute in sequence
+        commands = [
+            ('Starting to load restaurant owners...', 'load_restaurant_owner', 'Successfully loaded restaurant owners.'),
+            ('Starting to load restaurants...', 'load_restaurant', 'Successfully loaded restaurants.'),
+            ('Starting to load stores...', 'loadstores', 'Successfully loaded stores.'),
+            ('Starting to load users...', 'loadusers', 'Successfully loaded users.'),
+        ]
+
         try:
             with transaction.atomic():
-                self._extracted_from_handle_4(
-                    'Starting to load restaurants...',
-                    'load_restaurant',
-                    'Successfully loaded restaurants.\n',
-                )
-                self._extracted_from_handle_4(
-                    'Starting to load stores...',
-                    'loadstores',
-                    'Successfully loaded stores.\n',
-                )
-                self._extracted_from_handle_4(
-                    'Starting to load users...',
-                    'loadusers',
-                    'Successfully loaded users.\n',
-                )
+                for start_msg, command_name, success_msg in commands:
+                    self._run_command_with_feedback(start_msg, command_name, success_msg)
             self.stdout.write(self.style.SUCCESS('Core initialization completed successfully.'))
         except CommandError as e:
-            self.stdout.write(self.style.ERROR(f'An error occurred: {e}'))
+            self.stderr.write(self.style.ERROR(f'CommandError occurred: {e}'))
         except Exception as e:
-            self.stdout.write(self.style.ERROR(f'Unexpected error: {e}'))
+            self.stderr.write(self.style.ERROR(f'Unexpected error: {e}'))
 
-    def _extracted_from_handle_4(self, arg0, arg1, arg2):
-        self.stdout.write(self.style.NOTICE(arg0))
-        call_command(arg1)
-        self.stdout.write(self.style.SUCCESS(arg2))
+    def _run_command_with_feedback(self, start_message, command_name, success_message):
+        """
+        Helper method to run a command with feedback messages.
+        """
+        self.stdout.write(self.style.NOTICE(start_message))
+        try:
+            call_command(command_name)
+            self.stdout.write(self.style.SUCCESS(success_message))
+        except CommandError as e:
+            raise CommandError(f'Error while executing "{command_name}": {e}')

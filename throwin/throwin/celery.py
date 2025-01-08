@@ -33,9 +33,9 @@ app.conf.beat_schedule = {
 }
 
 # Define periodic tasks in Celery Beat schedule
-app.conf.beat_schedule = {
-    "print-something-every-30-seconds": {
-        "task": "accounts.tasks.print_something",  # Adjust the task path here
-        "schedule": crontab(minute="*"),  # Run every minute
-    },
-}
+# app.conf.beat_schedule = {
+#     "print-something-every-30-seconds": {
+#         "task": "accounts.tasks.print_something",  # Adjust the task path here
+#         "schedule": crontab(minute="*"),  # Run every minute
+#     },
+# }

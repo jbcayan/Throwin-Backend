@@ -3,18 +3,20 @@ from .views import (
     MakePaymentView,
     PayPalSuccessView,
     PayPalCancelView,
-    CustomerPaymentHistoryView,
-    StaffPaymentHistoryView,
-    AdminPaymentHistoryView,
+    RoleBasedPaymentHistoryView,
 )
 
-urlpatterns = [
-    path("make-payment/", MakePaymentView.as_view(), name="make_payment"),
+# Namespace for the app
+app_name = "payment_service"
 
+urlpatterns = [
+    # Endpoint to create a payment
+    path("make-payment/", MakePaymentView.as_view(), name="make_payment"),
+    
+    # PayPal integration callback URLs
     path("paypal-success/", PayPalSuccessView.as_view(), name="paypal_success"),
     path("paypal-cancel/", PayPalCancelView.as_view(), name="paypal_cancel"),
     
-    path("customer-payments/", CustomerPaymentHistoryView.as_view(), name="customer_payments"),
-    path("staff-payments/", StaffPaymentHistoryView.as_view(), name="staff_payments"),
-    path("admin-payments/", AdminPaymentHistoryView.as_view(), name="admin_payments"),
+    # Endpoint to fetch payment histories based on user roles
+    path("payment-histories/", RoleBasedPaymentHistoryView.as_view(), name="payment_histories"),
 ]

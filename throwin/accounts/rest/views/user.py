@@ -34,9 +34,9 @@ from common.permissions import (
     IsConsumerUser,
     CheckAnyPermission,
     IsConsumerOrGuestUser,
-    IsAdminUser,
+    IsGlowAdminUser,
     IsRestaurantStaffUser,
-    IsSuperAdminUser,
+    IsFCAdminUser,
 )
 
 from store.rest.serializers.store_stuff import StoreStuffListSerializer
@@ -176,8 +176,8 @@ class EmailChangeRequestVerify(generics.GenericAPIView):
     """Endpoint to verify and change the user's email."""
     available_permission_classes = (
         IsConsumerUser,
-        IsAdminUser,
-        IsSuperAdminUser,
+        IsGlowAdminUser,
+        IsFCAdminUser,
     )
     permission_classes = (CheckAnyPermission,)
 
@@ -230,9 +230,9 @@ class StaffDetailForConsumer(generics.RetrieveAPIView):
     available_permission_classes = (
         IsConsumerOrGuestUser,
         IsConsumerUser,
-        IsAdminUser,
+        IsGlowAdminUser,
         IsRestaurantStaffUser,
-        IsSuperAdminUser
+        IsFCAdminUser
     )
     permission_classes = (CheckAnyPermission,)
     serializer_class = StaffDetailForConsumerSerializer
@@ -324,8 +324,8 @@ class FavoriteStaffList(generics.ListAPIView):
     available_permission_classes = (
         IsConsumerOrGuestUser,
         IsConsumerUser,
-        IsAdminUser,
-        IsSuperAdminUser
+        IsGlowAdminUser,
+        IsFCAdminUser
     )
     permission_classes = (CheckAnyPermission,)
 
@@ -363,9 +363,9 @@ class Me(generics.GenericAPIView):
     available_permission_classes = (
         IsConsumerUser,
         IsConsumerOrGuestUser,
-        IsAdminUser,
+        IsGlowAdminUser,
         IsRestaurantStaffUser,
-        IsSuperAdminUser
+        IsFCAdminUser
     )
     permission_classes = (CheckAnyPermission,)
 
@@ -393,8 +393,8 @@ class Me(generics.GenericAPIView):
 )
 class DeleteUser(generics.DestroyAPIView):
     available_permission_classes = (
-        IsAdminUser,
-        IsSuperAdminUser,
+        IsGlowAdminUser,
+        IsFCAdminUser,
         IsConsumerUser
     )
     permission_classes = (CheckAnyPermission,)
@@ -413,8 +413,8 @@ class StaffList(generics.ListAPIView):
     available_permission_classes = (
         IsConsumerOrGuestUser,
         IsConsumerUser,
-        IsAdminUser,
-        IsSuperAdminUser,
+        IsGlowAdminUser,
+        IsFCAdminUser,
         IsRestaurantStaffUser
     )
     permission_classes = (CheckAnyPermission,)
