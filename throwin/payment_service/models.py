@@ -1,8 +1,10 @@
 from decimal import Decimal
 from django.db import models
+from django.core.exceptions import ValidationError
 from common.models import BaseModel
 from accounts.models import User
 from accounts.choices import UserKind
+from store.models import Restaurant, Store
 
 
 class PaymentHistory(BaseModel):
@@ -27,6 +29,20 @@ class PaymentHistory(BaseModel):
         related_name="received_payments",
         limit_choices_to={"kind": UserKind.RESTAURANT_STAFF},
         help_text="The staff receiving the payment"
+    )
+    restaurant = models.ForeignKey(
+        Restaurant,
+        on_delete=models.CASCADE,
+        related_name="payment_histories",
+        help_text="The restaurant where the staff works"
+    )
+    store = models.ForeignKey(
+        Store,
+        on_delete=models.CASCADE,
+        related_name="payment_histories",
+        blank=True,
+        null=True,
+        help_text="The store where the transaction occurred (nullable for unassigned staff)"
     )
     amount = models.DecimalField(
         max_digits=10,
@@ -103,11 +119,22 @@ class PaymentHistory(BaseModel):
 
     def clean(self):
         """
-        Validate that the payment amount is positive.
+        Validate the model fields.
+        - Ensure payment amount is positive.
+        - Ensure staff belongs to the provided restaurant.
+        - Ensure the store (if provided) belongs to the same restaurant.
         """
-        from django.core.exceptions import ValidationError
         if self.amount <= 0:
             raise ValidationError("Payment amount must be greater than zero.")
+
+        # Ensure staff belongs to the restaurant
+        if not self.restaurant.restaurant_users.filter(user=self.staff).exists():
+            raise ValidationError("The selected staff does not belong to the specified restaurant.")
+
+        # Ensure store belongs to the same restaurant (if store is provided)
+        if self.store and self.store.restaurant != self.restaurant:
+            raise ValidationError("The selected store does not belong to the specified restaurant.")
+
         super().clean()
 
     def __str__(self):

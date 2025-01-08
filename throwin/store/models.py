@@ -193,13 +193,7 @@ class StoreUser(BaseModel):
 
     class Meta:
         unique_together = ("store", "user")  # Ensure a user can have only one role per store
-        constraints = [
-            models.UniqueConstraint(
-                fields=["user", "store"],
-                name="unique_user_store_role",
-                violation_error_message="A user can only have one role per store."
-            )
-        ]
+        
 
     def __str__(self):
         return f"{self.user} - {self.role} - {self.store}"

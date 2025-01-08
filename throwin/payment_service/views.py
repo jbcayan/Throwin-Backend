@@ -4,16 +4,18 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
-from rest_framework.exceptions import ValidationError
 from .models import PaymentHistory
 from .serializers import (
     MakePaymentSerializer,
     PaymentHistorySerializer,
     StaffPaymentHistorySerializer,
     AdminPaymentHistorySerializer,
+    ConsumerPaymentHistorySerializer,
+    RestaurantOwnerPaymentHistorySerializer,
 )
 from .filters import PaymentHistoryFilter
 from .helpers.paypal_helper import create_paypal_payment, execute_paypal_payment
+from accounts.choices import UserKind
 import logging
 
 # Initialize logger
@@ -52,6 +54,7 @@ class MakePaymentView(generics.CreateAPIView):
     permission_classes = [permissions.AllowAny]
 
     def create(self, request, *args, **kwargs):
+        logger.info(f"Incoming payload: {request.data}")
         return_url = request.data.get("return_url")
         cancel_url = request.data.get("cancel_url")
 
@@ -98,6 +101,60 @@ class MakePaymentView(generics.CreateAPIView):
 
         error_message = paypal_response.get("error", "Failed to process payment with PayPal.")
         raise serializers.ValidationError({"error": error_message})
+
+
+@extend_schema(
+    parameters=[
+        OpenApiParameter("search", str, description="Search across relevant fields."),
+        OpenApiParameter("ordering", str, description="Order by payment date or amount."),
+    ]
+)
+class RoleBasedPaymentHistoryView(generics.ListAPIView):
+    """
+    List payment history based on user roles.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+    filterset_class = PaymentHistoryFilter
+    search_fields = ["transaction_id", "staff__name", "customer__username", "nickname"]
+    ordering_fields = ["payment_date", "amount"]
+    pagination_class = StandardResultsPagination
+
+    def get_serializer_class(self):
+        """
+        Return serializer class based on the user's role.
+        """
+        user = self.request.user
+        if user.kind == UserKind.RESTAURANT_STAFF:
+            return StaffPaymentHistorySerializer
+        elif user.kind == UserKind.CONSUMER:
+            return ConsumerPaymentHistorySerializer
+        elif user.kind == UserKind.RESTAURANT_OWNER:
+            return RestaurantOwnerPaymentHistorySerializer
+        elif user.kind == UserKind.SALES_AGENT:
+            return AdminPaymentHistorySerializer  # Provides visibility for sales agents.
+        elif user.kind in [UserKind.SUPER_ADMIN, UserKind.FC_ADMIN, UserKind.GLOW_ADMIN]:
+            return AdminPaymentHistorySerializer
+        raise AssertionError("No serializer defined for this role.")
+
+    def get_queryset(self):
+        """
+        Filter queryset based on the user's role.
+        """
+        user = self.request.user
+        queryset = PaymentHistory.objects.all()
+
+        if user.kind == UserKind.RESTAURANT_STAFF:
+            queryset = queryset.filter(staff=user)
+        elif user.kind == UserKind.CONSUMER:
+            queryset = queryset.filter(customer=user)
+        elif user.kind == UserKind.RESTAURANT_OWNER:
+            queryset = queryset.filter(restaurant__restaurant_owner=user)
+        elif user.kind == UserKind.SALES_AGENT:
+            queryset = queryset.filter(restaurant__sales_agent=user)
+
+        # Optimize database queries with related fields
+        return queryset.select_related("staff", "restaurant", "store", "customer")
 
 
 @extend_schema(
@@ -156,69 +213,3 @@ class PayPalCancelView(APIView):
             except PaymentHistory.DoesNotExist:
                 pass  # No action needed if payment record is not found
         return Response({"message": "Payment was canceled."}, status=status.HTTP_200_OK)
-
-
-@extend_schema(
-    parameters=[
-        OpenApiParameter("search", str, description="Search for transaction ID, staff name, or nickname."),
-        OpenApiParameter("ordering", str, description="Order by payment date or amount."),
-    ]
-)
-class CustomerPaymentHistoryView(generics.ListAPIView):
-    """
-    List payment history for authenticated customers.
-    """
-    serializer_class = PaymentHistorySerializer
-    permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_class = PaymentHistoryFilter
-    search_fields = ["transaction_id", "staff__name", "nickname"]
-    ordering_fields = ["payment_date", "amount"]
-    pagination_class = StandardResultsPagination
-
-    def get_queryset(self):
-        return PaymentHistory.objects.filter(customer=self.request.user)
-
-
-@extend_schema(
-    parameters=[
-        OpenApiParameter("search", str, description="Search for transaction ID, customer username, or nickname."),
-        OpenApiParameter("ordering", str, description="Order by payment date or amount."),
-    ]
-)
-class StaffPaymentHistoryView(generics.ListAPIView):
-    """
-    List payment history for authenticated staff members.
-    """
-    serializer_class = StaffPaymentHistorySerializer
-    permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_class = PaymentHistoryFilter
-    search_fields = ["transaction_id", "customer__username", "nickname"]
-    ordering_fields = ["payment_date", "amount"]
-    pagination_class = StandardResultsPagination
-
-    def get_queryset(self):
-        return PaymentHistory.objects.filter(staff=self.request.user)
-
-
-@extend_schema(
-    parameters=[
-        OpenApiParameter("search", str, description="Search across all payment fields."),
-        OpenApiParameter("ordering", str, description="Order by payment date or amount."),
-    ]
-)
-class AdminPaymentHistoryView(generics.ListAPIView):
-    """
-    List all payment history for admin users.
-    """
-    serializer_class = AdminPaymentHistorySerializer
-    permission_classes = [permissions.IsAdminUser]
-    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
-    filterset_class = PaymentHistoryFilter
-    search_fields = ["transaction_id", "staff__name", "customer__username", "nickname"]
-    ordering_fields = ["payment_date", "amount"]
-    pagination_class = StandardResultsPagination
-
-    def get_queryset(self):
-        return PaymentHistory.objects.all()
