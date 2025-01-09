@@ -7,9 +7,13 @@ from rest_framework.response import Response
 
 from accounts.choices import UserKind
 
-from common.permissions import IsConsumerUser, CheckAnyPermission, IsConsumerOrGuestUser, IsGlowAdminUser, IsFCAdminUser
+from common.permissions import IsConsumerUser, CheckAnyPermission, IsConsumerOrGuestUser, IsGlowAdminUser, \
+    IsFCAdminUser, IsSuperAdminUser
 
-from store.rest.serializers.store_stuff import StoreStuffListSerializer
+from store.rest.serializers.store_stuff import (
+    StoreStuffListSerializer,
+    StoreUserSerializer,
+)
 
 from store.models import Store, StoreUser, Restaurant, RestaurantUser
 
@@ -19,15 +23,16 @@ User = get_user_model()
 @extend_schema(
     summary="Store stuff list",
     description="Get store stuff list based on store code",
-    responses=StoreStuffListSerializer
+    responses=StoreUserSerializer
 )
 class StoreStuffList(generics.ListAPIView):
-    serializer_class = StoreStuffListSerializer
+    serializer_class = StoreUserSerializer
     available_permission_classes = (
         IsConsumerOrGuestUser,
         IsConsumerUser,
         IsGlowAdminUser,
         IsFCAdminUser,
+        IsSuperAdminUser,
     )
     permission_classes = (CheckAnyPermission,)
 
@@ -43,15 +48,14 @@ class StoreStuffList(generics.ListAPIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            print("Code: ", code)
-            # Filter StoreUser objects and fetch related User objects
-            store_users = StoreUser.objects.filter(
-                store__code=code,
-                role=UserKind.RESTAURANT_STAFF
-            ).select_related("user", "store")
-
-            # Extract and return associated User instances
-            return User.objects.filter(id__in=store_users.values_list("user_id", flat=True)).distinct()
+            return StoreUser.objects.filter(
+                store__code=code, role=UserKind.RESTAURANT_STAFF
+            ).select_related(
+                "user",
+                "user__profile",
+                "store",
+                "store__restaurant",
+            )
         except Exception as e:
             return Response({
                 "detail": "Invalid code provided",
