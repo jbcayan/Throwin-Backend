@@ -23,6 +23,10 @@ class StoreSerializer(BaseSerializer):
         max_length=20,
         required=False
     )
+    restaurant_uid = serializers.SerializerMethodField()
+
+    def get_restaurant_uid(self, obj):
+        return obj.restaurant.uid if obj.restaurant else None
 
     class Meta(BaseSerializer.Meta):
         model = Store
@@ -32,7 +36,8 @@ class StoreSerializer(BaseSerializer):
             "code",
             "description",
             "logo",
-            "banner"
+            "banner",
+            "restaurant_uid",
         ]
         read_only_fields = ["uid"]
 

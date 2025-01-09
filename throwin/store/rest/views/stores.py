@@ -1,6 +1,7 @@
 """Views for store"""
 from rest_framework import generics, status
 from rest_framework.response import Response
+from rest_framework import permissions
 
 from store.models import Store
 from store.rest.serializers.stores import StoreSerializer
@@ -10,7 +11,7 @@ from common.permissions import (
     IsConsumerUser,
     IsGlowAdminUser,
     IsFCAdminUser,
-    CheckAnyPermission
+    CheckAnyPermission, IsRestaurantOwnerUser
 )
 
 
@@ -24,6 +25,7 @@ class StoreListCreate(generics.ListCreateAPIView):
             self.available_permission_classes = (
                 IsFCAdminUser,
                 IsGlowAdminUser,
+                IsRestaurantOwnerUser
             )
         else:
             self.available_permission_classes = (
@@ -35,32 +37,17 @@ class StoreListCreate(generics.ListCreateAPIView):
         return (CheckAnyPermission(),)
 
     def get_queryset(self):
-        queryset = Store().get_all_actives()
-        return queryset
+        return Store().get_all_actives()
 
 
 class StoreDetailUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = StoreSerializer
-
-    available_permission_classes = ()
-
-    def get_permissions(self):
-        if self.request.method == "PUT":
-            self.available_permission_classes = (
-                IsGlowAdminUser,
-                IsFCAdminUser,
-            )
-        else:
-            self.available_permission_classes = (
-                IsConsumerOrGuestUser,
-                IsConsumerUser,
-                IsGlowAdminUser,
-                IsFCAdminUser,
-            )
-        return (CheckAnyPermission(),)
+    permission_classes = (permissions.AllowAny,)
 
     def get_object(self):
-        queryset = Store().get_all_actives().get(
-            code=self.kwargs["code"]
-        )
-        return queryset
+        try:
+            return Store().get_all_actives().get(code=self.kwargs["code"])
+        except Store.DoesNotExist:
+            return Response({
+                "detail": "Store not found"
+            }, status=status.HTTP_404_NOT_FOUND)
