@@ -39,7 +39,11 @@ from common.permissions import (
     IsFCAdminUser,
 )
 
-from store.rest.serializers.store_stuff import StoreStuffListSerializer
+from store.models import StoreUser
+from store.rest.serializers.store_stuff import (
+    StoreStuffListSerializer,
+    StoreUserSerializer
+)
 
 User = get_user_model()
 
@@ -423,3 +427,41 @@ class StaffList(generics.ListAPIView):
 
     def get_queryset(self):
         return User().get_all_actives().filter(kind=UserKind.RESTAURANT_STAFF)
+
+
+@extend_schema(
+    summary="Get store stuff list by staff name {param request}",
+    description="Request example: /auth/users/store-user-search?name=Test Staff",
+    request=StoreStuffListSerializer
+)
+class StoreUserSearchView(generics.GenericAPIView):
+    """
+    API to search for users by name and retrieve their store associations.
+    """
+    serializer_class = StoreUserSerializer
+
+    def get(self, request, *args, **kwargs):
+        name = self.request.query_params.get("name", None)
+
+        if not name:
+            return Response(
+                {"detail": "Name is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Filter StoreUser objects by user__name
+        store_users = StoreUser.objects.filter(
+            user__name__icontains=name,
+            role=UserKind.RESTAURANT_STAFF
+        ).select_related(
+            "user", "store", "store__restaurant"
+        )
+
+        if not store_users.exists():
+            return Response(
+                {"detail": "No users found with the given name."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        data = self.serializer_class(store_users, many=True).data
+        return Response(data, status=status.HTTP_200_OK)

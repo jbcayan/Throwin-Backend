@@ -14,6 +14,7 @@ from accounts.rest.views.user import (
     StaffList,
     ConsumerLikeStaffToggle,
     SetGuestName,
+    StoreUserSearchView,
 )
 
 urlpatterns = [
@@ -71,5 +72,10 @@ urlpatterns = [
         "/staff-list",
         StaffList.as_view(),
         name="staff-list"
+    ),
+    path(
+        "/store-user-search",
+        StoreUserSearchView.as_view(),
+        name="store-user-search"
     ),
 ]
