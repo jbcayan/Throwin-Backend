@@ -382,7 +382,7 @@ SITE_NAME = "Throwin"
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        # "LOCATION": "redis://localhost:6379",
-        "LOCATION": "redis://redis_cache:6379",
+        "LOCATION": "redis://localhost:6379",
+        # "LOCATION": "redis://redis_cache:6379",
     }
 }

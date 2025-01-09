@@ -14,17 +14,18 @@ class Command(BaseCommand):
 
     def handle(self, *args, **options):
         # Create restaurant owner users
-        User.objects.get_or_create(
+        owner_1, _ = User.objects.get_or_create(
             email="abc@gmail.com",
-            password="password1234",
             name="ABC",
             kind=UserKind.RESTAURANT_OWNER,
             is_active=True,
             is_verified=True,
-            auth_provider=AuthProvider.EMAIL,
+            auth_provider=AuthProvider.EMAIL
         )
+        owner_1.set_password("password1234")
+        owner_1.save()
 
-        User.objects.get_or_create(
+        owner_2, _ = User.objects.get_or_create(
             email="cdc@gmail.com",
             password="password1234",
             name="CDC",
@@ -33,8 +34,10 @@ class Command(BaseCommand):
             is_verified=True,
             auth_provider=AuthProvider.EMAIL,
         )
+        owner_2.set_password("password1234")
+        owner_2.save()
 
-        User.objects.get_or_create(
+        owner_3, _ = User.objects.get_or_create(
             email="xyz@gmail.com",
             password="password1234",
             name="XYZ",
@@ -43,6 +46,7 @@ class Command(BaseCommand):
             is_verified=True,
             auth_provider=AuthProvider.EMAIL,
         )
+        owner_3.set_password("password1234")
+        owner_3.save()
 
         self.stdout.write(self.style.SUCCESS('Successfully created restaurant owners'))
-

@@ -1,0 +1,45 @@
+from drf_spectacular.utils import extend_schema
+
+from rest_framework import generics, status, permissions
+from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
+
+from accounts.rest.serializers.restaurant_owner_login import RestaurantOwnerLoginSerializer
+from accounts.rest.serializers.user_login import UserLoginSerializer
+
+
+@extend_schema(
+    summary="Login API for restaurant owner by email and password",
+    request=UserLoginSerializer,
+    responses={status.HTTP_200_OK: {"data": {
+        "email": "str",
+        "name": "str",
+        "role": "str",
+        "refresh": "str",
+        "access": "str"
+    }}},
+    description="Login API",
+    methods=["POST"],
+)
+class RestaurantOwnerLogin(generics.GenericAPIView):
+    serializer_class = RestaurantOwnerLoginSerializer
+    permission_classes = (permissions.AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data.get("user")
+
+        # get token
+        refresh = RefreshToken.for_user(user)
+        response_data = {
+            "msg": "Login Successful",
+            "data": {
+                "email": user.email,
+                "name": user.name or "",
+                "role": user.kind,
+                "refresh": str(refresh),
+                "access": str(refresh.access_token),
+            },
+        }
+        return Response(response_data, status=status.HTTP_200_OK)
