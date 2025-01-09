@@ -61,7 +61,10 @@ PROJECT_APPS = [
 ]
 
 if ENABLE_SILK:
-    THIRD_PARTY_APPS += ["silk", "django_extensions"]
+    THIRD_PARTY_APPS += [
+        "silk",
+        "django_extensions",
+    ]
 
 if DEBUG:
     THIRD_PARTY_APPS += ["drf_spectacular"]

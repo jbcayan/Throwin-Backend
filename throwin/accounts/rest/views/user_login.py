@@ -28,6 +28,7 @@ class UserLogin(generics.GenericAPIView):
             "data": {
                 "email": user.email,
                 "name": user.name or "",
+                "role": user.kind,
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
             },
