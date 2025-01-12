@@ -7,7 +7,11 @@ from versatileimagefield.serializers import VersatileImageFieldSerializer
 
 from store.models import StoreUser
 
+from django.conf import settings
+
 User = get_user_model()
+
+domain = settings.SITE_DOMAIN
 
 
 class StoreStuffListSerializer(StaffDetailForConsumerSerializer):
@@ -18,6 +22,7 @@ class StoreStuffListSerializer(StaffDetailForConsumerSerializer):
         allow_blank=True,
         allow_null=True,
     )
+    image = serializers.SerializerMethodField()
 
     class Meta(StaffDetailForConsumerSerializer.Meta):
         fields = (
@@ -31,13 +36,17 @@ class StoreStuffListSerializer(StaffDetailForConsumerSerializer):
         )
 
     def get_image(self, obj):
-        try:
-            if obj.image:
-                return VersatileImageFieldSerializer(obj.image, context=self.context).data
-            return None
-        except (FileNotFoundError, ValueError):
-            # Return None if the image file is not found or another error occurs
-            return None
+        if obj.image:
+            try:
+                return {
+                    'small': domain + obj.image.crop['400x400'].url,
+                    'medium': domain + obj.image.crop['600x600'].url,
+                    'large': domain + obj.image.crop['1000x1000'].url,
+                    'full_size': domain + obj.image.url,
+                }
+            except Exception as e:
+                return {'error': str(e)}  # Handle errors gracefully
+        return None
 
 
 class StoreUserSerializer(serializers.ModelSerializer):
@@ -48,13 +57,13 @@ class StoreUserSerializer(serializers.ModelSerializer):
         source="user.profile.introduction", allow_null=True, allow_blank=True
     )
     score = serializers.IntegerField(source="user.profile.total_score", default=0)
-    image = VersatileImageFieldSerializer(sizes="profile_image", source="user.image")
     fun_fact = serializers.CharField(
         source="user.profile.fun_fact", allow_null=True, allow_blank=True
     )
     store_name = serializers.CharField(source="store.name")
     store_uid = serializers.CharField(source="store.uid")
     restaurant_uid = serializers.CharField(source="store.restaurant.uid")
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = StoreUser
@@ -71,11 +80,15 @@ class StoreUserSerializer(serializers.ModelSerializer):
             "restaurant_uid",
         ]
 
-    # def get_image(self, obj):
-    #     try:
-    #         if obj.user.image:
-    #             return VersatileImageFieldSerializer(obj.user.image, context=self.context).data
-    #         return None
-    #     except (FileNotFoundError, ValueError):
-    #         # Return None if the image file is not found or another error occurs
-    #         return None
+    def get_image(self, obj):
+        if obj.user.image:
+            try:
+                return {
+                    'small': domain + obj.user.image.crop['400x400'].url,
+                    'medium': domain + obj.user.image.crop['600x600'].url,
+                    'large': domain + obj.user.image.crop['1000x1000'].url,
+                    'full_size': domain + obj.user.image.url,
+                }
+            except Exception as e:
+                return {'error': str(e)}  # Handle errors gracefully
+        return None

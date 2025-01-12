@@ -378,6 +378,7 @@ EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 
 FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
+SITE_DOMAIN = config("SITE_DOMAIN", default="http://localhost:8000")
 
 SITE_NAME = "Throwin"
 

@@ -36,7 +36,7 @@ from common.permissions import (
     IsConsumerOrGuestUser,
     IsGlowAdminUser,
     IsRestaurantStaffUser,
-    IsFCAdminUser,
+    IsFCAdminUser, IsSuperAdminUser,
 )
 
 from store.models import StoreUser
@@ -236,7 +236,8 @@ class StaffDetailForConsumer(generics.RetrieveAPIView):
         IsConsumerUser,
         IsGlowAdminUser,
         IsRestaurantStaffUser,
-        IsFCAdminUser
+        IsFCAdminUser,
+        IsSuperAdminUser,
     )
     permission_classes = (CheckAnyPermission,)
     serializer_class = StaffDetailForConsumerSerializer
@@ -246,7 +247,13 @@ class StaffDetailForConsumer(generics.RetrieveAPIView):
 
     def get(self, request, *args, **kwargs):
         # Retrieve the staff
-        staff = self.get_object()
+        try:
+            staff = self.get_object()
+        except User.DoesNotExist:
+            return Response(
+                {"detail": "Staff member not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         # Serialize the staff
         serializer = self.serializer_class(staff)

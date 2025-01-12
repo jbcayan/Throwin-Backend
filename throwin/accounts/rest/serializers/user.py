@@ -14,6 +14,10 @@ from versatileimagefield.serializers import VersatileImageFieldSerializer
 
 from common.serializers import BaseSerializer
 
+from django.conf import settings
+
+domain = settings.SITE_DOMAIN
+
 User = get_user_model()
 
 
@@ -92,9 +96,7 @@ class StaffDetailForConsumerSerializer(BaseSerializer):
         source="profile.total_score",
         default=0
     )
-    image = VersatileImageFieldSerializer(
-        sizes='profile_image',
-    )
+    image = serializers.SerializerMethodField()
     fun_fact = serializers.CharField(
         source="profile.fun_fact",
         allow_blank=True,
@@ -114,12 +116,24 @@ class StaffDetailForConsumerSerializer(BaseSerializer):
             "fun_fact",
         )
 
+    def get_image(self, obj):
+
+        if obj.image:
+            try:
+                return {
+                    'small': domain + obj.image.crop['400x400'].url,
+                    'medium': domain + obj.image.crop['600x600'].url,
+                    'large': domain + obj.image.crop['1000x1000'].url,
+                    'full_size': domain + obj.image.url,
+                }
+            except Exception as e:
+                return {'error': str(e)}  # Handle errors gracefully
+        return None
+
 
 class MeSerializer(BaseSerializer):
     """This serializer is used to represent the current user's details."""
-    image = VersatileImageFieldSerializer(
-        sizes='profile_image',
-    )
+    image = serializers.SerializerMethodField()
     introduction = serializers.CharField(
         source="profile.introduction",
         allow_blank=True,
@@ -158,6 +172,19 @@ class MeSerializer(BaseSerializer):
             "total_score",
             "fun_fact",
         )
+
+    def get_image(self, obj):
+        if obj.image:
+            try:
+                return {
+                    'small': domain + obj.image.crop['400x400'].url,
+                    'medium': domain + obj.image.crop['600x600'].url,
+                    'large': domain + obj.image.crop['1000x1000'].url,
+                    'full_size': domain + obj.image.url,
+                }
+            except Exception as e:
+                return {'error': str(e)}  # Handle errors gracefully
+        return None
 
     def to_representation(self, instance):
         """Customize the fields based on the user kind."""
