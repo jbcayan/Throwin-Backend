@@ -102,6 +102,8 @@ class PaymentHistory(BaseModel):
         help_text="Net amount received after deducting service fees"
     )
 
+    message = models.TextField(default="", blank=True, null=True)
+
     def save(self, *args, **kwargs):
         """
         Override the save method to calculate service fee and net amount.

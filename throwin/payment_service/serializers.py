@@ -15,7 +15,7 @@ class MakePaymentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = PaymentHistory
-        fields = ["staff_uid", "restaurant_uid", "store_uid", "nickname", "amount", "currency", "payment_method"]
+        fields = ["staff_uid", "restaurant_uid", "store_uid", "nickname", "amount", "currency", "payment_method", "message"]
 
     def validate_staff_uid(self, value):
         """
@@ -239,3 +239,17 @@ class AdminPaymentHistorySerializer(serializers.ModelSerializer):
             "net_amount",
             "is_distributed",
         ]
+
+
+
+class StaffRecentMessagesSerializer(serializers.ModelSerializer):
+    """
+    Serializer to send the last 5 messages for a staff's transactions.
+    """
+    date = serializers.DateTimeField(source="payment_date", read_only=True)  # Map to 'payment_date' explicitly
+    message = serializers.CharField(read_only=True)  # Keep this as it is
+    nickname = serializers.CharField(read_only=True)  # No 'source' required because field name matches the model
+
+    class Meta:
+        model = PaymentHistory
+        fields = ["message", "date", "nickname"]

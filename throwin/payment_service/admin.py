@@ -62,6 +62,7 @@ class PaymentHistoryAdmin(admin.ModelAdmin):
                 "amount",
                 "currency",
                 "status",
+                "message",
                 "payment_method",
                 "is_distributed",
             )

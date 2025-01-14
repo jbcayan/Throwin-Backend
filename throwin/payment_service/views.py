@@ -213,3 +213,41 @@ class PayPalCancelView(APIView):
             except PaymentHistory.DoesNotExist:
                 pass  # No action needed if payment record is not found
         return Response({"message": "Payment was canceled."}, status=status.HTTP_200_OK)
+
+
+
+from .serializers import StaffRecentMessagesSerializer
+from rest_framework import status, permissions
+from accounts.models import User
+
+class StaffRecentMessagesView(APIView):
+    permission_classes = [permissions.AllowAny]
+    """
+    API to fetch the last 5 messages for a staff's transactions with non-empty messages based on their UID.
+    """
+    def get(self, request, uid):
+        try:
+            # Fetch the staff user with the given UID
+            staff = User.objects.get(uid=uid, kind=UserKind.RESTAURANT_STAFF)
+
+            # Fetch the last 5 transactions with non-empty messages for the staff
+            recent_transactions = PaymentHistory.objects.filter(
+                staff=staff, message__isnull=False
+            ).exclude(
+                message__exact=""
+            ).order_by('-payment_date')[:5]
+
+            # Serialize the transaction data
+            serializer = StaffRecentMessagesSerializer(recent_transactions, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+
+        except User.DoesNotExist:
+            return Response(
+                {"error": "Staff not found or not authorized."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        except Exception as e:
+            return Response(
+                {"error": "An unexpected error occurred. Please try again later."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )

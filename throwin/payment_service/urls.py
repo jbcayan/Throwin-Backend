@@ -4,6 +4,7 @@ from .views import (
     PayPalSuccessView,
     PayPalCancelView,
     RoleBasedPaymentHistoryView,
+    StaffRecentMessagesView
 )
 
 # Namespace for the app
@@ -19,4 +20,7 @@ urlpatterns = [
     
     # Endpoint to fetch payment histories based on user roles
     path("payment-histories/", RoleBasedPaymentHistoryView.as_view(), name="payment_histories"),
+    
+    # Endppoint to get last 5 messgaes for staff
+    path('staff/<uuid:uid>/recent-messages/', StaffRecentMessagesView.as_view(), name='staff-recent-messages'),
 ]
