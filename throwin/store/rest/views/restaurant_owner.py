@@ -1,21 +1,14 @@
 """Views for restaurant owner."""
-
-from rest_framework import status
-from rest_framework.response import Response
-
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import generics
+from rest_framework.filters import SearchFilter, OrderingFilter
 
 from common.permissions import (
-    IsConsumerUser,
     CheckAnyPermission,
-    IsConsumerOrGuestUser,
-    IsGlowAdminUser,
-    IsFCAdminUser,
-    IsSuperAdminUser, IsRestaurantOwnerUser
+    IsRestaurantOwnerUser
 )
-
-from store.models import Restaurant, RestaurantUser, Store, StoreUser
-
+from store.filters import StoreFilter
+from store.models import Store
 from store.rest.serializers.restaurant_owner import RestaurantStoresSerializer
 
 
@@ -23,6 +16,10 @@ class RestaurantStoresView(generics.ListAPIView):
     """View for restaurant owner to see stores."""
 
     serializer_class = RestaurantStoresSerializer
+
+    filterset_class = StoreFilter
+    filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
+
     available_permission_classes = (
         IsRestaurantOwnerUser,
     )
