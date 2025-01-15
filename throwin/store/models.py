@@ -61,6 +61,14 @@ class Restaurant(BaseModel):
     def __str__(self):
         return self.name
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=['restaurant_owner'],
+                name='unique_restaurant_owner'
+            )
+        ]
+
 
 # Create your models here.
 class Store(BaseModel):

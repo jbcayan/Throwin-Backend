@@ -13,7 +13,7 @@ urlpatterns = [
     path("auth", include("accounts.rest.urls")),
     path("stores", include("store.rest.urls")),
     path('payment_service/', include('payment_service.urls')),
-    path('restaurant-owner', include('accounts.rest.urls.restaurant_owner')),
+    path('restaurant-owner', include('store.rest.urls.restaurant_owner')),
     # path("notifications", include("notification.rest.urls.notification")),
 ]
 

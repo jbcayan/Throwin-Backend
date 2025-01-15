@@ -7,8 +7,14 @@ from rest_framework.response import Response
 
 from accounts.choices import UserKind
 
-from common.permissions import IsConsumerUser, CheckAnyPermission, IsConsumerOrGuestUser, IsGlowAdminUser, \
-    IsFCAdminUser, IsSuperAdminUser
+from common.permissions import (
+    IsConsumerUser,
+    CheckAnyPermission,
+    IsConsumerOrGuestUser,
+    IsGlowAdminUser,
+    IsFCAdminUser,
+    IsSuperAdminUser
+)
 
 from store.rest.serializers.store_stuff import (
     StoreStuffListSerializer,
