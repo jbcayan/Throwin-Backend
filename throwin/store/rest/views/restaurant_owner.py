@@ -5,8 +5,9 @@ from rest_framework.filters import SearchFilter, OrderingFilter
 
 from common.permissions import (
     CheckAnyPermission,
-    IsRestaurantOwnerUser
+    IsRestaurantOwnerUser,
 )
+
 from store.filters import StoreFilter
 from store.models import Store
 from store.rest.serializers.restaurant_owner import RestaurantStoresSerializer
