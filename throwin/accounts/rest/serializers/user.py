@@ -70,13 +70,6 @@ class EmailChangeRequestSerializer(serializers.Serializer):
 
         verification_url = f"{settings.FRONTEND_URL}/verify-email/{token}"
 
-        # Send a verification email to the new email address
-        # send_mail_task(
-        #     subject="Verify Email",
-        #     message=f"Please click the link below to verify your email. {verification_url}",
-        #     to_email=new_email
-        # )
-
         send_mail_task.delay(
             subject="Verify Email",
             message=f"Please click the link below to verify your email. {verification_url}",
