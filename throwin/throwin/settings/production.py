@@ -371,7 +371,7 @@ EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 
 FRONTEND_URL = config("FRONTEND_URL")
-SITE_DOMAIN = config("SITE_DOMAIN", default="https://api-dev.throwin-glow.com/")
+SITE_DOMAIN = config("SITE_DOMAIN", default="https://api-dev.throwin-glow.com")
 SITE_NAME = "Throwin"
 
 # For docker Redis Caching

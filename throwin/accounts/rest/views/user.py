@@ -36,7 +36,9 @@ from common.permissions import (
     IsConsumerOrGuestUser,
     IsGlowAdminUser,
     IsRestaurantStaffUser,
-    IsFCAdminUser, IsSuperAdminUser,
+    IsFCAdminUser,
+    IsSuperAdminUser,
+    IsRestaurantOwnerUser,
 )
 
 from store.models import StoreUser
@@ -376,7 +378,9 @@ class Me(generics.GenericAPIView):
         IsConsumerOrGuestUser,
         IsGlowAdminUser,
         IsRestaurantStaffUser,
-        IsFCAdminUser
+        IsFCAdminUser,
+        IsRestaurantOwnerUser,
+        IsSuperAdminUser,
     )
     permission_classes = (CheckAnyPermission,)
 
@@ -426,7 +430,9 @@ class StaffList(generics.ListAPIView):
         IsConsumerUser,
         IsGlowAdminUser,
         IsFCAdminUser,
-        IsRestaurantStaffUser
+        IsRestaurantStaffUser,
+        IsRestaurantOwnerUser,
+        IsSuperAdminUser,
     )
     permission_classes = (CheckAnyPermission,)
     filter_backends = [DjangoFilterBackend]
