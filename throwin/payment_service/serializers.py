@@ -1,9 +1,16 @@
-from rest_framework import serializers
-from .models import PaymentHistory
-from accounts.models import User
-from accounts.choices import UserKind
-from store.models import Restaurant, Store, StoreUser
 import logging
+
+from django.conf import settings
+from rest_framework import serializers
+
+from accounts.choices import UserKind
+from accounts.models import User
+
+from store.models import Restaurant, Store
+
+from .models import PaymentHistory
+
+domain = settings.SITE_DOMAIN
 
 logger = logging.getLogger(__name__)
 
@@ -170,6 +177,7 @@ class ConsumerPaymentHistorySerializer(serializers.ModelSerializer):
     staff_name = serializers.CharField(source="staff.name", read_only=True)
     restaurant_name = serializers.CharField(source="restaurant.name", read_only=True)
     store_name = serializers.CharField(source="store.name", read_only=True)
+    staff_image = serializers.SerializerMethodField()
 
     class Meta:
         model = PaymentHistory
@@ -183,8 +191,24 @@ class ConsumerPaymentHistorySerializer(serializers.ModelSerializer):
             "status",
             "payment_date",
             "payment_method",
+            "staff_image",
         ]
 
+    def get_staff_image(self, obj):
+        """
+        Get the staff user's profile image.
+        """
+        if obj.staff.image:
+            try:
+                return {
+                    "small": domain + obj.staff.image.crop["400x400"].url,
+                    "medium": domain + obj.staff.image.crop["600x600"].url,
+                    "large": domain + obj.staff.image.crop["1000x1000"].url,
+                    "full_size": domain + obj.staff.image.url,
+                }
+            except Exception as e:
+                return {"error": str(e)}
+        return None
 
 class RestaurantOwnerPaymentHistorySerializer(serializers.ModelSerializer):
     """
