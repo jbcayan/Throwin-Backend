@@ -59,7 +59,7 @@ class Restaurant(BaseModel):
         super(Restaurant, self).save(*args, **kwargs)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} - {self.restaurant_owner}"
 
     class Meta:
         constraints = [
@@ -115,7 +115,7 @@ class Store(BaseModel):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return self.name
+        return f"{self.name} - {self.code}"
 
     class Meta:
         verbose_name = 'Store'
