@@ -23,12 +23,34 @@ class Command(BaseCommand):
 
         with tqdm(total=len(self.names), desc='Creating Users', unit='user') as pbar:
             # Create a superuser
-            # User.objects.create_superuser(
-            #     email="admin@gmail.com",
-            #     password="123456",
-            #     name="Super Admin",
-            # )
-            # self.stdout.write(f"Created superuser: Admin\n")
+            User.objects.create_superuser(
+                email="admin@gmail.com",
+                password="123456",
+                name="Super Admin",
+            )
+            self.stdout.write(f"Created superuser: Admin\n")
+
+            fc_user = User.objects.create_user(
+                email="fc.admin@gmail.com",
+                password="string1234",
+                name="FC ADMIN",
+                kind=UserKind.FC_ADMIN,
+                is_active=True,
+                is_verified=True,
+                auth_provider=AuthProvider.EMAIL,
+            )
+            self.stdout.write(f"Created user FC USER: {fc_user}\n")
+
+            glow_user = User.objects.create_user(
+                email="glow.admin@gmail.com",
+                password="string1234",
+                name="GLOW ADMIN",
+                kind=UserKind.FC_ADMIN,
+                is_active=True,
+                is_verified=True,
+                auth_provider=AuthProvider.EMAIL,
+            )
+            self.stdout.write(f"Created user GLOW USER: {glow_user}\n")
 
             for english_name, japanese_name in self.names:
                 email = f"{english_name.split()[0].lower()}@example.com"

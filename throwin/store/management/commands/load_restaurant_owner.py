@@ -22,12 +22,12 @@ class Command(BaseCommand):
             is_verified=True,
             auth_provider=AuthProvider.EMAIL
         )
-        owner_1.set_password("password1234")
+        owner_1.set_password("string1234")
         owner_1.save()
 
         owner_2, _ = User.objects.get_or_create(
             email="cdc@gmail.com",
-            password="password1234",
+            password="stringd1234",
             name="CDC",
             kind=UserKind.RESTAURANT_OWNER,
             is_active=True,
@@ -39,7 +39,7 @@ class Command(BaseCommand):
 
         owner_3, _ = User.objects.get_or_create(
             email="xyz@gmail.com",
-            password="password1234",
+            password="string1234",
             name="XYZ",
             kind=UserKind.RESTAURANT_OWNER,
             is_active=True,
