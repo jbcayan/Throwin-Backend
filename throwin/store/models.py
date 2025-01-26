@@ -1,4 +1,6 @@
+from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
 from versatileimagefield.fields import VersatileImageField
@@ -14,6 +16,10 @@ from core.utils import (
     get_store_banner_file_prefix
 )
 
+from store.choices import (
+    GachaTicketEnabled,
+    ExposeStatus,
+)
 from store.utils import (
     generate_store_code,
     generate_unique_slug
@@ -105,6 +111,32 @@ class Store(BaseModel):
         max_length=100,
         blank=True,
         null=True,
+    )
+    throwin_amounts = ArrayField(
+        models.DecimalField(
+            max_digits=10,
+            decimal_places=2,
+            validators=[
+                MinValueValidator(500),  # Minimum value of 500
+                MaxValueValidator(49500),  # Maximum value of 1,000,000
+            ],
+
+        ),
+        size=10,
+        default=list,
+        help_text="The amount of throwin for the store (min 500)"
+    )
+    gacha_enabled = models.CharField(
+        max_length=10,
+        choices=GachaTicketEnabled.choices,
+        default=GachaTicketEnabled.UNDEFINED,
+        help_text="Gacha enabled status for the store (yes/no)"
+    )
+    exposure = models.CharField(
+        max_length=10,
+        choices=ExposeStatus.choices,
+        default=ExposeStatus.UNDEFINED,
+        help_text="Exposure status for the store (public/private)"
     )
 
     def save(self, *args, **kwargs):
