@@ -25,6 +25,8 @@ from store.utils import (
     generate_unique_slug
 )
 
+from decimal import Decimal
+
 
 class Restaurant(BaseModel):
     """Model to represent a restaurant"""
@@ -77,6 +79,9 @@ class Restaurant(BaseModel):
 
 
 # Create your models here.
+def default_throwin_amounts():
+    return [Decimal("500.00"), Decimal("1000.00")]
+
 class Store(BaseModel):
     """Model to represent a store/restaurant."""
     restaurant = models.ForeignKey(
@@ -118,12 +123,11 @@ class Store(BaseModel):
             decimal_places=2,
             validators=[
                 MinValueValidator(500),  # Minimum value of 500
-                MaxValueValidator(49500),  # Maximum value of 1,000,000
+                MaxValueValidator(49500),  # Maximum value of 49,500
             ],
-
         ),
         size=10,
-        default=list,
+        default=default_throwin_amounts,  # Use the top-level function
         help_text="The amount of throwin for the store (min 500)"
     )
     gacha_enabled = models.CharField(
