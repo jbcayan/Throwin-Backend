@@ -80,8 +80,8 @@ class Restaurant(BaseModel):
 
 # Create your models here.
 def default_throwin_amounts():
-    return [Decimal("500.00"), Decimal("1000.00")]
-
+    # Return a default list of numeric values as plain floats
+    return [500.00, 1000.00]
 class Store(BaseModel):
     """Model to represent a store/restaurant."""
     restaurant = models.ForeignKey(
@@ -104,13 +104,13 @@ class Store(BaseModel):
         "Store logo",
         upload_to=get_store_logo_file_prefix,
         blank=True,
-        null=True
+        null=True,
     )
     banner = VersatileImageField(
         "Store Banner",
         upload_to=get_store_banner_file_prefix,
         blank=True,
-        null=True
+        null=True,
     )  # Optional banner image
     location = models.CharField(
         max_length=100,
@@ -127,20 +127,20 @@ class Store(BaseModel):
             ],
         ),
         size=10,
-        default=default_throwin_amounts,  # Use the top-level function
-        help_text="The amount of throwin for the store (min 500)"
+        default=default_throwin_amounts,  # Use a callable that returns a plain list of floats
+        help_text="The amount of throwin for the store (min 500)",
     )
     gacha_enabled = models.CharField(
         max_length=10,
         choices=GachaTicketEnabled.choices,
         default=GachaTicketEnabled.UNDEFINED,
-        help_text="Gacha enabled status for the store (yes/no)"
+        help_text="Gacha enabled status for the store (yes/no)",
     )
     exposure = models.CharField(
         max_length=10,
         choices=ExposeStatus.choices,
         default=ExposeStatus.UNDEFINED,
-        help_text="Exposure status for the store (public/private)"
+        help_text="Exposure status for the store (public/private)",
     )
 
     def save(self, *args, **kwargs):
