@@ -10,22 +10,22 @@ def get_user_media_file_prefix(instance, filename):
 
 def get_store_banner_file_prefix(instance, filename):
     """Return the file path prefix for a store's banner file."""
-    return f"stores/banners/{instance.name}_{filename}"
+    return f"stores/banners/{instance.uid}_{filename}"
 
 
 def get_store_logo_file_prefix(instance, filename):
     """Return the file path prefix for a store's logo file."""
-    return f"stores/logos/{instance.name}_{filename}"
+    return f"stores/logos/{instance.uid}_{filename}"
 
 
 def get_restaurant_banner_file_prefix(instance, filename):
     """Return the file path prefix for a store's banner file."""
-    return f"restaurants/banners/{instance.name}_{filename}"
+    return f"restaurants/banners/{instance.uid}_{filename}"
 
 
 def get_restaurant_logo_file_prefix(instance, filename):
     """Return the file path prefix for a store's logo file."""
-    return f"restaurants/logos/{instance.name}_{filename}"
+    return f"restaurants/logos/{instance.uid}_{filename}"
 
 
 def is_valid_japanese_phone_number(phone_number: str):

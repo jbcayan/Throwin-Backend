@@ -7,7 +7,15 @@ class StoreFilter(filters.FilterSet):
 
     name = filters.CharFilter(field_name="name", lookup_expr="icontains")
     code = filters.CharFilter(field_name="code", lookup_expr="icontains")
+    location = filters.CharFilter(field_name="location", lookup_expr="icontains")
+    exposure = filters.CharFilter(field_name="exposure", lookup_expr="iexact")
 
     class Meta:
         model = Store
-        fields = ["name", "code", "restaurant"]
+        fields = [
+            "name",
+            "code",
+            "restaurant",
+            "location",
+            "exposure",
+        ]
