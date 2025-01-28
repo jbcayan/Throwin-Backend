@@ -19,8 +19,8 @@ class StoreCreateSerializer(serializers.ModelSerializer):
         child=serializers.DecimalField(
             max_digits=10,
             decimal_places=2,
-            min_value=500,
-            max_value=49500,
+            min_value=Decimal("500.00"),
+            max_value=Decimal("49500.00"),
         ),
         help_text="List of throwin amounts (e.g., [1000, 5000, 10000]).",
     )

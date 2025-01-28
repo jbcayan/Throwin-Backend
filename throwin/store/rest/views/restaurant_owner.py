@@ -1,6 +1,7 @@
 """Views for restaurant owner."""
 from django_filters.rest_framework import DjangoFilterBackend
 
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics
 from rest_framework.filters import SearchFilter, OrderingFilter
 
@@ -19,6 +20,10 @@ from store.rest.serializers.restaurant_owner import (
     StoreListSerializer
 )
 
+@extend_schema(
+    summary="List and Create Stores for Restaurant Owner",
+    methods=["GET", "POST"],
+)
 class StoreListCreateView(generics.ListCreateAPIView):
     """View for restaurant owner to create or list stores."""
 
