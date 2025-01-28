@@ -2,13 +2,13 @@
 
 from django.urls import path
 
-from store.rest.views.stores import StoreListCreate, StoreDetailUpdateDestroy
+from store.rest.views.stores import StoreList, StoreDetailUpdateDestroy
 
 
 urlpatterns = [
     path(
         "",
-        StoreListCreate.as_view(),
+        StoreList.as_view(),
         name="store-list-create"
     ),
     path(

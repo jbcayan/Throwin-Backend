@@ -1,12 +1,15 @@
 """Serializers for store."""
+from django.conf import settings
 
 from rest_framework import serializers
+
 from common.serializers import BaseSerializer
 
 from store.models import Store
 
 from versatileimagefield.serializers import VersatileImageFieldSerializer
 
+domain = settings.SITE_DOMAIN
 
 class StoreSerializer(BaseSerializer):
     """Serializer for store."""
@@ -25,7 +28,7 @@ class StoreSerializer(BaseSerializer):
     )
     restaurant_uid = serializers.SerializerMethodField()
 
-    def get_restaurant_uid(self, obj):
+    def get_restaurant_uid(self, obj) -> str or None:
         return obj.restaurant.uid if obj.restaurant else None
 
     class Meta(BaseSerializer.Meta):
@@ -54,3 +57,16 @@ class StoreSerializer(BaseSerializer):
         # instance.save(update_fields=["user_updated"])
 
         return instance
+    
+    def get_banner(self, obj) -> dict or None:
+        if obj.banner:
+            try:
+                return {
+                    'small': domain + obj.banner.crop['400x400'].url,
+                    'medium': domain + obj.banner.crop['600x600'].url,
+                    'large': domain + obj.banner.crop['1000x1000'].url,
+                    'full_size': domain + obj.banner.url,
+                }
+            except Exception as e:
+                return {'error': str(e)}  # Handle errors gracefully
+        return None

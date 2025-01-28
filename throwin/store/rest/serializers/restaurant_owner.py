@@ -81,7 +81,7 @@ class StoreListSerializer(BaseSerializer):
         ]
         read_only_fields = ["uid"]
 
-    def get_banner(self, obj):
+    def get_banner(self, obj) -> dict | None:
         if obj.banner:
             try:
                 return {

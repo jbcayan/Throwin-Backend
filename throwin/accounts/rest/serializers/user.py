@@ -109,7 +109,7 @@ class StaffDetailForConsumerSerializer(BaseSerializer):
             "fun_fact",
         )
 
-    def get_image(self, obj):
+    def get_image(self, obj) -> dict or None:
 
         if obj.image:
             try:
@@ -166,7 +166,7 @@ class MeSerializer(BaseSerializer):
             "fun_fact",
         )
 
-    def get_image(self, obj):
+    def get_image(self, obj) -> dict or None:
         if obj.image:
             try:
                 return {

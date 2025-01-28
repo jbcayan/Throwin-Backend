@@ -17,49 +17,18 @@ from common.permissions import (
 )
 
 
-class StoreListCreate(generics.ListCreateAPIView):
+class StoreList(generics.ListAPIView):
     serializer_class = StoreSerializer
-
-    def get_permissions(self):
-        if self.request.method == "POST":
-            self.available_permission_classes = (
-                IsFCAdminUser,
-                IsGlowAdminUser,
-                IsSuperAdminUser,
-            )
-        else:
-            self.available_permission_classes = (
-                IsConsumerOrGuestUser,
-                IsConsumerUser,
-                IsGlowAdminUser,
-                IsFCAdminUser,
-                IsSuperAdminUser,
-            )
-        return (CheckAnyPermission(),)
+    permission_classes = (permissions.AllowAny,)
 
     def get_queryset(self):
         return Store().get_all_actives()
 
 
-class StoreDetailUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
+class StoreDetailUpdateDestroy(generics.RetrieveAPIView):
     serializer_class = StoreSerializer
 
-    def get_permissions(self):
-        if self.request.method == "GET":
-            self.available_permission_classes = (
-                IsConsumerOrGuestUser,
-                IsConsumerUser,
-                IsGlowAdminUser,
-                IsFCAdminUser,
-                IsSuperAdminUser,
-            )
-        else:
-            self.available_permission_classes = (
-                IsFCAdminUser,
-                IsGlowAdminUser,
-                IsSuperAdminUser,
-            )
-        return (CheckAnyPermission(),)
+    permission_classes = (permissions.AllowAny,)
 
     def get_object(self):
         try:

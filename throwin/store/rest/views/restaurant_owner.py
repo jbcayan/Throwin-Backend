@@ -27,8 +27,6 @@ from store.rest.serializers.restaurant_owner import (
 class StoreListCreateView(generics.ListCreateAPIView):
     """View for restaurant owner to create or list stores."""
 
-    serializer_class = StoreCreateSerializer
-
     filterset_class = StoreFilter
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
 

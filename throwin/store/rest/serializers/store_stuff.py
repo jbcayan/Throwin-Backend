@@ -35,7 +35,7 @@ class StoreStuffListSerializer(StaffDetailForConsumerSerializer):
             "fun_fact",
         )
 
-    def get_image(self, obj):
+    def get_image(self, obj) -> dict or None:
         if obj.image:
             try:
                 return {
@@ -80,7 +80,7 @@ class StoreUserSerializer(serializers.ModelSerializer):
             "restaurant_uid",
         ]
 
-    def get_image(self, obj):
+    def get_image(self, obj) -> dict or None:
         if obj.user.image:
             try:
                 return {
