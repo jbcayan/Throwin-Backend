@@ -1,6 +1,7 @@
 import logging
 
 from django.conf import settings
+
 from rest_framework import serializers
 
 from accounts.choices import UserKind

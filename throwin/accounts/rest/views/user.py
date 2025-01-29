@@ -115,8 +115,8 @@ class SetUserName(generics.GenericAPIView):
         serializer.save()
 
         return Response({
-            "detail": "User Name Updated Successfully",
-        }, status=status.HTTP_200_OK,
+            "detail": "User Name Updated Successfully"
+             }, status=status.HTTP_200_OK,
         )
 
 

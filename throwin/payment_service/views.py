@@ -1,22 +1,26 @@
-from rest_framework import generics, permissions, pagination, status, serializers
+import logging
+
 from django_filters.rest_framework import DjangoFilterBackend
+
+from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
+
+from rest_framework import generics, permissions, pagination, serializers
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from drf_spectacular.utils import extend_schema, OpenApiResponse, OpenApiParameter
+
+from accounts.choices import UserKind
+
+from .filters import PaymentHistoryFilter
+from .helpers.paypal_helper import create_paypal_payment, execute_paypal_payment
 from .models import PaymentHistory
 from .serializers import (
     MakePaymentSerializer,
-    PaymentHistorySerializer,
     StaffPaymentHistorySerializer,
     AdminPaymentHistorySerializer,
     ConsumerPaymentHistorySerializer,
     RestaurantOwnerPaymentHistorySerializer,
 )
-from .filters import PaymentHistoryFilter
-from .helpers.paypal_helper import create_paypal_payment, execute_paypal_payment
-from accounts.choices import UserKind
-import logging
 
 # Initialize logger
 logger = logging.getLogger(__name__)
