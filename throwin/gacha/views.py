@@ -1,15 +1,15 @@
 from rest_framework import generics, status
-
 from rest_framework.response import Response
 
 from common.permissions import (
     IsConsumerUser,
 )
-from gacha.models import SpinBalance
 
+from gacha.models import SpinBalance, GachaHistory
 from gacha.serializers import (
     AvailableSpinsSerializer,
     PlayGachaSerializer,
+    GachaTicketListSerializer,
 )
 
 
@@ -47,3 +47,23 @@ class PlayGacha(generics.GenericAPIView):
             {"result": result},
             status=status.HTTP_200_OK
         )
+
+
+class GachaTicketList(generics.ListAPIView):
+    """
+    API to get available spins per store for the authenticated user.
+    """
+    permission_classes = [IsConsumerUser]
+    serializer_class = GachaTicketListSerializer
+
+
+    def get_queryset(self):
+        try:
+            return GachaHistory.objects.filter(
+            consumer=self.request.user,
+            is_consumed=False
+        ).select_related(
+            "store",
+            )
+        except AttributeError as e:
+            return SpinBalance.objects.none()

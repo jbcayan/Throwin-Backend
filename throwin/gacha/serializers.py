@@ -78,3 +78,16 @@ class PlayGachaSerializer(serializers.Serializer):
         spin_balance.save()
 
         return result
+
+
+class GachaTicketListSerializer(serializers.ModelSerializer):
+    store_name = serializers.CharField(source="store.name")
+    gacha_kind = serializers.CharField()
+
+    class Meta:
+        model = GachaHistory
+        fields = [
+            "uid",
+            "store_name",
+            "gacha_kind",
+        ]
