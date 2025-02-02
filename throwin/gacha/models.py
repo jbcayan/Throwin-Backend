@@ -111,3 +111,6 @@ class GachaHistory(BaseModel):
 
     def __str__(self):
         return f"{self.consumer.name} played {self.gacha_kind} gacha at {self.store.name}"
+
+    class Meta:
+        ordering = ["-created_at"]
