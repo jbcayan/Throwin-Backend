@@ -15,6 +15,8 @@ urlpatterns = [
     path('payment_service/', include('payment_service.urls')),
     path('restaurant-owner', include('store.rest.urls.restaurant_owner')),
     # path("notifications", include("notification.rest.urls.notification")),
+
+    path("gacha", include("gacha.urls")),
 ]
 
 if settings.DEBUG:
