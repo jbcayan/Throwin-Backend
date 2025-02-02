@@ -14,7 +14,8 @@ from store.models import Store
 User = get_user_model()
 
 class AvailableSpinsSerializer(serializers.Serializer):
-    store_id = serializers.IntegerField(source="store__id")
+    store_uid = serializers.UUIDField(source="store__uid")
+    store_name = serializers.CharField(source="store__name")
     available_spin = serializers.IntegerField(source="remaining_spin")
 
 

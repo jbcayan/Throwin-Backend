@@ -26,7 +26,7 @@ class AvailableSpinsView(generics.ListAPIView):
             return SpinBalance.objects.filter(
             consumer=self.request.user,
             remaining_spin__gt=0
-        ).values("store__id", "remaining_spin")
+        ).values("store__uid", "store__name", "remaining_spin")
         except AttributeError as e:
             return SpinBalance.objects.none()
 
