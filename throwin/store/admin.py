@@ -33,8 +33,8 @@ admin.site.register(RestaurantUser, RestaurantUserAdmin)
 
 class StoreAdmin(admin.ModelAdmin):
     """Admin configuration for Store model."""
-    list_display = ["uid", "id", "name", "code", "restaurant", "created_at"]
-    search_fields = ["name", "code", "restaurant__name"]
+    list_display = ["uid", "id", "name", "code", "restaurant", "status", "created_at"]
+    search_fields = ["name","uid", "code", "restaurant__name"]
     list_filter = ["restaurant", "created_at"]
 
     def get_queryset(self, request):

@@ -1,6 +1,4 @@
-from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
-from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 
 from versatileimagefield.fields import VersatileImageField
@@ -13,16 +11,17 @@ from core.utils import (
     get_restaurant_logo_file_prefix,
     get_restaurant_banner_file_prefix,
     get_store_logo_file_prefix,
-    get_store_banner_file_prefix
+    get_store_banner_file_prefix,
 )
 
 from store.choices import (
     GachaTicketEnabled,
     ExposeStatus,
 )
+
 from store.utils import (
     generate_store_code,
-    generate_unique_slug
+    generate_unique_slug,
 )
 
 
