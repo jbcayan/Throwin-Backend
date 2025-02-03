@@ -33,8 +33,14 @@ class Command(BaseCommand):
         sales_agent.save()
 
         with tqdm(total=len(self.names), desc='Creating Restaurants', unit='restaurant') as pbar:
+            available_owners = list(owners)
+
             for english_name, japanese_name in self.names:
-                owner = random.choice(owners)
+                if not available_owners:
+                    self.stdout.write(self.style.WARNING("No more available owners for new restaurants. Skipping..."))
+                    break  # Stop the loop when all owners are assigned
+
+                owner = available_owners.pop(0)
 
                 restaurant, created = Restaurant.objects.get_or_create(
                     name=japanese_name,
