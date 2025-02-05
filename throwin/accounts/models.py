@@ -113,7 +113,7 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
     REQUIRED_FIELDS = ["name"]
 
     def __str__(self):
-        return self.email or self.phone_number
+        return f"{self.email or self.phone_number}"
 
     def save(self, *args, **kwargs):
         if self.username is None:
@@ -202,9 +202,15 @@ class UserProfile(models.Model):
         null=True,
         help_text="Short fun fact about the user (e.g., 'Eating and laughing')"
     )
+    thank_message = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        help_text="Thank you message for the user (e.g., 'Thank you for your support')"
+    )
 
     def __str__(self):
-        return f"Profile of {self.user.name}"
+        return f"Profile of {self.user.id}"
 
 
 class Like(BaseModel):

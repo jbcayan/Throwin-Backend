@@ -19,3 +19,14 @@ class StoreFilter(filters.FilterSet):
             "location",
             "exposure",
         ]
+
+
+class StaffFilter(filters.FilterSet):
+    name = filters.CharFilter(field_name="user__name", lookup_expr='icontains')
+    email = filters.CharFilter(field_name="user__email", lookup_expr='icontains')
+    phone_number = filters.CharFilter(field_name="user__phone_number", lookup_expr='icontains')
+    public_status = filters.CharFilter(field_name="user__public_status", lookup_expr='iexact')
+
+    class Meta:
+        model = RestaurantUser
+        fields = ['name', 'email', 'phone_number']

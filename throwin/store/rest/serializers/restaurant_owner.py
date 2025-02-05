@@ -1,13 +1,20 @@
 """Serializers for restaurant owner."""
+import random
 from decimal import Decimal
 
 from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.db import transaction
 
 from rest_framework import serializers
 
+from accounts.choices import UserKind
+
 from common.serializers import BaseSerializer
 
-from store.models import Store
+from store.models import Store, StoreUser, RestaurantUser
+
+User = get_user_model()
 
 domain = settings.SITE_DOMAIN
 
@@ -93,3 +100,168 @@ class StoreListSerializer(BaseSerializer):
             except Exception as e:
                 return {'error': str(e)}  # Handle errors gracefully
         return None
+
+
+class StaffListSerializer(BaseSerializer):
+    image = serializers.SerializerMethodField()
+    uid = serializers.CharField(source='user.uid')
+    name = serializers.CharField(source='user.name')
+    public_status = serializers.CharField(source='user.public_status')
+
+    class Meta(BaseSerializer.Meta):
+        model = User
+        fields = [
+            "uid",
+            "name",
+            "public_status",
+            "image",
+        ]
+
+
+
+    def get_image(self, obj) -> dict or None:
+        if obj.user.image:
+            try:
+                return {
+                    'small': domain + obj.user.image.crop['400x400'].url,
+                    'medium': domain + obj.user.image.crop['600x600'].url,
+                    'large': domain + obj.user.image.crop['1000x1000'].url,
+                    'full_size': domain + obj.user.image.url,
+                }
+            except Exception as e:
+                return {'error': str(e)}  # Handle errors gracefully
+        return None
+
+
+class StaffCreateSerializer(BaseSerializer):
+    """Serializer for creating staff."""
+    email = serializers.EmailField(
+        write_only=True,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        help_text="Email of the staff.",
+    )
+    introduction = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        help_text="Introduction about the staff.",
+    )
+    fun_fact = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        help_text="Fun fact about the staff.",
+    )
+    store_uid = serializers.CharField(
+        write_only=True,  # Ensure it is only used for input, not output
+        required=True,
+        help_text="The store UID where the staff will be assigned.",
+    )
+    thank_message = serializers.CharField(
+        write_only=True,
+        required=False,
+        allow_blank=True,
+        allow_null=True,
+        help_text="Thank you message for the user (e.g., 'Thank you for your support')",
+    )
+
+    class Meta(BaseSerializer.Meta):
+        model = User
+        fields = [
+            "uid",
+            "name",
+            "email",
+            "public_status",
+            "image",
+            "introduction",
+            "fun_fact",
+            "thank_message",
+            "store_uid",  # Keep it, but handle manually
+        ]
+        read_only_fields = ["uid", "email"]
+
+    @transaction.atomic
+    def create(self, validated_data):
+        """Create staff."""
+        # Pop introduction, fun fact, and store_uid from validated data
+        introduction = validated_data.pop("introduction", None)
+        fun_fact = validated_data.pop("fun_fact", None)
+        thank_message = validated_data.pop("thank_message", None)
+        store_uid = validated_data.pop("store_uid")  # Extract store UID
+
+        # Get the restaurant of the logged-in restaurant owner
+        restaurant = self.context["request"].user.get_restaurant_owner_restaurant
+
+        # Retrieve the store object using UID
+        try:
+            store = Store.objects.get(
+                uid=store_uid,
+                restaurant_id=restaurant.id,
+            )
+        except Store.DoesNotExist:
+            raise serializers.ValidationError({
+                "store_uid": "Invalid store UID provided."
+            })
+
+        # Generate email if not provided
+        email = validated_data.get("email", None)
+        if not email:
+            count = User.objects.all().count()
+            email = f"staff.{store.code}.{count}@gmail.com"
+            if User.objects.filter(email=email).exists():
+                # Generate a random 6-digit number and character and append to the email
+                random_number_char = ''.join(random.choices('0123456789abcdefghijklmnopqrstuvwxyz', k=6))
+                email = f"staff.{store.code}.{random_number_char}@gmail.com"
+
+        validated_data["email"] = email
+
+        # Add kind to validated data
+        validated_data["kind"] = UserKind.RESTAURANT_STAFF
+
+        # Create staff using the validated data
+        staff = super().create(validated_data)
+
+        # Update user profile
+        profile = staff.profile
+        profile.introduction = introduction
+        profile.fun_fact = fun_fact
+        profile.thank_message = thank_message
+        profile.save(update_fields=['introduction', 'fun_fact', 'thank_message'])
+
+        # Save extra fields in serializer context (not in DB)
+        self.context["extra_fields"] = {
+            "introduction": introduction,
+            "fun_fact": fun_fact,
+            "thank_message": thank_message,
+        }
+
+        # Associate staff with restaurant
+        RestaurantUser.objects.get_or_create(
+            restaurant_id=restaurant.id,
+            user_id=staff.id,
+            role=UserKind.RESTAURANT_STAFF,
+        )
+
+        # Associate staff with store
+        StoreUser.objects.get_or_create(
+            user_id=staff.id,
+            store_id=store.id,
+            role=UserKind.RESTAURANT_STAFF,
+        )
+
+        return staff
+
+    def to_representation(self, instance):
+        """Modify response to include write-only fields."""
+        data = super().to_representation(instance)
+
+        # Retrieve extra fields from context and add to response
+        extra_fields = self.context.get("extra_fields", {})
+        data.update(extra_fields)
+
+        return data
+

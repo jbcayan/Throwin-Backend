@@ -55,6 +55,7 @@ class GachaTicketList(generics.ListAPIView):
     """
     permission_classes = [IsConsumerUser]
     serializer_class = GachaTicketListSerializer
+    pagination_class = None
 
 
     def get_queryset(self):
