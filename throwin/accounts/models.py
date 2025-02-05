@@ -210,7 +210,7 @@ class UserProfile(models.Model):
     )
 
     def __str__(self):
-        return f"Profile of {self.user.id}"
+        return f"Profile of {self.user.name if self.user.name else self.user.id}"
 
 
 class Like(BaseModel):
