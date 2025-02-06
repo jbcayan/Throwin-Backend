@@ -5,14 +5,10 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
-
 from rest_framework import serializers
 
-from accounts.choices import UserKind, PublicStatus
-
+from accounts.choices import UserKind
 from common.serializers import BaseSerializer
-from store.choices import ExposeStatus
-
 from store.models import Store, StoreUser, RestaurantUser
 
 User = get_user_model()
@@ -265,43 +261,6 @@ class StaffCreateSerializer(BaseSerializer):
         data.update(extra_fields)
 
         return data
-
-
-class QRCodeGenerationSerializer(serializers.Serializer):
-    store_code = serializers.CharField(required=False)
-    staff_username = serializers.CharField(required=False)
-
-    def validate(self, attrs):
-        """Validate store_code and staff_username."""
-        store_code = attrs.get("store_code")
-        staff_username = attrs.get("staff_username")
-
-        # At least one of the fields must be provided
-        if not store_code and not staff_username:
-            raise serializers.ValidationError("Either store_code or staff_username must be provided.")
-
-        # Validate store_code if provided
-        if store_code:
-            store = Store().get_all_actives().filter(
-                code=store_code,
-                exposure=ExposeStatus.PUBLIC,
-            ).first()
-
-            if not store:
-                raise serializers.ValidationError("Invalid store code provided.")
-
-        # Validate staff_username if provided
-        if staff_username:
-            staff = User().get_all_actives().filter(
-                username=staff_username,
-                kind=UserKind.RESTAURANT_STAFF,
-                public_status=PublicStatus.PUBLIC,
-            ).first()
-
-            if not staff:
-                raise serializers.ValidationError("Invalid staff username provided.")
-
-        return attrs
 
 
 class StaffUserSerializer(serializers.ModelSerializer):

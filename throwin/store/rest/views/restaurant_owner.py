@@ -1,34 +1,25 @@
 """Views for restaurant owner."""
-import qrcode
-import io
-from django.conf import settings
-from django.http import JsonResponse, HttpResponse
 
+from django.contrib.auth import get_user_model
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics
 from rest_framework.filters import SearchFilter, OrderingFilter
-from rest_framework.views import APIView
 
 from accounts.choices import UserKind, PublicStatus
 from common.permissions import (
     CheckAnyPermission,
     IsRestaurantOwnerUser,
 )
-from store.choices import ExposeStatus
-from store.filters import StoreFilter, StaffFilter, StaffUserFilter
+from store.filters import StoreFilter, StaffFilter
 from store.models import Store, RestaurantUser, StoreUser
 from store.rest.serializers.restaurant_owner import (
     StoreCreateSerializer,
     StoreListSerializer,
     StaffListSerializer,
-    StaffCreateSerializer, QRCodeGenerationSerializer, StaffUserSerializer,
+    StaffCreateSerializer,
+    StaffUserSerializer,
 )
-
-from rest_framework.response import Response
-from rest_framework import status
-
-from django.contrib.auth import get_user_model
 
 User = get_user_model()
 
@@ -112,61 +103,61 @@ class StaffListCreateView(generics.ListCreateAPIView):
         )
 
 
-class QRCodeGenerationView(APIView):
-    """View to generate QR code for a store and/or staff"""
-
-    available_permission_classes = (
-        IsRestaurantOwnerUser,
-    )
-    permission_classes = (CheckAnyPermission,)
-
-    serializer_class = QRCodeGenerationSerializer
-
-    def post(self, request, *args, **kwargs):
-        """
-        Generate QR code for a store and/or staff.
-        """
-        serializer = self.serializer_class(data=request.data)
-        if not serializer.is_valid():
-            return Response(
-                serializer.errors,
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        # Get validated data
-        store_code = serializer.validated_data.get("store_code")
-        staff_username = serializer.validated_data.get("staff_username")
-
-        # Construct the QR code URL based on provided parameters
-        domain = settings.FRONTEND_URL
-        qr_url = domain
-
-        if store_code:
-            qr_url += f"/store/{store_code}"
-            if staff_username:
-                qr_url += f"/staff/{staff_username}"
-
-        # Generate QR code
-        qr = qrcode.QRCode(
-            version=1,
-            error_correction=qrcode.constants.ERROR_CORRECT_L,
-            box_size=10,
-            border=4,
-        )
-        qr.add_data(qr_url)
-        qr.make(fit=True)
-
-        # Create an in-memory file to store the QR code image
-        img_io = io.BytesIO()
-        qr.make_image(fill_color="black", back_color="white").save(img_io, "PNG")
-        img_io.seek(0)  # Reset the buffer to read from the beginning
-
-        # Return the QR code as a response
-        return HttpResponse(
-            img_io.read(),
-            content_type="image/png",
-            status=status.HTTP_200_OK
-        )
+# class QRCodeGenerationView(APIView):
+#     """View to generate QR code for a store and/or staff"""
+#
+#     available_permission_classes = (
+#         IsRestaurantOwnerUser,
+#     )
+#     permission_classes = (CheckAnyPermission,)
+#
+#     serializer_class = QRCodeGenerationSerializer
+#
+#     def post(self, request, *args, **kwargs):
+#         """
+#         Generate QR code for a store and/or staff.
+#         """
+#         serializer = self.serializer_class(data=request.data)
+#         if not serializer.is_valid():
+#             return Response(
+#                 serializer.errors,
+#                 status=status.HTTP_400_BAD_REQUEST
+#             )
+#
+#         # Get validated data
+#         store_code = serializer.validated_data.get("store_code")
+#         staff_username = serializer.validated_data.get("staff_username")
+#
+#         # Construct the QR code URL based on provided parameters
+#         domain = settings.FRONTEND_URL
+#         qr_url = domain
+#
+#         if store_code:
+#             qr_url += f"/store/{store_code}"
+#             if staff_username:
+#                 qr_url += f"/staff/{staff_username}"
+#
+#         # Generate QR code
+#         qr = qrcode.QRCode(
+#             version=1,
+#             error_correction=qrcode.constants.ERROR_CORRECT_L,
+#             box_size=10,
+#             border=4,
+#         )
+#         qr.add_data(qr_url)
+#         qr.make(fit=True)
+#
+#         # Create an in-memory file to store the QR code image
+#         img_io = io.BytesIO()
+#         qr.make_image(fill_color="black", back_color="white").save(img_io, "PNG")
+#         img_io.seek(0)  # Reset the buffer to read from the beginning
+#
+#         # Return the QR code as a response
+#         return HttpResponse(
+#             img_io.read(),
+#             content_type="image/png",
+#             status=status.HTTP_200_OK
+#         )
 
 class StaffListByStoreView(generics.ListAPIView):
     """View to list staff members by store."""

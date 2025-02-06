@@ -62,6 +62,7 @@ class StoreUserSerializer(serializers.ModelSerializer):
     )
     store_name = serializers.CharField(source="store.name")
     store_uid = serializers.CharField(source="store.uid")
+    store_code = serializers.CharField(source="store.code")
     restaurant_uid = serializers.CharField(source="store.restaurant.uid")
     image = serializers.SerializerMethodField()
 
@@ -77,6 +78,7 @@ class StoreUserSerializer(serializers.ModelSerializer):
             "fun_fact",
             "store_name",
             "store_uid",
+            "store_code",
             "restaurant_uid",
         ]
 
