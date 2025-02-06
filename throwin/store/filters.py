@@ -30,3 +30,12 @@ class StaffFilter(filters.FilterSet):
     class Meta:
         model = RestaurantUser
         fields = ['name', 'email', 'phone_number']
+
+
+class StaffUserFilter(filters.FilterSet):
+    store_uid = filters.CharFilter(field_name="store__uid")
+    store_code = filters.CharFilter(field_name="store__code")
+
+    class Meta:
+        model = StoreUser
+        fields = ["store_uid", "store_code"]
