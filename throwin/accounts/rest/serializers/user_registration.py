@@ -16,13 +16,14 @@ User = get_user_model()
 
 
 def validate_password_complexity(value):
-    """Validate that the password is at least 8 characters long and contains at least one letter, one number, and one symbol."""
-    if not re.search(r"[A-Za-z]", value):
-        raise ValidationError("Password must contain at least one letter.")
+    """Validate that the password is at least 8 characters long
+    and contains one Upper case letter, one lower case letter, one number"""
     if not re.search(r"\d", value):
         raise ValidationError("Password must contain at least one number.")
-    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", value):
-        raise ValidationError("Password must contain at least one symbol.")
+    if not re.search(r"[A-Z]", value):
+        raise ValidationError("Password must contain at least one uppercase letter.")
+    if not re.search(r"[a-z]", value):
+        raise ValidationError("Password must contain at least one lowercase letter.")
 
 
 class UserRegisterSerializerWithEmail(serializers.ModelSerializer):
