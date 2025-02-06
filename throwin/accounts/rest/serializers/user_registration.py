@@ -1,8 +1,10 @@
 """Serializers for User model."""
 
+import re
+
 from django.contrib.auth import get_user_model
-from django.contrib.auth.hashers import make_password
 from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 
 from rest_framework import serializers
 
@@ -12,9 +14,24 @@ from accounts.models import TemporaryUser
 User = get_user_model()
 
 
+
+def validate_password_complexity(value):
+    """Validate that the password is at least 8 characters long and contains at least one letter, one number, and one symbol."""
+    if not re.search(r"[A-Za-z]", value):
+        raise ValidationError("Password must contain at least one letter.")
+    if not re.search(r"\d", value):
+        raise ValidationError("Password must contain at least one number.")
+    if not re.search(r"[!@#$%^&*(),.?\":{}|<>]", value):
+        raise ValidationError("Password must contain at least one symbol.")
+
+
 class UserRegisterSerializerWithEmail(serializers.ModelSerializer):
     """Serializer for user registration with email."""
-    password = serializers.CharField(write_only=True, required=True, validators=[validate_password])
+    password = serializers.CharField(
+        write_only=True,
+        required=True,
+        validators=[validate_password, validate_password_complexity],
+    )
     confirm_password = serializers.CharField(write_only=True, required=True)
 
     class Meta:
