@@ -6,15 +6,10 @@ from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from accounts.choices import UserKind
-from accounts.models import Like
 from accounts.tasks import send_mail_task
 from accounts.utils import generate_verification_token
 
-from versatileimagefield.serializers import VersatileImageFieldSerializer
-
 from common.serializers import BaseSerializer
-
-from django.conf import settings
 
 domain = settings.SITE_DOMAIN
 
@@ -181,7 +176,6 @@ class MeSerializer(BaseSerializer):
 
     def to_representation(self, instance):
         """Customize the fields based on the user kind."""
-        print("I am here")
         representation = super().to_representation(instance)
 
         # Check if the user's kind is not RESTAURANT_STAFF

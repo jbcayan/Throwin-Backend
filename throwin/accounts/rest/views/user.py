@@ -3,14 +3,11 @@
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
-from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
-from django.views.decorators.csrf import ensure_csrf_cookie
 from django_filters.rest_framework import DjangoFilterBackend
-from django.middleware.csrf import get_token
 
 from drf_spectacular.utils import extend_schema
 
@@ -41,7 +38,7 @@ from common.permissions import (
     IsRestaurantOwnerUser,
 )
 
-from store.models import StoreUser, Store
+from store.models import StoreUser
 from store.rest.serializers.store_stuff import (
     StoreStuffListSerializer,
     StoreUserSerializer
