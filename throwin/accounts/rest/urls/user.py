@@ -49,7 +49,7 @@ urlpatterns = [
         name="verify-email-change"
     ),
     path(
-        "/staff/<str:username>",
+        "/store/<str:store_code>/staff/<str:username>",
         StaffDetailForConsumer.as_view(),
         name="stuff-detail-for-consumer"
     ),

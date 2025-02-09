@@ -41,7 +41,7 @@ from common.permissions import (
     IsRestaurantOwnerUser,
 )
 
-from store.models import StoreUser
+from store.models import StoreUser, Store
 from store.rest.serializers.store_stuff import (
     StoreStuffListSerializer,
     StoreUserSerializer
@@ -248,9 +248,18 @@ class StaffDetailForConsumer(generics.RetrieveAPIView):
         return User().get_all_actives().get(username=self.kwargs["username"])
 
     def get(self, request, *args, **kwargs):
+
+        # get store code from url
+        store_code = self.kwargs.get("store_code", None)
+
         # Retrieve the staff
         try:
             staff = self.get_object()
+            store_user = StoreUser.objects.get(
+                store__code=store_code,
+                user_id=staff.id,
+                role=UserKind.RESTAURANT_STAFF
+            )
         except User.DoesNotExist:
             return Response(
                 {"detail": "Staff member not found"},
@@ -274,6 +283,7 @@ class StaffDetailForConsumer(generics.RetrieveAPIView):
             liked = request.session.get("liked_staff_uids", []).count(staff.uid) > 0
 
         data["liked"] = liked
+        data["store_uid"] = store_user.store.uid
 
         return Response(data, status=status.HTTP_200_OK)
 
