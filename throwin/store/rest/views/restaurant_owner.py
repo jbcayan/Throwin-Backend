@@ -1,16 +1,26 @@
 """Views for restaurant owner."""
 
 from django.contrib.auth import get_user_model
+from django.db.models import (
+    Count,
+    Q,
+    F
+)
 from django_filters.rest_framework import DjangoFilterBackend
+
 from drf_spectacular.utils import extend_schema
+
 from rest_framework import generics
 from rest_framework.filters import SearchFilter, OrderingFilter
 
+
 from accounts.choices import UserKind, PublicStatus
+
 from common.permissions import (
     CheckAnyPermission,
     IsRestaurantOwnerUser,
 )
+from gacha.choices import GachaKind
 from store.filters import StoreFilter, StaffFilter
 from store.models import Store, RestaurantUser, StoreUser
 from store.rest.serializers.restaurant_owner import (
@@ -19,6 +29,7 @@ from store.rest.serializers.restaurant_owner import (
     StaffListSerializer,
     StaffCreateSerializer,
     StaffUserSerializer,
+    GachaHistorySerializer,
 )
 
 User = get_user_model()
@@ -196,3 +207,71 @@ class StaffListByStoreView(generics.ListAPIView):
             role=UserKind.RESTAURANT_STAFF,
             user__public_status=PublicStatus.PUBLIC  # Only include public users
         )
+
+
+class RestaurantGachaHistoryView(generics.ListAPIView):
+    """View to get gacha history statistics for a restaurant's stores."""
+
+    available_permission_classes = (IsRestaurantOwnerUser,)
+    permission_classes = (CheckAnyPermission,)
+
+    serializer_class = GachaHistorySerializer
+    pagination_class = None
+
+
+    def get_queryset(self):
+        # Get the restaurant of the logged-in restaurant owner
+        restaurant = self.request.user.get_restaurant_owner_restaurant
+
+        # Annotate each store with gacha statistics
+        stores = Store.objects.filter(
+            restaurant=restaurant
+        ).annotate(
+            # Annotate gacha enabled status
+            gacha_settings=F('gacha_enabled'),
+
+            # Annotate counts for each gacha kind and status
+            gold_issued=Count(
+                'gacha_store_histories',
+                filter=Q(gacha_store_histories__gacha_kind=GachaKind.GOLD) &
+                       Q(gacha_store_histories__is_consumed=False)
+            ),
+            gold_used=Count(
+                'gacha_store_histories',
+                filter=Q(gacha_store_histories__gacha_kind=GachaKind.GOLD) &
+                       Q(gacha_store_histories__is_consumed=True)
+            ),
+            silver_issued=Count(
+                'gacha_store_histories',
+                filter=Q(gacha_store_histories__gacha_kind=GachaKind.SILVER) &
+                       Q(gacha_store_histories__is_consumed=False)
+            ),
+            silver_used=Count(
+                'gacha_store_histories',
+                filter=Q(gacha_store_histories__gacha_kind=GachaKind.SILVER) &
+                       Q(gacha_store_histories__is_consumed=True)
+            ),
+            bronze_issued=Count(
+                'gacha_store_histories',
+                filter=Q(gacha_store_histories__gacha_kind=GachaKind.BRONZE) &
+                       Q(gacha_store_histories__is_consumed=False)
+            ),
+            bronze_used=Count(
+                'gacha_store_histories',
+                filter=Q(gacha_store_histories__gacha_kind=GachaKind.BRONZE) &
+                       Q(gacha_store_histories__is_consumed=True)
+            ),
+        ).values(
+            'uid',
+            'name',
+            'banner',
+            'gacha_settings',
+            'gold_issued',
+            'gold_used',
+            'silver_issued',
+            'silver_used',
+            'bronze_issued',
+            'bronze_used',
+        )
+
+        return stores

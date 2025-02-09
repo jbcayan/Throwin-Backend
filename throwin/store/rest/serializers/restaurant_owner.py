@@ -296,3 +296,16 @@ class StaffUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = StoreUser
         fields = ["uid", "name", "email"]
+
+
+class GachaHistorySerializer(serializers.Serializer):
+    uid = serializers.UUIDField()
+    name = serializers.CharField()
+    banner = serializers.ImageField()
+    gacha_settings = serializers.CharField()
+    gold_issued = serializers.IntegerField()
+    gold_used = serializers.IntegerField()
+    silver_issued = serializers.IntegerField()
+    silver_used = serializers.IntegerField()
+    bronze_issued = serializers.IntegerField()
+    bronze_used = serializers.IntegerField()
