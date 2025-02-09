@@ -5,10 +5,14 @@ from decimal import Decimal
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
+
 from rest_framework import serializers
 
 from accounts.choices import UserKind
+
 from common.serializers import BaseSerializer
+from core.utils import to_decimal
+
 from store.models import Store, StoreUser, RestaurantUser
 
 User = get_user_model()
@@ -16,16 +20,10 @@ User = get_user_model()
 domain = settings.SITE_DOMAIN
 
 
-
 class StoreCreateSerializer(serializers.ModelSerializer):
     """Serializer for creating store."""
     throwin_amounts = serializers.ListField(
-        child=serializers.DecimalField(
-            max_digits=10,
-            decimal_places=2,
-            min_value=Decimal("500.00"),
-            max_value=Decimal("49500.00"),
-        ),
+        child=serializers.CharField(),
         help_text="List of throwin amounts (e.g., [1000, 5000, 10000]).",
     )
 
@@ -42,31 +40,58 @@ class StoreCreateSerializer(serializers.ModelSerializer):
 
     def validate_throwin_amounts(self, value):
         """
-        Custom validation to ensure unique values in the list.
+        Custom validation to ensure unique values in the list and proper formatting.
         """
-        if len(value) != len(set(value)):
-            raise serializers.ValidationError("Throwin amounts must be unique.")
-        return value
+        try:
+            decimal_values = []
+            for amount in value:
+                # Convert string to Decimal and validate range
+                decimal_amount = to_decimal(amount)
+                if not (Decimal("500.00") <= decimal_amount <= Decimal("49500.00")):
+                    raise serializers.ValidationError(
+                        "Throwin amount must be between 500.00 and 49500.00."
+                    )
+                decimal_values.append(decimal_amount)
+
+            # Check for duplicates
+            if len(decimal_values) != len(set(decimal_values)):
+                raise serializers.ValidationError("Throwin amounts must be unique.")
+
+            return decimal_values
+
+        except (ValueError, TypeError):
+            raise serializers.ValidationError(
+                "Invalid throwin amount format. Please use numbers only."
+            )
 
     def create(self, validated_data):
         """Create store."""
         throwin_amounts = validated_data.pop('throwin_amounts')
-        validated_data['throwin_amounts'] = ','.join(map(str, throwin_amounts))
+        # Convert Decimal values to properly formatted strings
+        validated_data['throwin_amounts'] = ','.join(
+            f"{amount:.2f}" for amount in throwin_amounts
+        )
         validated_data["restaurant"] = self.context["request"].user.get_restaurant_owner_restaurant
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
         """Update store."""
         if throwin_amounts := validated_data.pop('throwin_amounts', None):
-            validated_data['throwin_amounts'] = ','.join(map(str, throwin_amounts))
+            # Convert Decimal values to properly formatted strings
+            validated_data['throwin_amounts'] = ','.join(
+                f"{amount:.2f}" for amount in throwin_amounts
+            )
         validated_data.pop("restaurant", None)
         return super().update(instance, validated_data)
 
     def to_representation(self, instance):
-        # Convert comma-separated string back to a list for the response
+        # Convert comma-separated string back to a list of formatted strings
         response_data = super().to_representation(instance)
         if instance.throwin_amounts:
-            response_data['throwin_amounts'] = list(instance.throwin_amounts.split(','))
+            response_data['throwin_amounts'] = [
+                f"{Decimal(amount):.2f}"
+                for amount in instance.throwin_amounts.split(',')
+            ]
         return response_data
 
 
