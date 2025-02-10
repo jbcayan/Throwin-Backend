@@ -1,32 +1,25 @@
 """Views for user"""
 
-from datetime import timedelta
-
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
-from django.utils import timezone
-from django.utils.encoding import force_str
-from django.utils.http import urlsafe_base64_decode
 from django_filters.rest_framework import DjangoFilterBackend
-
 from drf_spectacular.utils import extend_schema
-
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import AccessToken
 
 from accounts.choices import UserKind
 from accounts.filters import UserFilter
-from accounts.models import TemporaryUser, Like
+from accounts.models import Like
 from accounts.rest.serializers.user import (
     EmailChangeRequestSerializer,
     UserNameSerializer,
     StaffDetailForConsumerSerializer,
     MeSerializer,
     GuestNameSerializer,
+    AccountActivationSerializer,
+    EmailChangeTokenSerializer,
+    StaffLikeToggleSerializer,
 )
-
 from common.permissions import (
     IsConsumerUser,
     CheckAnyPermission,
@@ -37,7 +30,6 @@ from common.permissions import (
     IsSuperAdminUser,
     IsRestaurantOwnerUser,
 )
-
 from store.models import StoreUser
 from store.rest.serializers.store_stuff import (
     StoreStuffListSerializer,
@@ -52,45 +44,30 @@ User = get_user_model()
     description="Activate User Account using URL Path Parameters",
 )
 class AccountActivation(generics.GenericAPIView):
-    """View for activate user account"""
+    """View for activating user account"""
+    serializer_class = AccountActivationSerializer
 
     def get(self, request, uidb64, token):
-        try:
-            uid = force_str(urlsafe_base64_decode(uidb64))
-            temp_user = TemporaryUser.objects.get(pk=uid, token=token)
+        serializer = self.get_serializer(data={'uidb64': uidb64, 'token': token})
+        serializer.is_valid(raise_exception=True)
 
-            TOKEN_EXPIRATION_HOURS = 48  # Token validity period
+        temp_user = serializer.validated_data['temp_user']
 
-            # check if token is expired
-            if (
-                    temp_user.created_at + timedelta(hours=TOKEN_EXPIRATION_HOURS)
-                    <= timezone.now()
-            ):
-                return Response({
-                    "detail": "Token Expired"
-                }, status=status.HTTP_400_BAD_REQUEST)
+        # Create user
+        user = User.objects.create_user(
+            email=temp_user.email,
+            kind=temp_user.kind,
+            is_verified=True
+        )
+        user.set_password(temp_user.password)
+        user.save()
 
-            # if not expired, create user
-            user = User.objects.create_user(
-                email=temp_user.email,
-                kind=temp_user.kind,
-                is_verified=True
-            )
+        # Delete temp user
+        temp_user.delete()
 
-            user.set_password(temp_user.password)
-            user.save()
-
-            # delete temp user
-            temp_user.delete()
-
-            return Response({
-                "detail": "User Activated Successfully"
-            }, status=status.HTTP_200_OK)
-
-        except Exception:
-            return Response({
-                "detail": "Invalid Token or User"
-            }, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            "detail": "User Activated Successfully"
+        }, status=status.HTTP_200_OK)
 
 
 @extend_schema(
@@ -177,6 +154,8 @@ class EmailChangeRequest(generics.GenericAPIView):
 )
 class EmailChangeRequestVerify(generics.GenericAPIView):
     """Endpoint to verify and change the user's email."""
+    serializer_class = EmailChangeTokenSerializer
+
     available_permission_classes = (
         IsConsumerUser,
         IsGlowAdminUser,
@@ -185,43 +164,32 @@ class EmailChangeRequestVerify(generics.GenericAPIView):
     permission_classes = (CheckAnyPermission,)
 
     def post(self, request, token=None):
-
         if not token:
             return Response(
                 {"detail": "Token is missing"},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        try:
-            access_token = AccessToken(token)
-            user_id = access_token.get("user_id")
-            new_email = access_token.get("new_email")
+        serializer = self.get_serializer(data={'token': token})
+        serializer.is_valid(raise_exception=True)
 
-            if not (request.user.is_authenticated and request.user.id == user_id):
-                return Response(
-                    {"detail": "Requested user does not match the authenticated user"},
-                    status=status.HTTP_403_FORBIDDEN
-                )
+        user_id = serializer.validated_data['user_id']
+        new_email = serializer.validated_data['new_email']
 
-            request.user.email = new_email
-            request.user.is_verified = True
-            request.user.save(update_fields=["email", "is_verified"])
-
+        if not (request.user.is_authenticated and request.user.id == user_id):
             return Response(
-                {"detail": "Email changed successfully"},
-                status=status.HTTP_200_OK
+                {"detail": "Requested user does not match the authenticated user"},
+                status=status.HTTP_403_FORBIDDEN
             )
 
-        except AccessToken.DoesNotExist:
-            return Response(
-                {"detail": "Invalid token"},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        except Exception as e:
-            return Response(
-                {"detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        request.user.email = new_email
+        request.user.is_verified = True
+        request.user.save(update_fields=["email", "is_verified"])
+
+        return Response(
+            {"detail": "Email changed successfully"},
+            status=status.HTTP_200_OK
+        )
 
 
 @extend_schema(
@@ -289,15 +257,12 @@ class ConsumerLikeStaffToggle(generics.GenericAPIView):
     """
     Toggle 'like' status for a staff member by the consumer.
     """
+    serializer_class = StaffLikeToggleSerializer
 
     def post(self, request, *args, **kwargs):
-        staff_uid = str(self.kwargs.get("uid", None))
-        staff = get_object_or_404(
-            User,
-            uid=staff_uid,
-            is_active=True,
-            kind=UserKind.RESTAURANT_STAFF
-        )
+        serializer = self.get_serializer(data={'uid': self.kwargs.get("uid")})
+        serializer.is_valid(raise_exception=True)
+        staff = serializer.validated_data['uid']
 
         if self.request.user.is_authenticated:
             # For authenticated users
@@ -314,11 +279,11 @@ class ConsumerLikeStaffToggle(generics.GenericAPIView):
                 status_code = status.HTTP_200_OK
         else:
             # For guest users
-            print("Cookie and session ID", request.session.session_key)
             if not request.session.session_key:
                 request.session.create()  # Ensure session is initialized
 
             liked_staff_uids = request.session.get("liked_staff_uids", [])
+            staff_uid = str(staff.uid)
             if staff_uid in liked_staff_uids:
                 liked_staff_uids.remove(staff_uid)
                 message = "Staff member Unliked"

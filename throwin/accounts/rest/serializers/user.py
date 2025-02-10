@@ -1,20 +1,45 @@
 """Serializer for user"""
 
+from datetime import timedelta
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
-
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 from rest_framework import serializers
+from rest_framework_simplejwt.tokens import AccessToken
 
 from accounts.choices import UserKind
+from accounts.models import TemporaryUser
 from accounts.tasks import send_mail_task
 from accounts.utils import generate_verification_token
-
 from common.serializers import BaseSerializer
 
 domain = settings.SITE_DOMAIN
 
 User = get_user_model()
 
+
+class AccountActivationSerializer(serializers.Serializer):
+    uidb64 = serializers.CharField()
+    token = serializers.CharField()
+
+    def validate(self, data):
+        try:
+            uid = force_str(urlsafe_base64_decode(data['uidb64']))
+            temp_user = TemporaryUser.objects.get(pk=uid, token=data['token'])
+
+            # Check if token is expired
+            TOKEN_EXPIRATION_HOURS = 48
+            if temp_user.created_at + timedelta(hours=TOKEN_EXPIRATION_HOURS) <= timezone.now():
+                raise serializers.ValidationError("Token Expired")
+
+            data['temp_user'] = temp_user
+            return data
+        except (TypeError, ValueError, OverflowError, TemporaryUser.DoesNotExist):
+            raise serializers.ValidationError("Invalid Token or User")
 
 class UserNameSerializer(serializers.ModelSerializer):
     class Meta:
@@ -71,6 +96,24 @@ class EmailChangeRequestSerializer(serializers.Serializer):
             to_email=new_email
         )
 
+class EmailChangeTokenSerializer(serializers.Serializer):
+    token = serializers.CharField()
+
+    def validate(self, data):
+        try:
+            access_token = AccessToken(data['token'])
+            user_id = access_token.get("user_id")
+            new_email = access_token.get("new_email")
+
+            if not user_id or not new_email:
+                raise serializers.ValidationError("Invalid token data")
+
+            data['user_id'] = user_id
+            data['new_email'] = new_email
+            return data
+
+        except Exception:
+            raise serializers.ValidationError("Invalid token")
 
 class StaffDetailForConsumerSerializer(BaseSerializer):
     """Serializer to represent restaurant stuff details."""
@@ -187,3 +230,16 @@ class MeSerializer(BaseSerializer):
             representation = {key: representation[key] for key in fields_to_keep if key in representation}
 
         return representation
+
+class StaffLikeToggleSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+
+    def validate_uid(self, value):
+        # Validate that the staff member exists and is active
+        staff = get_object_or_404(
+            User,
+            uid=value,
+            is_active=True,
+            kind=UserKind.RESTAURANT_STAFF
+        )
+        return staff
