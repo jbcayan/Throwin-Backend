@@ -135,6 +135,7 @@ class StaffDetailForConsumerSerializer(BaseSerializer):
         help_text="Short fun fact about the user (e.g., 'Eating and laughing')"
     )
     store_code = serializers.SerializerMethodField()
+    store_uid = serializers.SerializerMethodField()
 
     class Meta(BaseSerializer.Meta):
         model = User
@@ -147,6 +148,7 @@ class StaffDetailForConsumerSerializer(BaseSerializer):
             "image",
             "fun_fact",
             "store_code",
+            "store_uid",
         )
 
     def get_image(self, obj) -> dict or None:
@@ -170,6 +172,15 @@ class StaffDetailForConsumerSerializer(BaseSerializer):
         staff_store = obj.get_staff_store
         if staff_store:
             return staff_store.code
+        return None
+
+    def get_store_uid(self, obj) -> str or None:
+        """
+        Get the store uid associated with the staff member.
+        """
+        staff_store = obj.get_staff_store
+        if staff_store:
+            return staff_store.uid
         return None
 
 
