@@ -1,6 +1,7 @@
 """Views for user"""
 
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
@@ -321,7 +322,6 @@ class FavoriteStaffList(generics.ListAPIView):
             # Get liked staff for authenticated consumer
             liked_staff_ids = Like.objects.filter(consumer=consumer).values_list("staff", flat=True)
         else:
-            print("Cookie and session ID", self.request.session.session_key)
             # Get liked staff for guest
             liked_staff_uids = self.request.session.get("liked_staff_uids", [])
             liked_staff_ids = User.objects.filter(

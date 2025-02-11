@@ -56,6 +56,11 @@ class Restaurant(BaseModel):
         related_name="sales_agent_restaurants",
         help_text="The sales agent of the restaurant",
     )
+    post_code = models.CharField(max_length=20, blank=True, null=True)
+    address = models.CharField(max_length=255, blank=True, null=True)
+    industry = models.CharField(max_length=100, blank=True, null=True)
+    invoice_number = models.CharField(max_length=100, blank=True, null=True)
+    corporate_number = models.CharField(max_length=100, blank=True, null=True)
 
     def save(self, *args, **kwargs):
         # Generate slug from the restaurant name if it's not already set

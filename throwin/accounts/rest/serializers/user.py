@@ -134,6 +134,7 @@ class StaffDetailForConsumerSerializer(BaseSerializer):
         allow_null=True,
         help_text="Short fun fact about the user (e.g., 'Eating and laughing')"
     )
+    store_code = serializers.SerializerMethodField()
 
     class Meta(BaseSerializer.Meta):
         model = User
@@ -145,6 +146,7 @@ class StaffDetailForConsumerSerializer(BaseSerializer):
             "score",
             "image",
             "fun_fact",
+            "store_code",
         )
 
     def get_image(self, obj) -> dict or None:
@@ -159,6 +161,15 @@ class StaffDetailForConsumerSerializer(BaseSerializer):
                 }
             except Exception as e:
                 return {'error': str(e)}  # Handle errors gracefully
+        return None
+
+    def get_store_code(self, obj) -> str or None:
+        """
+        Get the store code associated with the staff member.
+        """
+        staff_store = obj.get_staff_store
+        if staff_store:
+            return staff_store.code
         return None
 
 
@@ -232,7 +243,7 @@ class MeSerializer(BaseSerializer):
         return representation
 
 class StaffLikeToggleSerializer(serializers.Serializer):
-    uid = serializers.CharField()
+    uid = serializers.UUIDField()
 
     def validate_uid(self, value):
         # Validate that the staff member exists and is active

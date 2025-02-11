@@ -1,5 +1,6 @@
 import secrets
 import string
+import random
 
 from django.contrib.auth.models import (
     AbstractUser,
@@ -18,6 +19,7 @@ from accounts.choices import (
     PublicStatus
 )
 from accounts.signals import post_save_user
+# from accounts.utils import generate_agency_code
 
 from common.models import BaseModel
 
@@ -144,6 +146,16 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
         return None  # Return None if the user is not a RESTAURANT_STAFF
 
     @property
+    def get_staff_store(self):
+        """Retrieve the store where the user has the role 'RESTAURANT_STAFF'"""
+        if self.kind == UserKind.RESTAURANT_STAFF:
+            try:
+                return self.user_stores.filter(role=UserKind.RESTAURANT_STAFF).first().store
+            except Exception:
+                return None
+        return None
+
+    @property
     def get_agent_restaurants(self):
         """Retrieve all the restaurants where the user has the role 'SALES_AGENT'"""
         if self.kind == UserKind.SALES_AGENT:
@@ -208,9 +220,43 @@ class UserProfile(models.Model):
         null=True,
         help_text="Thank you message for the user (e.g., 'Thank you for your support')"
     )
+    post_code = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True
+    )
+    company_name = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+    invoice_number = models.CharField(
+        max_length=20,
+        blank=True,
+        null=True
+    )
+    agency_code = models.CharField(
+        max_length=8,
+        blank=True,
+        null=True
+    )
 
     def __str__(self):
         return f"Profile of {self.user.name if self.user.name else self.user.id}"
+
+
+    def save(self, *args, **kwargs):
+        if self.user.kind == UserKind.SALES_AGENT:
+            while True:
+                # Generate a random 7-digit number
+                code = ''.join(str(random.randint(0, 9)) for _ in range(7))
+
+                # Check if the code is already in use
+                if not UserProfile.objects.filter(agency_code=code).exists():
+                    self.agency_code = code
+                    break
+
+        super().save(*args, **kwargs)
 
 
 class Like(BaseModel):

@@ -13,7 +13,6 @@ from drf_spectacular.utils import extend_schema
 from rest_framework import generics
 from rest_framework.filters import SearchFilter, OrderingFilter
 
-
 from accounts.choices import UserKind, PublicStatus
 
 from common.permissions import (
