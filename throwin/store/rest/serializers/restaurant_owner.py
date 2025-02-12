@@ -309,3 +309,53 @@ class GachaHistorySerializer(serializers.Serializer):
     silver_used = serializers.IntegerField()
     bronze_issued = serializers.IntegerField()
     bronze_used = serializers.IntegerField()
+
+
+class SalesAgentCreateSerializer(serializers.Serializer):
+    # user details
+    name = serializers.CharField(max_length=100, required=True)
+    phone_number = serializers.CharField(max_length=15, required=True)
+    email = serializers.EmailField(required=True)
+    # profile details
+    post_code = serializers.CharField(max_length=10, required=True)
+    address = serializers.CharField(max_length=255, required=True)
+    company_name = serializers.CharField(max_length=100, required=True)
+    invoice_number = serializers.CharField(max_length=20, required=True)
+    corporate_number = serializers.CharField(max_length=20, required=True)
+
+
+    def create(self, validated_data):
+        post_code = validated_data.pop("post_code", None)
+        address = validated_data.pop("address", None)
+        company_name = validated_data.pop("company_name", None)
+        invoice_number = validated_data.pop("invoice_number", None)
+        corporate_number = validated_data.pop("corporate_number", None)
+
+        name = validated_data.pop("name", None)
+        phone_number = validated_data.pop("phone_number", None)
+        email = validated_data.pop("email", None)
+
+        user = User.objects.create_user(
+            name=name,
+            phone_number=phone_number,
+            email=email,
+            kind=UserKind.SALES_AGENT
+        )
+        user.set_password(phone_number)
+        user.save()
+
+        profile = user.profile
+        profile.post_code = post_code
+        profile.address = address
+        profile.company_name = company_name
+        profile.invoice_number = invoice_number
+        profile.corporate_number = corporate_number
+        profile.save(update_fields=[
+            'post_code',
+            'address',
+            'company_name',
+            'invoice_number',
+            'corporate_number'
+        ])
+
+        return user

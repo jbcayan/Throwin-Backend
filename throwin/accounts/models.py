@@ -232,11 +232,19 @@ class UserProfile(models.Model):
     )
     invoice_number = models.CharField(
         max_length=20,
+        unique=True,
         blank=True,
         null=True
     )
     agency_code = models.CharField(
         max_length=8,
+        unique=True,
+        blank=True,
+        null=True
+    )
+    corporate_number = models.CharField(
+        max_length=100,
+        unique=True,
         blank=True,
         null=True
     )
