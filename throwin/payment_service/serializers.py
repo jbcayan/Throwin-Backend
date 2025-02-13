@@ -278,3 +278,33 @@ class StaffRecentMessagesSerializer(serializers.ModelSerializer):
     class Meta:
         model = PaymentHistory
         fields = ["message", "date", "nickname"]
+
+
+
+
+from rest_framework import serializers
+from payment_service.bank_details.bank_details_model import BankAccount
+
+class BankAccountSerializer(serializers.ModelSerializer):
+    """Serializer for user’s bank account details"""
+
+    class Meta:
+        model = BankAccount
+        fields = [
+            "id", "bank_name", "bank_code", "branch_name", "branch_code",
+            "account_number", "account_type", "account_holder_name", "is_active"
+        ]
+        read_only_fields = ["bank_code", "branch_code", "account_type"]
+
+    def validate_is_active(self, value):
+        """Ensure only one account can be active at a time."""
+        user = self.context["request"].user
+        if value and BankAccount.objects.filter(user=user, is_active=True).exists():
+            raise serializers.ValidationError("You can have only one active bank account at a time.")
+        return value
+
+    def update(self, instance, validated_data):
+        """Ensure only one account is active at a time when updating"""
+        if validated_data.get("is_active", False):
+            BankAccount.objects.filter(user=instance.user).update(is_active=False)
+        return super().update(instance, validated_data)

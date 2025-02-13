@@ -255,3 +255,38 @@ class StaffRecentMessagesView(APIView):
                 {"error": "An unexpected error occurred. Please try again later."},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
+        
+
+from rest_framework import generics, permissions
+from payment_service.bank_details.bank_details_model import BankAccount
+from payment_service.serializers import BankAccountSerializer
+
+class UserBankAccountListCreateView(generics.ListCreateAPIView):
+    """
+    Allows a user to:
+    - List their own bank accounts.
+    - Create a new bank account.
+    """
+    serializer_class = BankAccountSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """Filter to only show the authenticated user’s bank accounts"""
+        return BankAccount.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        """Associate the new bank account with the authenticated user"""
+        serializer.save(user=self.request.user)
+
+class UserBankAccountUpdateView(generics.RetrieveUpdateAPIView):
+    """
+    Allows a user to:
+    - Retrieve a specific bank account.
+    - Update their own bank account.
+    """
+    serializer_class = BankAccountSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        """Filter to only show the authenticated user’s bank accounts"""
+        return BankAccount.objects.filter(user=self.request.user)

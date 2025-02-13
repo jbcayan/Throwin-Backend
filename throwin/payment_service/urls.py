@@ -4,7 +4,10 @@ from .views import (
     PayPalSuccessView,
     PayPalCancelView,
     RoleBasedPaymentHistoryView,
-    StaffRecentMessagesView
+    StaffRecentMessagesView,
+    UserBankAccountListCreateView,
+    UserBankAccountUpdateView
+
 )
 
 # Namespace for the app
@@ -23,4 +26,9 @@ urlpatterns = [
     
     # Endppoint to get last 5 messgaes for staff
     path('staff/<uuid:uid>/recent-messages/', StaffRecentMessagesView.as_view(), name='staff-recent-messages'),
+
+
+    # Endppoint for Bank Details
+    path("bank-accounts/", UserBankAccountListCreateView.as_view(), name="user-bank-accounts"),
+    path("bank-accounts/<int:pk>/", UserBankAccountUpdateView.as_view(), name="user-bank-account-detail"),
 ]

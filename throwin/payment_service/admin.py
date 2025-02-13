@@ -109,3 +109,36 @@ class PaymentHistoryAdmin(admin.ModelAdmin):
         return super().get_queryset(request).select_related(
             "customer", "staff", "restaurant", "store"
         )
+
+
+
+from django.contrib import admin
+from payment_service.bank_details.bank_details_model import BankAccount
+
+
+@admin.register(BankAccount)
+class BankAccountAdmin(admin.ModelAdmin):
+    list_display = (
+        "user", "bank_name", "account_number", "account_type", "is_active", "created_at"
+    )
+    search_fields = ("user__email", "bank_name", "account_number")
+    list_filter = ("bank_name", "account_type", "is_active")
+    ordering = ("-created_at",)
+    readonly_fields = ("created_at", "updated_at")
+
+    def get_queryset(self, request):
+        """Ensure superusers see all, but regular admins see limited data."""
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(user=request.user)
+
+    def deactivate_others(self, obj):
+        """Ensure only one bank account is active per user."""
+        if obj.is_active:
+            BankAccount.objects.filter(user=obj.user).exclude(id=obj.id).update(is_active=False)
+
+    def save_model(self, request, obj, form, change):
+        """Enforce single active bank account when saving from admin."""
+        self.deactivate_others(obj)
+        super().save_model(request, obj, form, change)
