@@ -8,7 +8,7 @@ from django.db.models import (
 )
 from django_filters.rest_framework import DjangoFilterBackend
 
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 from rest_framework import generics
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -169,6 +169,19 @@ class StaffListCreateView(generics.ListCreateAPIView):
 #             status=status.HTTP_200_OK
 #         )
 
+
+@extend_schema(
+        parameters=[
+            OpenApiParameter(
+                name='store_code',
+                type=str,
+                location=OpenApiParameter.QUERY,
+                description="The code of the store to list staff members for.",
+                required=True
+            )
+        ],
+        responses={200: StaffUserSerializer(many=True)},
+    )
 class StaffListByStoreView(generics.ListAPIView):
     """View to list staff members by store."""
 
@@ -177,6 +190,7 @@ class StaffListByStoreView(generics.ListAPIView):
 
     available_permission_classes = (IsRestaurantOwnerUser,)
     permission_classes = (CheckAnyPermission,)
+
 
     def get_queryset(self):
         """Retrieve staff members associated with a specific store."""

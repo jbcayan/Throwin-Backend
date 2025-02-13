@@ -27,7 +27,6 @@ class Command(BaseCommand):
 
         owner_2, _ = User.objects.get_or_create(
             email="cdc@gmail.com",
-            password="stringd1234",
             name="CDC",
             kind=UserKind.RESTAURANT_OWNER,
             is_active=True,
@@ -39,7 +38,6 @@ class Command(BaseCommand):
 
         owner_3, _ = User.objects.get_or_create(
             email="xyz@gmail.com",
-            password="string1234",
             name="XYZ",
             kind=UserKind.RESTAURANT_OWNER,
             is_active=True,
