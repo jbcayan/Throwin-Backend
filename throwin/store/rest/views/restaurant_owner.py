@@ -72,7 +72,49 @@ class StoreListCreateView(generics.ListCreateAPIView):
         ).select_related(
             "restaurant"
         )
-    
+
+@extend_schema(
+    summary="Retrieve, Update, or Delete Store for Restaurant Owner",
+    methods=["GET", "PUT", "PATCH", "DELETE"],
+)
+class StoreRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
+    """View for restaurant owner to retrieve, update, or delete stores."""
+
+    available_permission_classes = (
+        IsRestaurantOwnerUser,
+    )
+    permission_classes = (CheckAnyPermission,)
+
+    def get_serializer_class(self):
+        if self.request.method == "GET":
+            return StoreListSerializer
+        return StoreCreateSerializer
+
+    def get_object(self):
+        try:
+            user_restaurant = self.request.user.get_restaurant_owner_restaurant
+        except AttributeError as e:
+            return Store.objects.none()
+
+        store = Store.objects.only(
+            "uid",
+            "name",
+            "code",
+            "restaurant",
+            "exposure",
+            "banner",
+        ).select_related(
+            "restaurant"
+        ).get(
+            uid=self.kwargs["uid"],
+            restaurant_id=user_restaurant.id
+        )
+        return store
+
+@extend_schema(
+    summary="List and Create Staff for Restaurant Owner",
+    methods=["GET", "POST"],
+)
 class StaffListCreateView(generics.ListCreateAPIView):
     """View for restaurant owner to create or list staff."""
     
@@ -171,6 +213,7 @@ class StaffListCreateView(generics.ListCreateAPIView):
 
 
 @extend_schema(
+        summary="List staff members for a specific store.",
         parameters=[
             OpenApiParameter(
                 name='store_code',
@@ -221,7 +264,9 @@ class StaffListByStoreView(generics.ListAPIView):
             user__public_status=PublicStatus.PUBLIC  # Only include public users
         )
 
-
+@extend_schema(
+    summary="Get gacha history statistics for a restaurant's stores.",
+)
 class RestaurantGachaHistoryView(generics.ListAPIView):
     """View to get gacha history statistics for a restaurant's stores."""
 

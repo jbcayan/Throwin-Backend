@@ -3,6 +3,7 @@ from django.urls import path
 
 from store.rest.views.restaurant_owner import (
     StoreListCreateView,
+    StoreRetrieveUpdateDestroyView,
     StaffListCreateView,
     StaffListByStoreView,
     RestaurantGachaHistoryView
@@ -11,6 +12,9 @@ from store.rest.views.restaurant_owner import (
 urlpatterns = [
     path("/stores", StoreListCreateView.as_view(),
          name="store-list-create"
+    ),
+    path("/stores/<str:uid>", StoreRetrieveUpdateDestroyView.as_view(),
+         name="store-detail-update-destroy"
     ),
     path("/staff", StaffListCreateView.as_view(),
          name="staff-list-create"

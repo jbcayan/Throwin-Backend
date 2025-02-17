@@ -76,12 +76,17 @@ class StoreCreateSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         """Update store."""
-        if throwin_amounts := validated_data.pop('throwin_amounts', None):
-            # Convert Decimal values to properly formatted strings
+        # Extract throwin_amounts if present and convert to properly formatted string
+        if 'throwin_amounts' in validated_data:
+            throwin_amounts = validated_data.pop('throwin_amounts')
             validated_data['throwin_amounts'] = ','.join(
                 f"{amount:.2f}" for amount in throwin_amounts
             )
+
+        # Remove 'restaurant' to prevent modification
         validated_data.pop("restaurant", None)
+
+        # Update the instance with the validated data
         return super().update(instance, validated_data)
 
     def to_representation(self, instance):
@@ -98,6 +103,10 @@ class StoreCreateSerializer(serializers.ModelSerializer):
 class StoreListSerializer(BaseSerializer):
     """Serializer for listing stores."""
     banner = serializers.SerializerMethodField()
+    throwin_amounts = serializers.ListField(
+        child=serializers.CharField(),
+        help_text="List of throwin amounts (e.g., [1000, 5000, 10000]).",
+    )
 
     class Meta:
         model = Store
@@ -107,8 +116,9 @@ class StoreListSerializer(BaseSerializer):
             "code",
             "exposure",
             "banner",
+            "throwin_amounts",
         ]
-        read_only_fields = ["uid"]
+        read_only_fields = ["uid", "name", "code", "exposure", "banner", "throwin_amounts"]
 
     def get_banner(self, obj) -> dict | None:
         if obj.banner:
@@ -122,6 +132,17 @@ class StoreListSerializer(BaseSerializer):
             except Exception as e:
                 return {'error': str(e)}  # Handle errors gracefully
         return None
+
+
+    def to_representation(self, instance):
+        # Convert comma-separated string back to a list of formatted strings
+        response_data = super().to_representation(instance)
+        if instance.throwin_amounts:
+            response_data['throwin_amounts'] = [
+                f"{Decimal(amount):.2f}"
+                for amount in instance.throwin_amounts.split(',')
+            ]
+        return response_data
 
 
 class StaffListSerializer(BaseSerializer):
