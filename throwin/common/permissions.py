@@ -49,7 +49,7 @@ class IsGlowAdminUser(BasePermission):
 
 
 class IsFCAdminUser(BasePermission):
-    """Permission for super admin"""
+    """Permission for admin"""
 
     def has_permission(self, request, view):
         if not request.user.is_authenticated:
@@ -58,6 +58,18 @@ class IsFCAdminUser(BasePermission):
             return False
         try:
             return request.user.kind == UserKind.FC_ADMIN
+        except Exception:
+            return False
+
+class IsSalesAgentUser(BasePermission):
+    """Permission for admin"""
+    def has_permission(self, request, view):
+        if not request.user.is_authenticated:
+            return False
+        if not request.user.is_verified:
+            return False
+        try:
+            return request.user.kind == UserKind.SALES_AGENT
         except Exception:
             return False
 

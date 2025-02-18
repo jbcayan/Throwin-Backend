@@ -78,6 +78,7 @@ class Restaurant(BaseModel):
                 name='unique_restaurant_owner'
             )
         ]
+        ordering = ["-created_at"]
 
 
 # Create your models here.
@@ -186,6 +187,7 @@ class RestaurantUser(BaseModel):
                 condition=models.Q(role__in=["restaurant_staff", "restaurant_owner"])
             ),
         ]
+        ordering = ['-created_at']
 
     def clean(self):
         """
@@ -228,7 +230,8 @@ class StoreUser(BaseModel):
     )
 
     class Meta:
-        unique_together = ("store", "user")  # Ensure a user can have only one role per store
+        unique_together = ("store", "user")
+        ordering = ['-created_at']# Ensure a user can have only one role per store
 
     def __str__(self):
         return f"{self.user} - {self.role} - {self.store}"

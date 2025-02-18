@@ -1,6 +1,8 @@
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from accounts.choices import UserKind
 from accounts.rest.serializers.user_login import UserLoginSerializer
 from drf_spectacular.utils import extend_schema
 
@@ -33,4 +35,6 @@ class UserLogin(generics.GenericAPIView):
                 "access": str(refresh.access_token),
             },
         }
+        if user.kind == UserKind.SALES_AGENT:
+            response_data["data"]["agency_code"] = user.profile.agency_code
         return Response(response_data, status=status.HTTP_200_OK)
