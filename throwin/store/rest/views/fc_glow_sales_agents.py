@@ -18,7 +18,9 @@ from store.rest.serializers.fc_glow_sales_agents import (
     OrganizationListSerializer,
 )
 from store.models import Restaurant, Store, StoreUser, RestaurantUser
+
 logger = logging.getLogger(__name__)
+
 
 @extend_schema(
     summary="List and Create organization by FC, GLOW, Sales Agent",
@@ -50,7 +52,6 @@ class OrganizationListCreateView(generics.ListCreateAPIView):
         """
         return Restaurant.objects.all().select_related('restaurant_owner')
 
-
     def create(self, request, *args, **kwargs):
         """
         Handles POST requests to create a new organization.
@@ -71,6 +72,7 @@ class OrganizationListCreateView(generics.ListCreateAPIView):
         # Use the serializer's to_representation to format the response data.
         response_data = serializer.to_representation(restaurant)
         return Response(response_data, status=status.HTTP_201_CREATED)
+
 
 @extend_schema(
     summary="Retrieve, update or delete organization by FC, GLOW, Sales Agent",
