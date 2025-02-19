@@ -152,8 +152,22 @@ class OrganizationCreateSerializer(serializers.Serializer):
         instance.corporate_number = validated_data.get("corporate_number", instance.corporate_number)
         instance.save()
 
-        # Update owner's profile
+        # Update owner fields
         owner = instance.restaurant_owner
+
+        # Update owner's email and name
+        new_email = validated_data.get("email", owner.email)
+        if owner.email != new_email:
+            owner.email = new_email
+            owner.is_verified = False  # Deactivate until email is confirmed
+            activation_url = generate_admin_email_activation_url(owner)
+            subject = "Activate Your Account"
+            message = f"Please click the following link to activate your account: {activation_url}"
+            send_mail_task.delay(subject, message, new_email)
+
+        owner.name = validated_data.get("owner_name", owner.name)
+        owner.save(update_fields=["email", "name", "is_verified"])
+
         profile = owner.profile
         profile.post_code = validated_data.get("post_code", profile.post_code)
         profile.company_name = validated_data.get("company_name", profile.company_name)
