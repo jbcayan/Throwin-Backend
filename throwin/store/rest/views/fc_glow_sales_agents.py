@@ -132,7 +132,10 @@ class OrganizationRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-
+@extend_schema(
+    summary="Activate a user's account",
+    methods=["GET"],
+)
 class ActivateAccountView(generics.GenericAPIView):
     """
     API endpoint to activate a user's account.
