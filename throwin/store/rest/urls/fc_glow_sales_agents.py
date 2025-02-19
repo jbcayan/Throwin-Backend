@@ -14,7 +14,7 @@ urlpatterns = [
     path("/organizations/<str:uid>", OrganizationRetrieveUpdateDestroy.as_view(),
         name="organization-detail"
     ),
-    path('activate/<uidb64>/<token>/', ActivateAccountView.as_view(),
+    path('/activate/<uidb64>/<token>', ActivateAccountView.as_view(),
         name='activate-account'
     ),
 ]
