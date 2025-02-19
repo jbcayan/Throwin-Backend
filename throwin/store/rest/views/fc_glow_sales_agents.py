@@ -1,7 +1,8 @@
 import logging
+
 from django.shortcuts import get_object_or_404
 
-from drf_spectacular.utils import extend_schema, OpenApiParameter
+from drf_spectacular.utils import extend_schema
 
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -13,11 +14,12 @@ from common.permissions import (
     CheckAnyPermission
 )
 
+from store.models import Restaurant
 from store.rest.serializers.fc_glow_sales_agents import (
     OrganizationCreateSerializer,
     OrganizationListSerializer,
+    ActivationSerializer,
 )
-from store.models import Restaurant, Store, StoreUser, RestaurantUser
 
 logger = logging.getLogger(__name__)
 
@@ -129,3 +131,20 @@ class OrganizationRetrieveUpdateDestroy(generics.RetrieveUpdateDestroyAPIView):
         instance = self.get_object()
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ActivateAccountView(generics.GenericAPIView):
+    """
+    API endpoint to activate a user's account.
+    """
+    def get(self, request, uidb64, token, *args, **kwargs):
+        serializer = ActivationSerializer(data={'uidb64': uidb64, 'token': token})
+        if serializer.is_valid():
+            user = serializer.validated_data['user']
+            user.is_verified = True
+            user.save()
+            return Response({
+                "detail": "Account activated successfully."
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

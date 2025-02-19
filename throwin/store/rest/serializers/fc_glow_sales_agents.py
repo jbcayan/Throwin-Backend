@@ -3,11 +3,15 @@
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
 
 from rest_framework import serializers
 
 from accounts.choices import UserKind
 from accounts.models import UserProfile
+from accounts.utils import generate_admin_email_activation_url
+from accounts.tasks import send_mail_task
 
 from payment_service.bank_details.bank_details_model import BankAccount
 
@@ -72,7 +76,6 @@ class OrganizationCreateSerializer(serializers.Serializer):
                 name=validated_data.get("owner_name"),
                 phone_number=validated_data.get("telephone_number"),
                 kind=UserKind.RESTAURANT_OWNER,
-                is_verified=True,
             )
             owner.set_password(validated_data.get("telephone_number"))
             owner.save()
@@ -118,6 +121,12 @@ class OrganizationCreateSerializer(serializers.Serializer):
                 account_number=validated_data.get("account_number"),
                 is_active=True,
             )
+
+            # Send activation email
+            activation_url = generate_admin_email_activation_url(owner)
+            subject = "Activate Your Account"
+            message = f"Please click the following link to activate your account: {activation_url}"
+            send_mail_task.delay(subject, message, owner.email)
 
             return restaurant
 
@@ -209,6 +218,25 @@ class OrganizationListSerializer(serializers.ModelSerializer):
         ]
 
 
+class ActivationSerializer(serializers.Serializer):
+    uidb64 = serializers.CharField()
+    token = serializers.CharField()
+
+    def validate(self, data):
+        """
+        Validate the UID and token, and return the user if valid.
+        """
+        try:
+            uid = urlsafe_base64_decode(data['uidb64']).decode()
+            user = User.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            raise serializers.ValidationError("Invalid activation link.")
+
+        if not default_token_generator.check_token(user, data['token']):
+            raise serializers.ValidationError("Invalid activation link.")
+
+        data['user'] = user
+        return data
 
 
 

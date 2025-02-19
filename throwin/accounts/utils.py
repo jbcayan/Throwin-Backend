@@ -1,18 +1,22 @@
-import uuid
 import random
 import string
+import uuid
 
+from django.urls import reverse
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from django.contrib.auth.tokens import default_token_generator
 
 from google.auth.transport import requests
 from google.oauth2 import id_token
 
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import AccessToken
+
+from accounts.models import TemporaryUser
 
 from common.utils import login_social_user
 
@@ -70,7 +74,7 @@ class EmailVerificationTokenGenerator(PasswordResetTokenGenerator):
 email_activation_token = EmailVerificationTokenGenerator()
 
 
-def generate_email_activation_url(user):
+def generate_email_activation_url(user: TemporaryUser):
     """Generate an activation url with user id and token """
     uid64 = urlsafe_base64_encode(force_bytes(user.id))
     token = user.token
@@ -116,3 +120,13 @@ def generate_agency_code():
         # if not UserProfile.objects.filter(agency_code=code).exists():
         #     return code
 
+
+def generate_admin_email_activation_url(user):
+    """
+    Generate a unique activation URL for the user.
+    """
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = default_token_generator.make_token(user)
+    activation_url = reverse('activate-account', kwargs={'uidb64': uid, 'token': token})
+    full_activation_url = f"{settings.FRONTEND_URL}{activation_url}"
+    return full_activation_url
