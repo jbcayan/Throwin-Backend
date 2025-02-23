@@ -4,7 +4,10 @@ from django.urls import path
 from store.rest.views.fc_glow_sales_agents import (
     OrganizationListCreateView,
     OrganizationRetrieveUpdateDestroy,
-    ActivateAccountView
+    ActivateNewAccountView,
+    SalesAgentListCreateView,
+    SalesAgentRetrieveUpdateDestroyView,
+    ActivateAccountView,
 )
 
 urlpatterns = [
@@ -14,7 +17,16 @@ urlpatterns = [
     path("/organizations/<str:uid>", OrganizationRetrieveUpdateDestroy.as_view(),
         name="organization-detail"
     ),
+    path('/activate/new/account/<uidb64>/<token>', ActivateNewAccountView.as_view(),
+         name='activate-new-account'
+    ),
     path('/activate/<uidb64>/<token>', ActivateAccountView.as_view(),
         name='activate-account'
+    ),
+    path("/sales-agents", SalesAgentListCreateView.as_view(),
+        name="sales-agent-list-create"
+    ),
+    path("/sales-agents/<str:uid>", SalesAgentRetrieveUpdateDestroyView.as_view(),
+        name="sales-agent-detail"
     ),
 ]

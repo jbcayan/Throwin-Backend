@@ -121,12 +121,22 @@ def generate_agency_code():
         #     return code
 
 
-def generate_admin_email_activation_url(user):
+def generate_admin_new_account_activation_url(user):
     """
-    Generate a unique activation URL for the user.
+    Generate a unique activation URL for the new user.
     """
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
-    activation_url = reverse('activate-account', kwargs={'uidb64': uid, 'token': token})
+    activation_url = reverse('activate-new-account', kwargs={'uidb64': uid, 'token': token})
+    full_activation_url = f"{settings.FRONTEND_URL}{activation_url}"
+    return full_activation_url
+
+
+def generate_admin_account_activation_url(user, new_email):
+    """ Generate a unique activation URL for the user. """
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    token = AccessToken.for_user(user)
+    token['new_email'] = new_email
+    activation_url = reverse('activate-account', kwargs={'uidb64': uid, 'token': str(token)})
     full_activation_url = f"{settings.FRONTEND_URL}{activation_url}"
     return full_activation_url

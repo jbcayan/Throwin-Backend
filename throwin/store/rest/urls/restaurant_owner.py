@@ -6,7 +6,8 @@ from store.rest.views.restaurant_owner import (
     StoreRetrieveUpdateDestroyView,
     StaffListCreateView,
     StaffListByStoreView,
-    RestaurantGachaHistoryView
+    RestaurantGachaHistoryView,
+    RestaurantOwnerChangeNameView
 )
 
 urlpatterns = [
@@ -24,5 +25,8 @@ urlpatterns = [
     ),
     path("/gacha-history", RestaurantGachaHistoryView.as_view(),
          name="gacha-history"
+    ),
+    path("/settings/change-name", RestaurantOwnerChangeNameView.as_view(),
+         name="change-name"
     ),
 ]

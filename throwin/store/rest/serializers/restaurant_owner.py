@@ -380,3 +380,15 @@ class SalesAgentCreateSerializer(serializers.Serializer):
         ])
 
         return user
+
+class ChangeRestaurantOwnerNameSerializer(serializers.Serializer):
+    name = serializers.CharField(max_length=100, required=True)
+
+    def create(self, validated_data):
+        name = validated_data.pop("name", None)
+        user = self.context["request"].user
+        user.name = name
+        user.save(
+            update_fields=["name"]
+        )
+        return user

@@ -29,6 +29,7 @@ from store.rest.serializers.restaurant_owner import (
     StaffCreateSerializer,
     StaffUserSerializer,
     GachaHistorySerializer,
+    ChangeRestaurantOwnerNameSerializer
 )
 
 User = get_user_model()
@@ -333,3 +334,13 @@ class RestaurantGachaHistoryView(generics.ListAPIView):
         )
 
         return stores
+
+
+@extend_schema(
+    summary="Change the restaurant owner's name.",
+    methods=["PUT"],
+)
+class RestaurantOwnerChangeNameView(generics.CreateAPIView):
+    available_permission_classes = (IsRestaurantOwnerUser,)
+    permission_classes = (CheckAnyPermission,)
+    serializer_class = ChangeRestaurantOwnerNameSerializer
