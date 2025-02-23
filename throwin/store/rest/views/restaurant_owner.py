@@ -21,8 +21,9 @@ from common.permissions import (
     IsRestaurantOwnerUser,
 )
 from gacha.choices import GachaKind
+from payment_service.bank_details.bank_details_model import BankAccount
 from store.filters import StoreFilter, StaffFilter
-from store.models import Store, RestaurantUser, StoreUser
+from store.models import Store, RestaurantUser, StoreUser, Restaurant
 from store.rest.serializers.restaurant_owner import (
     StoreCreateSerializer,
     StoreListSerializer,
@@ -31,7 +32,7 @@ from store.rest.serializers.restaurant_owner import (
     StaffUserSerializer,
     GachaHistorySerializer,
     ChangeRestaurantOwnerNameSerializer,
-    RestaurantOwnerChangeEmailRequestSerializer
+    RestaurantOwnerChangeEmailRequestSerializer, RestaurantOwnerDetailSerializer
 )
 
 User = get_user_model()
@@ -367,3 +368,33 @@ class RestaurantOwnerChangeEmailRequestView(generics.GenericAPIView):
         return Response({
             "detail": "Activation link sent to the new email."
         }, status=status.HTTP_200_OK)
+
+
+class RestaurantOwnerDetailView(generics.GenericAPIView):
+    available_permission_classes = (IsRestaurantOwnerUser,)
+    permission_classes = (CheckAnyPermission,)
+    serializer_class = RestaurantOwnerDetailSerializer
+
+    def get(self, request, *args, **kwargs):
+        # Assuming the user is the restaurant owner
+        user = request.user
+        try:
+            restaurant = Restaurant.objects.select_related(
+                "restaurant_owner"
+            ).get(restaurant_owner=user)
+
+            bank_account = BankAccount.objects.select_related(
+                "user"
+            ).filter(user=user, is_active=True).first()
+
+            # Prepare the data for the serializer
+            data = {
+                'restaurant': restaurant,
+                'bank_account': bank_account
+            }
+
+            serializer = self.get_serializer(data)
+            return Response(serializer.data)
+
+        except Restaurant.DoesNotExist:
+            return Response({"error": "Restaurant not found for this owner."}, status=404)

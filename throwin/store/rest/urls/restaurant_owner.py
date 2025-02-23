@@ -9,6 +9,7 @@ from store.rest.views.restaurant_owner import (
     RestaurantGachaHistoryView,
     RestaurantOwnerChangeNameView,
     RestaurantOwnerChangeEmailRequestView,
+    RestaurantOwnerDetailView
 )
 
 urlpatterns = [
@@ -26,6 +27,9 @@ urlpatterns = [
     ),
     path("/gacha-history", RestaurantGachaHistoryView.as_view(),
          name="gacha-history"
+    ),
+    path("/settings", RestaurantOwnerDetailView.as_view(),
+         name="restaurant-owner-detail"
     ),
     path("/settings/change-name", RestaurantOwnerChangeNameView.as_view(),
          name="change-name"

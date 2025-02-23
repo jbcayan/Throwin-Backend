@@ -434,7 +434,8 @@ class SalesAgentListCreateSerializer(serializers.ModelSerializer):
             branch_name=branch_name,
             account_type=account_type,
             account_number=account_number,
-            account_holder_name=account_holder_name
+            account_holder_name=account_holder_name,
+            is_active=True
         )
 
         return sales_agent

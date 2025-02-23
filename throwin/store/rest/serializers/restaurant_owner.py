@@ -432,3 +432,18 @@ class RestaurantOwnerChangeEmailRequestSerializer(serializers.Serializer):
         subject = "Email Change Request"
         message = f"Please click the following link to verify your new email: {activation_url}"
         send_mail_task.delay(subject, message, new_email)
+
+
+class RestaurantOwnerDetailSerializer(serializers.Serializer):
+    company_name = serializers.CharField(source='restaurant.name')
+    phone_number = serializers.CharField(source='restaurant.restaurant_owner.phone_number')
+    location = serializers.CharField(source='restaurant.address')
+    industry = serializers.CharField(source='restaurant.industry')
+    corporate_number = serializers.CharField(source='restaurant.corporate_number')
+    invoice_number = serializers.CharField(source='restaurant.invoice_number')
+    owner_name = serializers.CharField(source='restaurant.restaurant_owner.name')
+    email = serializers.EmailField(source='restaurant.restaurant_owner.email')
+    bank_name = serializers.CharField(source='bank_account.bank_name', default=None)
+    branch_name = serializers.CharField(source='bank_account.branch_name', default=None)
+    account_type = serializers.CharField(source='bank_account.account_type', default=None)
+    account_number = serializers.CharField(source='bank_account.account_number', default=None)
