@@ -10,7 +10,8 @@ from django_filters.rest_framework import DjangoFilterBackend
 
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 
-from rest_framework import generics
+from rest_framework import generics, status
+from rest_framework.response import Response
 from rest_framework.filters import SearchFilter, OrderingFilter
 
 from accounts.choices import UserKind, PublicStatus
@@ -29,7 +30,8 @@ from store.rest.serializers.restaurant_owner import (
     StaffCreateSerializer,
     StaffUserSerializer,
     GachaHistorySerializer,
-    ChangeRestaurantOwnerNameSerializer
+    ChangeRestaurantOwnerNameSerializer,
+    RestaurantOwnerChangeEmailRequestSerializer
 )
 
 User = get_user_model()
@@ -338,9 +340,30 @@ class RestaurantGachaHistoryView(generics.ListAPIView):
 
 @extend_schema(
     summary="Change the restaurant owner's name.",
-    methods=["PUT"],
+    methods=["POST"],
 )
 class RestaurantOwnerChangeNameView(generics.CreateAPIView):
     available_permission_classes = (IsRestaurantOwnerUser,)
     permission_classes = (CheckAnyPermission,)
     serializer_class = ChangeRestaurantOwnerNameSerializer
+
+@extend_schema(
+    summary="Request an email change for the restaurant owner.",
+    methods=["POST"],
+)
+class RestaurantOwnerChangeEmailRequestView(generics.GenericAPIView):
+    """
+    API endpoint for restaurant owners to request an email change.
+    """
+    available_permission_classes = (IsRestaurantOwnerUser,)
+    permission_classes = (CheckAnyPermission,)
+    serializer_class = RestaurantOwnerChangeEmailRequestSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({
+            "detail": "Activation link sent to the new email."
+        }, status=status.HTTP_200_OK)

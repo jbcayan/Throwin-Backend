@@ -75,21 +75,11 @@ class OrganizationCreateSerializer(serializers.Serializer):
             "account_type", "account_number", "account_holder_name",
         ]
 
-    def validate_agency_code(self, value):
-        """
-        Validate the agency code and return the associated sales agent.
-        This method is called when agency_code has a value.
-        """
-        try:
-            sales_agent = UserProfile.objects.get(agency_code=value).user
-            return sales_agent
-        except ObjectDoesNotExist:
-            raise serializers.ValidationError("Invalid agency code provided.")
-
     @transaction.atomic
     def create(self, validated_data):
         """Create a restaurant, restaurant owner, and bank account, then return the created Restaurant instance."""
         user = self.context["request"].user
+        sales_agent = None
 
         try:
             # Check for existing email and phone number
@@ -104,6 +94,12 @@ class OrganizationCreateSerializer(serializers.Serializer):
 
             if UserProfile.objects.filter(corporate_number=validated_data.get("corporate_number")).exists():
                 raise ValidationError({"corporate_number": "Corporate number already exists."})
+
+            if validated_data.get("agency_code"):
+                try:
+                    sales_agent = UserProfile.objects.get(agency_code=validated_data.get("agency_code")).user
+                except ObjectDoesNotExist:
+                    raise ValidationError({"sales_agent": "Invalid agency code."})
 
             # Create owner
             owner = User.objects.create_user(
@@ -125,11 +121,6 @@ class OrganizationCreateSerializer(serializers.Serializer):
             for field, value in profile_fields.items():
                 setattr(profile, field, value)
             profile.save(update_fields=profile_fields.keys())
-
-            # Conditionally validate and retrieve sales agent if provided
-            sales_agent = validated_data.get("agency_code")
-            if sales_agent:
-                sales_agent = self.validate_agency_code(sales_agent)
 
             # Create the restaurant
             restaurant = Restaurant.objects.create(
@@ -196,11 +187,13 @@ class OrganizationCreateSerializer(serializers.Serializer):
         instance.invoice_number = new_invoice_number or instance.invoice_number
         instance.corporate_number = new_corporate_number or instance.corporate_number
 
-        # Update sales agent if agency_code is provided
-        agency_code = validated_data.get("agency_code")
-        if agency_code:
-            sales_agent = self.validate_agency_code(agency_code)
-            instance.sales_agent = sales_agent
+        new_agency_code = validated_data.get("agency_code")
+        if new_agency_code:
+            try:
+                sales_agent = UserProfile.objects.get(agency_code=new_agency_code).user
+                instance.sales_agent = sales_agent
+            except ObjectDoesNotExist:
+                raise ValidationError({"sales_agent": "Invalid agency code."})
 
         instance.save(update_fields=[
             "name", "address", "post_code", "industry", "invoice_number", "corporate_number", "sales_agent"
