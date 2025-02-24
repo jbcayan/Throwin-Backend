@@ -315,11 +315,12 @@ class StaffCreateSerializer(BaseSerializer):
 class StaffUserSerializer(serializers.ModelSerializer):
     uid = serializers.CharField(source="user.uid")
     name = serializers.CharField(source="user.name")
+    username = serializers.CharField(source="user.username")
     email = serializers.EmailField(source="user.email")
 
     class Meta:
         model = StoreUser
-        fields = ["uid", "name", "email"]
+        fields = ["uid", "name", "email", "username"]
 
 
 class GachaHistorySerializer(serializers.Serializer):
