@@ -317,10 +317,26 @@ class StaffUserSerializer(serializers.ModelSerializer):
     name = serializers.CharField(source="user.name")
     username = serializers.CharField(source="user.username")
     email = serializers.EmailField(source="user.email")
+    image = serializers.SerializerMethodField()
 
     class Meta:
         model = StoreUser
-        fields = ["uid", "name", "email", "username"]
+        fields = ["uid", "name", "email", "username", "image"]
+
+
+    def get_image(self, obj) -> dict or None:
+        if obj.user.image:
+            try:
+                return {
+                    'small': domain + obj.user.image.crop['400x400'].url,
+                    'medium': domain + obj.user.image.crop['600x600'].url,
+                    'large': domain + obj.user.image.crop['1000x1000'].url,
+                    'full_size': domain + obj.user.image.url,
+                }
+            except Exception as e:
+                return {'error': str(e)}  # Handle errors gracefully
+        return None
+
 
 
 class GachaHistorySerializer(serializers.Serializer):
