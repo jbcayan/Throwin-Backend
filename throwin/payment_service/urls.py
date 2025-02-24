@@ -10,6 +10,8 @@ from .views import (
 
 )
 
+from .gmo_pg.views import GMOCreditCardPaymentView
+
 # Namespace for the app
 app_name = "payment_service"
 
@@ -31,4 +33,7 @@ urlpatterns = [
     # Endppoint for Bank Details
     path("bank-accounts/", UserBankAccountListCreateView.as_view(), name="user-bank-accounts"),
     path("bank-accounts/<int:pk>/", UserBankAccountUpdateView.as_view(), name="user-bank-account-detail"),
+
+    # GMO PG Credit Card Payment
+    path("gmo-pg/credit-card/", GMOCreditCardPaymentView.as_view(), name="gmo_credit_card_payment"),
 ]
