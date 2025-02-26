@@ -8,7 +8,6 @@ from store.rest.views.restaurant_owner import (
     StaffListByStoreView,
     RestaurantGachaHistoryView,
     RestaurantOwnerChangeNameView,
-    RestaurantOwnerChangeEmailRequestView,
     RestaurantOwnerDetailView
 )
 
@@ -33,8 +32,5 @@ urlpatterns = [
     ),
     path("/settings/change-name", RestaurantOwnerChangeNameView.as_view(),
          name="change-name"
-    ),
-    path("/settings/change-email-request", RestaurantOwnerChangeEmailRequestView.as_view(),
-         name="change-email-request"
     ),
 ]

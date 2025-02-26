@@ -13,7 +13,9 @@ from common.permissions import (
     IsFCAdminUser,
     IsGlowAdminUser,
     IsSalesAgentUser,
-    CheckAnyPermission
+    CheckAnyPermission,
+    IsRestaurantOwnerUser,
+    IsSuperAdminUser
 )
 
 from store.models import Restaurant
@@ -23,6 +25,7 @@ from store.rest.serializers.fc_glow_sales_agents import (
     ActivationNewUserSerializer,
     SalesAgentListCreateSerializer,
     ActivationSerializer,
+    AdminsChangeEmailRequestSerializer,
 )
 from django.db import transaction
 
@@ -294,3 +297,30 @@ class SalesAgentRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView)
         instance = self.get_object()
         self.perform_destroy(instance)
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+@extend_schema(
+    summary="Request email change for FC, GLOW, Sales Agent and Restaurant Owner",
+    methods=["POST"],
+)
+class AdminsChangeEmailRequestView(generics.GenericAPIView):
+    """
+    API endpoint for restaurant owners to request an email change.
+    """
+    available_permission_classes = (
+        IsRestaurantOwnerUser,
+        IsFCAdminUser,
+        IsGlowAdminUser,
+        IsSuperAdminUser,
+        IsSalesAgentUser,
+    )
+    permission_classes = (CheckAnyPermission,)
+    serializer_class = AdminsChangeEmailRequestSerializer
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({
+            "detail": "Activation link sent to the new email."
+        }, status=status.HTTP_200_OK)

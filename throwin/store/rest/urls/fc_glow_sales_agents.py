@@ -8,6 +8,7 @@ from store.rest.views.fc_glow_sales_agents import (
     SalesAgentListCreateView,
     SalesAgentRetrieveUpdateDestroyView,
     ActivateAccountView,
+    AdminsChangeEmailRequestView,
 )
 
 urlpatterns = [
@@ -23,6 +24,9 @@ urlpatterns = [
     path('/activate/<uidb64>/<token>', ActivateAccountView.as_view(),
         name='activate-account'
     ),
+    path("/settings/change-email-request", AdminsChangeEmailRequestView.as_view(),
+         name="change-email-request"
+         ),
     path("/sales-agents", SalesAgentListCreateView.as_view(),
         name="sales-agent-list-create"
     ),

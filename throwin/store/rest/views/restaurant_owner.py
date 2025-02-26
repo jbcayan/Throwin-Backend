@@ -36,7 +36,6 @@ from store.rest.serializers.restaurant_owner import (
     StaffUserSerializer,
     GachaHistorySerializer,
     ChangeRestaurantOwnerNameSerializer,
-    RestaurantOwnerChangeEmailRequestSerializer,
     RestaurantOwnerDetailSerializer
 )
 
@@ -356,33 +355,6 @@ class RestaurantOwnerChangeNameView(generics.CreateAPIView):
     available_permission_classes = (IsRestaurantOwnerUser,)
     permission_classes = (CheckAnyPermission,)
     serializer_class = ChangeRestaurantOwnerNameSerializer
-
-@extend_schema(
-    summary="Request an email change for the restaurant owner.",
-    methods=["POST"],
-)
-class RestaurantOwnerChangeEmailRequestView(generics.GenericAPIView):
-    """
-    API endpoint for restaurant owners to request an email change.
-    """
-    available_permission_classes = (
-        IsRestaurantOwnerUser,
-        IsFCAdminUser,
-        IsGlowAdminUser,
-        IsSuperAdminUser,
-        IsSalesAgentUser
-    )
-    permission_classes = (CheckAnyPermission,)
-    serializer_class = RestaurantOwnerChangeEmailRequestSerializer
-
-    def post(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response({
-            "detail": "Activation link sent to the new email."
-        }, status=status.HTTP_200_OK)
 
 
 class RestaurantOwnerDetailView(generics.GenericAPIView):

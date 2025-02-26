@@ -414,43 +414,6 @@ class ChangeRestaurantOwnerNameSerializer(serializers.Serializer):
         )
         return user
 
-class RestaurantOwnerChangeEmailRequestSerializer(serializers.Serializer):
-    """
-    Serializer for changing the email of the restaurant owner
-    """
-    email = serializers.EmailField()
-    password = serializers.CharField(write_only=True)
-
-    def validate(self, data):
-        user = self.context['request'].user
-
-        # Authenticate user with provided password
-        if not user.check_password(data['password']):
-            raise serializers.ValidationError({
-                "detail": "Incorrect password."
-            })
-
-        if user.email == data['email']:
-            raise serializers.ValidationError({"email": "New email is the same as the current email."})
-
-        # Check if the new email is already in use
-        if User.objects.filter(email=data['email']).exists():
-            raise serializers.ValidationError({"email": "This email is already in use."})
-
-        return data
-
-    def save(self):
-        user = self.context['request'].user
-        new_email = self.validated_data['email']
-
-        # Generate activation link
-        activation_url = generate_admin_account_activation_url(user, new_email)
-
-        # Send activation email
-        subject = "Email Change Request"
-        message = f"Please click the following link to verify your new email: {activation_url}"
-        send_mail_task.delay(subject, message, new_email)
-
 
 class RestaurantOwnerDetailSerializer(serializers.Serializer):
     company_name = serializers.CharField(source='restaurant.name')
