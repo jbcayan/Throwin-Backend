@@ -68,13 +68,25 @@ class RoleBasedPaymentHistoryView(generics.ListAPIView):
         elif user.kind == UserKind.CONSUMER:
             queryset = queryset.filter(customer=user)  # Only their own payments
         elif user.kind == UserKind.RESTAURANT_OWNER:
-            queryset = queryset.filter(restaurant_uid__in=user.get_agent_restaurants or [])
+            restaurant = user.get_restaurant_owner_restaurant
+            if restaurant:
+                queryset = queryset.filter(store_uid__in=[store.uid for store in restaurant.stores.all()])
+            else:
+                queryset = GMOCreditPayment.objects.none()  # No access if no linked restaurant
         elif user.kind == UserKind.SALES_AGENT:
-            queryset = queryset.filter(sales_agent_uid=user.uid)
+            agent_restaurants = user.get_agent_restaurants or []
+            store_uids = [store.uid for restaurant in agent_restaurants for store in restaurant.stores.all()]
+            queryset = queryset.filter(store_uid__in=store_uids)
         elif user.kind not in [UserKind.SUPER_ADMIN, UserKind.FC_ADMIN, UserKind.GLOW_ADMIN]:
             queryset = GMOCreditPayment.objects.none()  # Deny access if unauthorized
 
+        # Filtering by detected store, restaurant, or sales agent
+        store_uid = self.request.query_params.get("store_uid")
+        if store_uid:
+            queryset = queryset.filter(store_uid=store_uid)
+
         return queryset
+
 
 # --------------------------------------------
 # ✅ 3. API to Check Payment Status
@@ -89,6 +101,15 @@ class CheckGMOPaymentStatusView(APIView):
     def get(self, request, order_id):
         try:
             payment = GMOCreditPayment.objects.get(order_id=order_id)
-            return Response({"order_id": order_id, "status": payment.status}, status=status.HTTP_200_OK)
+            return Response({
+                "order_id": order_id,
+                "status": payment.status,
+                "transaction_id": payment.transaction_id,
+                "approval_code": payment.approval_code,
+                "process_date": payment.process_date,
+                "amount": payment.amount,
+                "currency": payment.currency,
+                "card_last4": payment.card_last4,
+            }, status=status.HTTP_200_OK)
         except GMOCreditPayment.DoesNotExist:
             return Response({"error": "Payment not found"}, status=status.HTTP_404_NOT_FOUND)

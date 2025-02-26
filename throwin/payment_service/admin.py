@@ -149,36 +149,47 @@ class BankAccountAdmin(admin.ModelAdmin):
 from django.contrib import admin
 from .gmo_pg.models import GMOCreditPayment
 
-
 @admin.register(GMOCreditPayment)
 class GMOCreditPaymentAdmin(admin.ModelAdmin):
+    """
+    Admin panel configuration for GMOCreditPayment.
+    """
     list_display = (
-        "order_id", "nickname", "customer", "staff_uid", "restaurant_uid",
-        "store_uid", "sales_agent_uid", "amount", "currency", "status", "created_at"
+        "order_id", "nickname", "amount", "currency", "status",
+        "transaction_id", "approval_code", "process_date", "created_at"
     )
-    list_filter = ("status", "currency", "created_at")
-    search_fields = ("order_id", "transaction_id", "customer__username", "nickname")
-    readonly_fields = (
-        "order_id", "access_id", "access_pass", "transaction_id",
-        "approval_code", "process_date", "card_last4", "expire_date",
-        "staff_uid", "restaurant_uid", "store_uid", "sales_agent_uid"
-    )
+    list_filter = ("status", "created_at")
+    search_fields = ("order_id", "transaction_id", "nickname", "staff_uid")
     ordering = ("-created_at",)
+    readonly_fields = (
+        "order_id", "customer", "nickname", "staff_uid", "store_uid", 
+        "amount", "currency", "status", "transaction_id", "approval_code",
+        "process_date", "card_last4", "expire_date", "pay_method",
+        "forward", "created_at", "updated_at"
+    )
 
     fieldsets = (
-        ("Order Details", {"fields": ("order_id", "amount", "currency", "status", "is_processed")}),
-        ("Payer Information", {"fields": ("customer", "nickname")}),
-        ("Recipient Information", {"fields": ("staff_uid", "restaurant_uid", "store_uid", "sales_agent_uid")}),
-        ("Transaction Details", {"fields": ("transaction_id", "approval_code", "process_date")}),
-        ("Card Information", {"fields": ("card_last4", "expire_date", "pay_method", "forward")}),
-        ("GMO API Details", {"fields": ("access_id", "access_pass")}),
-        ("Timestamps", {"fields": ("created_at", "updated_at")}),
+        ("Transaction Details", {
+            "fields": (
+                "order_id", "customer", "nickname", "staff_uid", "store_uid",
+                "amount", "currency", "status", "transaction_id", "approval_code",
+                "process_date"
+            )
+        }),
+        ("Card Details", {
+            "fields": ("card_last4", "expire_date", "pay_method", "forward"),
+            "classes": ("collapse",)
+        }),
+        ("Timestamps", {
+            "fields": ("created_at", "updated_at"),
+            "classes": ("collapse",)
+        }),
     )
 
     def has_add_permission(self, request):
-        """Disable manual addition of payments from the Django Admin."""
-        return False  
+        """Prevent manual creation of GMO Payments from Admin Panel."""
+        return False  # Payments should only be created through API calls
 
     def has_delete_permission(self, request, obj=None):
-        """Disable deletion of payments via Django Admin."""
-        return False  
+        """Prevent deletion of payments from the Admin Panel."""
+        return False  # Payments should not be deleted for audit trail purposes

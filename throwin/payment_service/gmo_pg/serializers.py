@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.conf import settings
 from .models import GMOCreditPayment
+from accounts.models import User
+from store.models import Store  # ✅ Corrected Import
 import uuid
 import requests
 import logging
@@ -18,68 +20,70 @@ GMO_API_URL = os.getenv("GMO_API_URL")
 GMO_SHOP_ID = os.getenv("GMO_SHOP_ID")
 GMO_SHOP_PASS = os.getenv("GMO_SHOP_PASS")
 
-
 from datetime import datetime
 
-# Convert GMO's date format (YYYYMMDDHHMMSS) to Django's format (YYYY-MM-DD HH:MM:SS)
 def convert_gmo_date(gmo_date):
-    if gmo_date and len(gmo_date) == 14:  # Ensure correct length
+    """Convert GMO's date format (YYYYMMDDHHMMSS) to Django's format (YYYY-MM-DD HH:MM:SS)."""
+    if gmo_date and len(gmo_date) == 14:
         return datetime.strptime(gmo_date, "%Y%m%d%H%M%S")
     return None
 
 class GMOCreditPaymentSerializer(serializers.ModelSerializer):
-    staff_uid = serializers.UUIDField(write_only=True)  # Reference staff by UID
-    restaurant_uid = serializers.UUIDField(write_only=True)  # Reference restaurant by UID
-    store_uid = serializers.UUIDField(write_only=True, required=False)  # Optional store UID
-    sales_agent_uid = serializers.UUIDField(write_only=True, required=False)  # Optional sales agent UID
-    token = serializers.CharField(write_only=True, required=True)  # Token is required for payment execution
+    staff_uid = serializers.UUIDField(write_only=True)
+    store_uid = serializers.UUIDField(write_only=True, required=True)
+
+    # Additional fields in API response
+    staff_name = serializers.CharField(source="staff.name", read_only=True)
+    restaurant_name = serializers.CharField(source="restaurant.name", read_only=True)
+    store_name = serializers.CharField(source="store.name", read_only=True)
+    sales_agent_name = serializers.CharField(source="sales_agent.name", read_only=True)
+    customer_name = serializers.CharField(source="customer.name", read_only=True)
+
+    token = serializers.CharField(write_only=True, required=True)
 
     class Meta:
         model = GMOCreditPayment
         fields = [
-            "order_id", "nickname", "staff_uid", "restaurant_uid", "store_uid", "sales_agent_uid",
-            "amount", "currency", "token", "status", "transaction_id", "approval_code", "process_date",
-            "card_last4", "expire_date", "pay_method", "forward", "created_at"
+            "order_id", "nickname", "staff_uid", "store_uid",
+            "amount", "currency", "token", "status", "transaction_id",
+            "approval_code", "process_date", "card_last4", "expire_date",
+            "pay_method", "forward", "created_at",
+
+            # Newly added fields
+            "staff_name", "restaurant_name", "store_name",
+            "sales_agent_name", "customer_name"
         ]
         read_only_fields = [
             "order_id", "status", "transaction_id", "approval_code", "process_date",
-            "card_last4", "expire_date", "pay_method", "forward", "created_at"
+            "card_last4", "expire_date", "pay_method", "forward", "created_at",
+            "staff_name", "restaurant_name", "store_name",
+            "sales_agent_name", "customer_name"
         ]
-
-    def validate_amount(self, value):
-        """Ensure amount is numeric and greater than zero."""
-        if value <= 0:
-            raise serializers.ValidationError("Amount must be greater than zero.")
-        return value
 
     def validate(self, data):
         """
-        Cross-validate staff, restaurant, and store relationships.
+        Validate store and staff relationships automatically.
         """
         staff_uid = data["staff_uid"]
-        restaurant_uid = data["restaurant_uid"]
-        store_uid = data.get("store_uid")
+        store_uid = data["store_uid"]
 
-        # Validation logic for staff belonging to the restaurant
-        # (Assuming we have a function to verify this)
-        if not self._is_staff_of_restaurant(staff_uid, restaurant_uid):
-            raise serializers.ValidationError("The selected staff does not belong to the specified restaurant.")
+        # Validate Store existence
+        try:
+            store = Store.objects.get(uid=store_uid)
+        except Store.DoesNotExist:
+            raise serializers.ValidationError("Invalid store_uid: Store does not exist.")
 
-        # Validation logic for store belonging to the restaurant
-        if store_uid and not self._is_store_of_restaurant(store_uid, restaurant_uid):
-            raise serializers.ValidationError("The selected store does not belong to the specified restaurant.")
+        # Validate Staff existence
+        try:
+            staff = User.objects.get(uid=staff_uid, kind="restaurant_staff")
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Invalid staff_uid: Staff does not exist.")
+
+        # Ensure staff belongs to the detected restaurant
+        if not store.restaurant.restaurant_users.filter(user=staff, role="restaurant_staff").exists():
+            raise serializers.ValidationError("The staff does not belong to the detected restaurant.")
 
         return data
-
-    def _is_staff_of_restaurant(self, staff_uid, restaurant_uid):
-        """Check if the staff belongs to the restaurant (Placeholder function)."""
-        # Implement logic to verify staff's restaurant relationship
-        return True
-
-    def _is_store_of_restaurant(self, store_uid, restaurant_uid):
-        """Check if the store belongs to the restaurant (Placeholder function)."""
-        # Implement logic to verify store's restaurant relationship
-        return True
 
     def create(self, validated_data):
         """
@@ -87,13 +91,17 @@ class GMOCreditPaymentSerializer(serializers.ModelSerializer):
         Step 2: Execute Payment using Token (`ExecTran`)
         """
         staff_uid = validated_data["staff_uid"]
-        restaurant_uid = validated_data["restaurant_uid"]
-        store_uid = validated_data.get("store_uid")
-        sales_agent_uid = validated_data.get("sales_agent_uid")
+        store_uid = validated_data["store_uid"]
         amount = validated_data["amount"]
         token = validated_data["token"]
+
         customer = self.context["request"].user if self.context["request"].user.is_authenticated else None
         nickname = customer.username if customer else validated_data.get("nickname", "Anonymous")
+
+        # Detect restaurant and sales agent dynamically
+        store = Store.objects.get(uid=store_uid)
+        restaurant = store.restaurant
+        sales_agent = restaurant.sales_agent if restaurant else None
 
         # Generate a unique Order ID
         order_id = f"ORDER{uuid.uuid4().hex[:12]}"
@@ -135,9 +143,7 @@ class GMOCreditPaymentSerializer(serializers.ModelSerializer):
             customer=customer,
             nickname=nickname,
             staff_uid=staff_uid,
-            restaurant_uid=restaurant_uid,
             store_uid=store_uid,
-            sales_agent_uid=sales_agent_uid,
             amount=amount,
             currency="JPY",
             access_id=access_id,

@@ -1,6 +1,9 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 import uuid
+from accounts.models import User  # Importing User for reference
+from accounts.choices import UserKind  # Importing role choices
+from store.models import Store  # ✅ Corrected Import
 
 User = get_user_model()
 
@@ -31,17 +34,9 @@ class GMOCreditPayment(models.Model):
         default=uuid.uuid4, editable=False, db_index=True,
         help_text="Unique identifier for staff receiving the tip"
     )
-    restaurant_uid = models.UUIDField(
-        default=uuid.uuid4, editable=False, db_index=True,
-        help_text="Unique identifier for restaurant"
-    )
     store_uid = models.UUIDField(
         default=uuid.uuid4, blank=True, null=True, db_index=True,
         help_text="Unique identifier for store (optional)"
-    )
-    sales_agent_uid = models.UUIDField(
-        default=uuid.uuid4, blank=True, null=True, db_index=True,
-        help_text="Unique identifier for sales agent (optional)"
     )
 
     amount = models.DecimalField(
@@ -95,3 +90,26 @@ class GMOCreditPayment(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+
+    # ---------------------
+    # Dynamic Relationship Properties
+    # ---------------------
+
+    @property
+    def restaurant(self):
+        """
+        Dynamically fetch the restaurant based on the store.
+        """
+        try:
+            store = Store.objects.get(uid=self.store_uid)
+            return store.restaurant if store else None
+        except Store.DoesNotExist:
+            return None
+
+    @property
+    def sales_agent(self):
+        """
+        Dynamically fetch the sales agent based on the restaurant.
+        """
+        restaurant = self.restaurant
+        return restaurant.sales_agent if restaurant else None
