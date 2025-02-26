@@ -19,6 +19,10 @@ from accounts.choices import UserKind, PublicStatus
 from common.permissions import (
     CheckAnyPermission,
     IsRestaurantOwnerUser,
+    IsFCAdminUser,
+    IsGlowAdminUser,
+    IsSuperAdminUser,
+    IsSalesAgentUser
 )
 from gacha.choices import GachaKind
 from payment_service.bank_details.bank_details_model import BankAccount
@@ -32,7 +36,8 @@ from store.rest.serializers.restaurant_owner import (
     StaffUserSerializer,
     GachaHistorySerializer,
     ChangeRestaurantOwnerNameSerializer,
-    RestaurantOwnerChangeEmailRequestSerializer, RestaurantOwnerDetailSerializer
+    RestaurantOwnerChangeEmailRequestSerializer,
+    RestaurantOwnerDetailSerializer
 )
 
 User = get_user_model()
@@ -360,7 +365,13 @@ class RestaurantOwnerChangeEmailRequestView(generics.GenericAPIView):
     """
     API endpoint for restaurant owners to request an email change.
     """
-    available_permission_classes = (IsRestaurantOwnerUser,)
+    available_permission_classes = (
+        IsRestaurantOwnerUser,
+        IsFCAdminUser,
+        IsGlowAdminUser,
+        IsSuperAdminUser,
+        IsSalesAgentUser
+    )
     permission_classes = (CheckAnyPermission,)
     serializer_class = RestaurantOwnerChangeEmailRequestSerializer
 
