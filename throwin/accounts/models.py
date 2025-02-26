@@ -182,8 +182,8 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
         """Retrieve the restaurant where the user has the role 'RESTAURANT_STAFF'."""
         if self.kind == UserKind.RESTAURANT_STAFF:
             try:
-                return self.sales_agent_restaurants.first()
-            except Exception as e:
+                return self.user_restaurants.filter(role=UserKind.RESTAURANT_STAFF).first().restaurant
+            except Exception:
                 return None
         return None
 
