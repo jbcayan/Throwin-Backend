@@ -169,21 +169,21 @@ class User(AbstractUser, BaseModel, PermissionsMixin):
 
     @property
     def get_restaurant_owner_restaurant(self):
-        """Retrieve the restaurant where the user has the role 'RESTAURANT_OWNER'"""
+        """Retrieve the restaurant where the user has the role 'RESTAURANT_OWNER'."""
         if self.kind == UserKind.RESTAURANT_OWNER:
             try:
-                return self.user_restaurants.filter(role=UserKind.RESTAURANT_OWNER).first().restaurant
+                return self.restaurants.first()  # Assuming 'restaurants' is the related_name in Restaurant model
             except Exception:
                 return None
         return None
 
     @property
     def get_staff_restaurant(self):
-        """Retrieve the restaurant where the user has the role 'RESTAURANT_STAFF'"""
+        """Retrieve the restaurant where the user has the role 'RESTAURANT_STAFF'."""
         if self.kind == UserKind.RESTAURANT_STAFF:
             try:
-                return self.user_restaurants.filter(role=UserKind.RESTAURANT_STAFF).first().restaurant
-            except Exception:
+                return self.sales_agent_restaurants.first()
+            except Exception as e:
                 return None
         return None
 

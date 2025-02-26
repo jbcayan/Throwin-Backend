@@ -23,7 +23,7 @@ from accounts.tasks import send_mail_task
 
 from payment_service.bank_details.bank_details_model import BankAccount
 
-from store.models import Restaurant
+from store.models import Restaurant, RestaurantUser
 
 User = get_user_model()
 
@@ -133,9 +133,24 @@ class OrganizationCreateSerializer(serializers.Serializer):
                 corporate_number=validated_data.get("corporate_number"),
                 created_by=user,
             )
+
+            restaurant_user = RestaurantUser.objects.create(
+                restaurant=restaurant,
+                user=owner,
+                created_by=user,
+                role=UserKind.RESTAURANT_OWNER,
+            )
+
             if sales_agent:
                 restaurant.sales_agent = sales_agent
                 restaurant.save(update_fields=["sales_agent"])
+
+                restaurant_user_sales = RestaurantUser.objects.create(
+                    restaurant=restaurant,
+                    user=sales_agent,
+                    created_by=user,
+                    role=UserKind.SALES_AGENT,
+                )
 
             # Create bank account for the owner
             BankAccount.objects.create(

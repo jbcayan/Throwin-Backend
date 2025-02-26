@@ -188,42 +188,28 @@ class MeSerializer(BaseSerializer):
     """This serializer is used to represent the current user's details."""
     image = serializers.SerializerMethodField()
     introduction = serializers.CharField(
-        source="profile.introduction",
-        allow_blank=True,
-        allow_null=True,
+        source="profile.introduction", allow_blank=True, allow_null=True,
     )
     address = serializers.CharField(
-        source="profile.address",
-        allow_blank=True,
-        allow_null=True,
+        source="profile.address", allow_blank=True, allow_null=True,
     )
     total_score = serializers.IntegerField(
-        source="profile.total_score",
-        default=0
+        source="profile.total_score", default=0
     )
     fun_fact = serializers.CharField(
-        source="profile.fun_fact",
-        allow_blank=True,
-        allow_null=True,
+        source="profile.fun_fact", allow_blank=True, allow_null=True,
         help_text="Short fun fact about the user (e.g., 'Eating and laughing')"
+    )
+    company_name = serializers.CharField(
+        source="profile.company_name", allow_blank=True, allow_null=True
     )
 
     class Meta(BaseSerializer.Meta):
         model = User
         fields = (
-            "id",
-            "uid",
-            "name",
-            "email",
-            "phone_number",
-            "username",
-            "image",
-            "auth_provider",
-            "kind",
-            "introduction",
-            "address",
-            "total_score",
-            "fun_fact",
+            "id", "uid", "name", "email", "phone_number", "username", "image",
+            "auth_provider", "kind", "introduction", "address", "total_score",
+            "fun_fact", "company_name"
         )
 
     def get_image(self, obj) -> dict or None:
@@ -247,9 +233,14 @@ class MeSerializer(BaseSerializer):
         if instance.kind != UserKind.RESTAURANT_STAFF:
             # Keep only the basic fields for non-restaurant staff users
             fields_to_keep = {
-                "id", "uid", "name", "email", "phone_number", "username", "image", "auth_provider", "kind"
+                "id", "uid", "name", "email", "phone_number", "username",
+                "image", "auth_provider", "kind"
             }
             representation = {key: representation[key] for key in fields_to_keep if key in representation}
+
+        # Include company_name for RESTAURANT_OWNER and SALES_AGENT
+        if instance.kind in {UserKind.RESTAURANT_OWNER, UserKind.SALES_AGENT}:
+            representation['company_name'] = instance.profile.company_name
 
         return representation
 

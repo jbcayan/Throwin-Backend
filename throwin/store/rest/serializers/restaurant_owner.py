@@ -75,6 +75,7 @@ class StoreCreateSerializer(serializers.ModelSerializer):
             f"{amount:.2f}" for amount in throwin_amounts
         )
         validated_data["restaurant"] = self.context["request"].user.get_restaurant_owner_restaurant
+
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
