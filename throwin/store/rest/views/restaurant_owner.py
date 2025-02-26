@@ -61,21 +61,23 @@ class StoreListCreateView(generics.ListCreateAPIView):
         # Get the restaurant of the logged in restaurant owner
         try:
             user_restaurant = self.request.user.get_restaurant_owner_restaurant
+
+            return Store().get_all_actives().filter(
+                restaurant_id=user_restaurant.id
+            ).only(
+                "uid",
+                "name",
+                "code",
+                "restaurant",
+                "exposure",
+                "banner",
+            ).select_related(
+                "restaurant"
+            )
+
         except AttributeError as e:
             return Store.objects.none()
 
-        return Store().get_all_actives().filter(
-            restaurant_id=user_restaurant.id
-        ).only(
-            "uid",
-            "name",
-            "code",
-            "restaurant",
-            "exposure",
-            "banner",
-        ).select_related(
-            "restaurant"
-        )
 
 @extend_schema(
     summary="Retrieve, Update, or Delete Store for Restaurant Owner",
@@ -97,23 +99,24 @@ class StoreRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView):
     def get_object(self):
         try:
             user_restaurant = self.request.user.get_restaurant_owner_restaurant
+
+            store = Store.objects.only(
+                "uid",
+                "name",
+                "code",
+                "restaurant",
+                "exposure",
+                "banner",
+            ).select_related(
+                "restaurant"
+            ).get(
+                uid=self.kwargs["uid"],
+                restaurant_id=user_restaurant.id
+            )
+            return store
+
         except AttributeError as e:
             return Store.objects.none()
-
-        store = Store.objects.only(
-            "uid",
-            "name",
-            "code",
-            "restaurant",
-            "exposure",
-            "banner",
-        ).select_related(
-            "restaurant"
-        ).get(
-            uid=self.kwargs["uid"],
-            restaurant_id=user_restaurant.id
-        )
-        return store
 
 @extend_schema(
     summary="List and Create Staff for Restaurant Owner",
@@ -139,24 +142,25 @@ class StaffListCreateView(generics.ListCreateAPIView):
         # Get the restaurant of the logged in restaurant owner
         try:
             user_restaurant = self.request.user.get_restaurant_owner_restaurant
+
+            return (
+                RestaurantUser.objects.filter(
+                    restaurant=user_restaurant, role=UserKind.RESTAURANT_STAFF
+                )
+                .select_related("user")
+                .only(
+                    "user__uid",
+                    "user__name",
+                    "user__email",
+                    "user__image",
+                    "user__public_status",
+                    "user__username",
+                    "user__phone_number",
+                )
+            )
+
         except AttributeError as e:
             return RestaurantUser.objects.none()
-
-        return (
-            RestaurantUser.objects.filter(
-                restaurant=user_restaurant, role=UserKind.RESTAURANT_STAFF
-            )
-            .select_related("user")
-            .only(
-                "user__uid",
-                "user__name",
-                "user__email",
-                "user__image",
-                "user__public_status",
-                "user__username",
-                "user__phone_number",
-            )
-        )
 
 
 # class QRCodeGenerationView(APIView):
