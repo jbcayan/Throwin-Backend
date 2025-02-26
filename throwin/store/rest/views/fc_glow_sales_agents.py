@@ -25,7 +25,7 @@ from store.rest.serializers.fc_glow_sales_agents import (
     ActivationNewUserSerializer,
     SalesAgentListCreateSerializer,
     ActivationSerializer,
-    AdminsChangeEmailRequestSerializer,
+    AdminsChangeEmailRequestSerializer, ChangeAdminNameSerializer,
 )
 from django.db import transaction
 
@@ -324,3 +324,17 @@ class AdminsChangeEmailRequestView(generics.GenericAPIView):
         return Response({
             "detail": "Activation link sent to the new email."
         }, status=status.HTTP_200_OK)
+
+@extend_schema(
+    summary="Change the FC, GLOW, Sales Agent name.",
+    methods=["POST"],
+)
+class AdminChangeNameView(generics.CreateAPIView):
+    available_permission_classes = (
+        IsSuperAdminUser,
+        IsGlowAdminUser,
+        IsFCAdminUser,
+        IsSalesAgentUser,
+    )
+    permission_classes = (CheckAnyPermission,)
+    serializer_class = ChangeAdminNameSerializer

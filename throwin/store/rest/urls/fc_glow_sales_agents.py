@@ -9,6 +9,7 @@ from store.rest.views.fc_glow_sales_agents import (
     SalesAgentRetrieveUpdateDestroyView,
     ActivateAccountView,
     AdminsChangeEmailRequestView,
+    AdminChangeNameView,
 )
 
 urlpatterns = [
@@ -32,5 +33,8 @@ urlpatterns = [
     ),
     path("/sales-agents/<str:uid>", SalesAgentRetrieveUpdateDestroyView.as_view(),
         name="sales-agent-detail"
+    ),
+    path("/settings/change-name", AdminChangeNameView.as_view(),
+         name="change-name"
     ),
 ]
