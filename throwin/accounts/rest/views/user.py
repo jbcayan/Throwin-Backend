@@ -250,6 +250,8 @@ class StaffDetailForConsumer(generics.RetrieveAPIView):
 
         data["liked"] = liked
         data["store_uid"] = store_user.store.uid
+        data["store_name"] = store_user.store.name
+        data["restaurant_uid"] = store_user.store.restaurant.uid
 
         return Response(data, status=status.HTTP_200_OK)
 
