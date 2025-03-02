@@ -195,6 +195,7 @@ class StaffDetailForConsumerSerializer(BaseSerializer):
             return staff_store.throwin_amounts.split(",")  # Convert string to list
         return []
 
+
 class MeSerializer(BaseSerializer):
     """This serializer is used to represent the current user's details."""
     image = serializers.SerializerMethodField()

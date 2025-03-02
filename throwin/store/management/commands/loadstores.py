@@ -27,6 +27,7 @@ class Command(BaseCommand):
                     name=japanese_name,
                     description="私たちは世界最高の食品を提供します",
                     restaurant=restaurant,
+                    throwin_amounts="1000,2000,5000,10000",
                 )
                 if created:
                     self.stdout.write(f"Created store: {english_name}\n")
