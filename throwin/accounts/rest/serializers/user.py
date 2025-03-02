@@ -41,6 +41,7 @@ class AccountActivationSerializer(serializers.Serializer):
         except (TypeError, ValueError, OverflowError, TemporaryUser.DoesNotExist):
             raise serializers.ValidationError("Invalid Token or User")
 
+
 class UserNameSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
@@ -96,6 +97,7 @@ class EmailChangeRequestSerializer(serializers.Serializer):
             to_email=new_email
         )
 
+
 class EmailChangeTokenSerializer(serializers.Serializer):
     token = serializers.CharField()
 
@@ -114,6 +116,7 @@ class EmailChangeTokenSerializer(serializers.Serializer):
 
         except Exception:
             raise serializers.ValidationError("Invalid token")
+
 
 class StaffDetailForConsumerSerializer(BaseSerializer):
     """Serializer to represent restaurant stuff details."""
@@ -136,6 +139,7 @@ class StaffDetailForConsumerSerializer(BaseSerializer):
     )
     store_code = serializers.SerializerMethodField()
     store_uid = serializers.SerializerMethodField()
+    throwin_amounts = serializers.SerializerMethodField()
 
     class Meta(BaseSerializer.Meta):
         model = User
@@ -149,6 +153,7 @@ class StaffDetailForConsumerSerializer(BaseSerializer):
             "fun_fact",
             "store_code",
             "store_uid",
+            "throwin_amounts",
         )
 
     def get_image(self, obj) -> dict or None:
@@ -183,6 +188,12 @@ class StaffDetailForConsumerSerializer(BaseSerializer):
             return staff_store.uid
         return None
 
+    def get_throwin_amounts(self, obj) -> list or None:
+        """Get the throwin amounts associated with the staff member's store."""
+        staff_store = obj.get_staff_store
+        if staff_store and staff_store.throwin_amounts:
+            return staff_store.throwin_amounts.split(",")  # Convert string to list
+        return []
 
 class MeSerializer(BaseSerializer):
     """This serializer is used to represent the current user's details."""
@@ -243,6 +254,7 @@ class MeSerializer(BaseSerializer):
             representation['company_name'] = instance.profile.company_name
 
         return representation
+
 
 class StaffLikeToggleSerializer(serializers.Serializer):
     uid = serializers.UUIDField()

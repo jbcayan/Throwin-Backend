@@ -313,7 +313,7 @@ class FavoriteStaffList(generics.ListAPIView):
         IsConsumerOrGuestUser,
         IsConsumerUser,
         IsGlowAdminUser,
-        IsFCAdminUser
+        IsFCAdminUser,
     )
     permission_classes = (CheckAnyPermission,)
 
