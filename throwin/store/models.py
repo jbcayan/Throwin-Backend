@@ -231,7 +231,7 @@ class StoreUser(BaseModel):
 
     class Meta:
         unique_together = ("store", "user")
-        ordering = ['-created_at']# Ensure a user can have only one role per store
+        ordering = ['-created_at']  # Ensure a user can have only one role per store
 
     def __str__(self):
         return f"{self.user} - {self.role} - {self.store}"

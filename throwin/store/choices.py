@@ -18,6 +18,7 @@ class ExposeStatus(TextChoices):
     PRIVATE = "private", "Private"
     UNDEFINED = "undefined", "Undefined"
 
+
 class SubscriptionStatus(TextChoices):
     ACTIVE = "active", "Active"
     INACTIVE = "inactive", "Inactive"
