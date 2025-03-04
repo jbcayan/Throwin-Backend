@@ -36,19 +36,19 @@ jobs:
           python-version: '3.10'
       
       - name: Cache pip packages
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
           restore-keys: |
             ${{ runner.os }}-pip-
-      
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r ../requirements_live.txt
         working-directory: ./throwin  # Ensure this line is correct based on your project structure
-      
+
       - name: Set environment variables from secrets
         run: |
           echo "SECRET_KEY=${{ secrets.SECRET_KEY }}" >> $GITHUB_ENV
@@ -78,16 +78,16 @@ jobs:
           echo "PAYPAL_CLIENT_ID=${{ secrets.PAYPAL_CLIENT_ID }}" >> $GITHUB_ENV
           echo "PAYPAL_CLIENT_SECRET=${{ secrets.PAYPAL_CLIENT_SECRET }}" >> $GITHUB_ENV
       
-      
+
       - name: Run migrations
         run: python manage.py migrate
         working-directory: ./throwin  # Corrected directory to manage.py's location
-      
+
       - name: Run tests
         run: python manage.py test
         working-directory: ./throwin  # Corrected directory to manage.py's location
-      
+
       - name: Collect static
         run: python manage.py collectstatic --noinput
         working-directory: ./throwin  # Corrected directory to manage.py's location
-        
+
