@@ -2,20 +2,14 @@
 import random
 from decimal import Decimal
 
-from django.contrib.auth import authenticate
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db import transaction
-
 from rest_framework import serializers
 
 from accounts.choices import UserKind
-from accounts.tasks import send_mail_task
-from accounts.utils import generate_admin_account_activation_url
-
 from common.serializers import BaseSerializer
 from core.utils import to_decimal
-
 from store.models import Store, StoreUser, RestaurantUser
 
 User = get_user_model()
