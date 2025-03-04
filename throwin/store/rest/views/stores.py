@@ -25,7 +25,7 @@ class StoreList(generics.ListAPIView):
         return Store().get_all_actives()
 
 
-class StoreDetailUpdateDestroy(generics.RetrieveAPIView):
+class StoreDetail(generics.RetrieveAPIView):
     serializer_class = StoreSerializer
 
     permission_classes = (permissions.AllowAny,)

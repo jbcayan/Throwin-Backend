@@ -137,7 +137,6 @@ class StoreListSerializer(BaseSerializer):
                 return {'error': str(e)}  # Handle errors gracefully
         return None
 
-
     def to_representation(self, instance):
         # Convert comma-separated string back to a list of formatted strings
         response_data = super().to_representation(instance)
@@ -163,8 +162,6 @@ class StaffListSerializer(BaseSerializer):
             "public_status",
             "image",
         ]
-
-
 
     def get_image(self, obj) -> dict or None:
         if obj.user.image:
@@ -324,7 +321,6 @@ class StaffUserSerializer(serializers.ModelSerializer):
         model = StoreUser
         fields = ["uid", "name", "email", "username", "image"]
 
-
     def get_image(self, obj) -> dict or None:
         if obj.user.image:
             try:
@@ -337,7 +333,6 @@ class StaffUserSerializer(serializers.ModelSerializer):
             except Exception as e:
                 return {'error': str(e)}  # Handle errors gracefully
         return None
-
 
 
 class GachaHistorySerializer(serializers.Serializer):
@@ -364,7 +359,6 @@ class SalesAgentCreateSerializer(serializers.Serializer):
     company_name = serializers.CharField(max_length=100, required=True)
     invoice_number = serializers.CharField(max_length=20, required=True)
     corporate_number = serializers.CharField(max_length=20, required=True)
-
 
     def create(self, validated_data):
         post_code = validated_data.pop("post_code", None)
@@ -401,6 +395,7 @@ class SalesAgentCreateSerializer(serializers.Serializer):
         ])
 
         return user
+
 
 class ChangeRestaurantOwnerNameSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100, required=True)

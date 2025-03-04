@@ -2,7 +2,7 @@
 
 from django.urls import path
 
-from store.rest.views.stores import StoreList, StoreDetailUpdateDestroy
+from store.rest.views.stores import StoreList, StoreDetail
 
 
 urlpatterns = [
@@ -13,7 +13,7 @@ urlpatterns = [
     ),
     path(
         "/<str:code>",
-        StoreDetailUpdateDestroy.as_view(),
+        StoreDetail.as_view(),
         name="store-detail-update-destroy"
     ),
 ]

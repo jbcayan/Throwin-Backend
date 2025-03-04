@@ -1,4 +1,6 @@
 """Serializers for store."""
+
+from decimal import Decimal
 from django.conf import settings
 
 from rest_framework import serializers
@@ -10,6 +12,7 @@ from store.models import Store
 from versatileimagefield.serializers import VersatileImageFieldSerializer
 
 domain = settings.SITE_DOMAIN
+
 
 class StoreSerializer(BaseSerializer):
     """Serializer for store."""
@@ -41,13 +44,12 @@ class StoreSerializer(BaseSerializer):
             "logo",
             "banner",
             "restaurant_uid",
+            "throwin_amounts",
         ]
         read_only_fields = ["uid"]
 
     def create(self, validated_data):
         instance = super().create(validated_data=validated_data)
-        # instance.user_created = self.context["request"].user
-        # instance.save(update_fields=["user_created"])
 
         return instance
 
@@ -57,7 +59,7 @@ class StoreSerializer(BaseSerializer):
         # instance.save(update_fields=["user_updated"])
 
         return instance
-    
+
     def get_banner(self, obj) -> dict or None:
         if obj.banner:
             try:
@@ -70,3 +72,13 @@ class StoreSerializer(BaseSerializer):
             except Exception as e:
                 return {'error': str(e)}  # Handle errors gracefully
         return None
+
+    def to_representation(self, instance):
+        # Convert comma-separated string back to a list of formatted strings
+        response_data = super().to_representation(instance)
+        if instance.throwin_amounts:
+            response_data['throwin_amounts'] = [
+                f"{Decimal(amount):.2f}"
+                for amount in instance.throwin_amounts.split(',')
+            ]
+        return response_data
