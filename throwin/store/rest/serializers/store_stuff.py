@@ -1,13 +1,9 @@
+from django.conf import settings
 from django.contrib.auth import get_user_model
-
 from rest_framework import serializers
 
 from accounts.rest.serializers.user import StaffDetailForConsumerSerializer
-from versatileimagefield.serializers import VersatileImageFieldSerializer
-
 from store.models import StoreUser
-
-from django.conf import settings
 
 User = get_user_model()
 
