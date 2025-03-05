@@ -1,9 +1,9 @@
 """Views for password reset and password change"""
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import PasswordResetTokenGenerator
-
+from django.utils.http import urlsafe_base64_decode
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -15,8 +15,6 @@ from accounts.rest.serializers.password import (
 )
 from accounts.tasks import send_mail_task
 from accounts.utils import generate_password_reset_token_url
-
-from drf_spectacular.utils import extend_schema
 
 User = get_user_model()
 

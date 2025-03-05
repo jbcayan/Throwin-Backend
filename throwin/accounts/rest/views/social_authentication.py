@@ -1,8 +1,8 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
+
 from accounts.rest.serializers.social_authentication import GoogleSignInSerializer
-from drf_spectacular.utils import extend_schema
 
 
 @extend_schema(

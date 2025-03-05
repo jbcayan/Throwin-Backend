@@ -1,10 +1,10 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from accounts.choices import UserKind
 from accounts.rest.serializers.user_login import UserLoginSerializer
-from drf_spectacular.utils import extend_schema
 
 
 @extend_schema(
