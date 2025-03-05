@@ -31,14 +31,16 @@ class GMOCreditCardPaymentView(generics.CreateAPIView):
 
     def create(self, request, *args, **kwargs):
         logger.info(f"Received payment request: {request.data}")
-
         serializer = self.get_serializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             payment = serializer.save()
+            # Explicitly call check_payment_status and log its response
+            status_response = payment.check_payment_status()
             return Response(GMOCreditPaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
+        else:
+            logger.error("Payment processing failed: %s", serializer.errors)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        logger.error(f"Payment processing failed: {serializer.errors}")
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 # --------------------------------------------------
 # ✅ 2. Role-Based API to Retrieve Payment History

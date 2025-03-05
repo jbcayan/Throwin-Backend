@@ -1,9 +1,17 @@
 from django.db import models
 from django.contrib.auth import get_user_model
 import uuid
+import os
+import requests
+from urllib.parse import parse_qs
+from dotenv import load_dotenv
+
 from accounts.models import User  # Importing User for reference
 from accounts.choices import UserKind  # Importing role choices
 from store.models import Store  # ✅ Corrected Import
+
+# Load environment variables from the .env file
+load_dotenv()
 
 User = get_user_model()
 
@@ -113,3 +121,43 @@ class GMOCreditPayment(models.Model):
         """
         restaurant = self.restaurant
         return restaurant.sales_agent if restaurant else None
+
+    # ---------------------
+    # Payment Status Check Helper
+    # ---------------------
+
+    def check_payment_status(self):
+        """
+        Checks the payment status with the GMO API.
+        If the status returned is 'CAPTURE', update the model accordingly.
+        """
+        # Retrieve credentials and base URL from environment variables
+        shop_id = os.environ.get("GMO_SHOP_ID")
+        shop_pass = os.environ.get("GMO_SHOP_PASS")
+        base_url = os.environ.get("GMO_API_URL")
+        
+        # Construct the endpoint URL for searching the trade
+        url = f"{base_url}/payment/SearchTrade.idPass"
+        
+        # Prepare payload with credentials and order id
+        payload = {
+            "ShopID": shop_id,
+            "ShopPass": shop_pass,
+            "OrderID": self.order_id
+        }
+        
+        response = requests.post(url, data=payload)
+        
+        if response.status_code == 200:
+            # Parse the URL-encoded response text
+            parsed_response = parse_qs(response.text)
+            
+            # Get the status value (first element from list)
+            status_value = parsed_response.get("Status", [None])[0]
+            if status_value == "CAPTURE":
+                self.status = "CAPTURE"
+                self.save(update_fields=["status"])
+            return parsed_response
+        else:
+            # Handle error as needed (consider logging instead of printing)
+            return None
