@@ -16,6 +16,7 @@ from google.oauth2 import id_token
 from rest_framework.exceptions import AuthenticationFailed
 from rest_framework_simplejwt.tokens import AccessToken
 
+from accounts.choices import UserKind
 from accounts.models import TemporaryUser
 
 from common.utils import login_social_user
@@ -41,7 +42,7 @@ class Google:
             raise AuthenticationFailed('Invalid credentials') from e
 
 
-def register_social_user(provider, email, name):
+def register_social_user(provider, email, name, profile_image=""):
     """
         Register a user with social login credentials if the user does not exist,
         or return a message to continue login with existing provider.
@@ -60,6 +61,10 @@ def register_social_user(provider, email, name):
             email=email,
             name=name,
             auth_provider=provider,
+            is_active=True,
+            is_verified=True,
+            kind=UserKind.CONSUMER,
+            image=profile_image
         )
         user.set_password(settings.SOCIAL_AUTH_PASSWORD)
         user.save()

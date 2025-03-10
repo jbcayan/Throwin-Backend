@@ -22,11 +22,13 @@ GMO_SHOP_PASS = os.getenv("GMO_SHOP_PASS")
 
 from datetime import datetime
 
+
 def convert_gmo_date(gmo_date):
     """Convert GMO's date format (YYYYMMDDHHMMSS) to Django's format (YYYY-MM-DD HH:MM:SS)."""
     if gmo_date and len(gmo_date) == 14:
         return datetime.strptime(gmo_date, "%Y%m%d%H%M%S")
     return None
+
 
 class GMOCreditPaymentSerializer(serializers.ModelSerializer):
     staff_uid = serializers.UUIDField(write_only=True)
@@ -173,4 +175,5 @@ class GMOCreditPaymentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({"error": "Failed to communicate with GMO API", "details": str(e)})
         except Exception as e:
             logger.error("Unexpected error during GMO API communication: %s", str(e))
-            raise serializers.ValidationError({"error": "Unexpected error during GMO API communication", "details": str(e)})
+            raise serializers.ValidationError(
+                {"error": "Unexpected error during GMO API communication", "details": str(e)})

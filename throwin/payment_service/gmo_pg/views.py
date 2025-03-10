@@ -1,22 +1,31 @@
 import logging
+
+from django.db.models import F
+from django_filters.rest_framework import DjangoFilterBackend
+from django.contrib.auth import get_user_model
 from rest_framework import generics, permissions, pagination, status
+from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.filters import SearchFilter, OrderingFilter
 
 from accounts.choices import UserKind
+from gacha.models import SpinBalance
+from store.models import Store
 from .models import GMOCreditPayment
 from .serializers import GMOCreditPaymentSerializer
 
+User = get_user_model()
+
 # Initialize logger
 logger = logging.getLogger(__name__)
+
 
 class StandardResultsPagination(pagination.PageNumberPagination):
     """Custom pagination class for consistent paginated responses."""
     page_size = 10
     page_size_query_param = "page_size"
     max_page_size = 100
+
 
 # ------------------------------------
 # ✅ 1. API to Create & Process Payment
@@ -36,6 +45,28 @@ class GMOCreditCardPaymentView(generics.CreateAPIView):
             payment = serializer.save()
             # Explicitly call check_payment_status and log its response
             status_response = payment.check_payment_status()
+
+            # Check if payment is captured and customer is authenticated
+            if status_response and payment.status == "CAPTURE" and payment.customer:
+                # Get or create SpinBalance
+                store = Store.objects.get(uid=payment.store_uid)
+                spin_balance, created = SpinBalance.objects.get_or_create(
+                    consumer=payment.customer,
+                    store=store,
+                    restaurant=store.restaurant
+                )
+                # Fetch the current total_spend value
+                spin_balance.refresh_from_db(fields=['total_spend'])
+                # Update total_spend with the new amount
+                spin_balance.total_spend += payment.amount
+                spin_balance.save()
+
+                # Update total_score for staff
+                staff: User = User.objects.get(uid=payment.staff_uid)
+                staff_profile = staff.profile
+                staff_profile.total_score += int(payment.amount)
+                staff_profile.save(update_fields=['total_score'])
+
             return Response(GMOCreditPaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
         else:
             logger.error("Payment processing failed: %s", serializer.errors)
