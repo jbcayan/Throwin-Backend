@@ -47,25 +47,26 @@ class GMOCreditCardPaymentView(generics.CreateAPIView):
             status_response = payment.check_payment_status()
 
             # Check if payment is captured and customer is authenticated
-            if status_response and payment.status == "CAPTURE" and payment.customer:
-                # Get or create SpinBalance
-                store = Store.objects.get(uid=payment.store_uid)
-                spin_balance, created = SpinBalance.objects.get_or_create(
-                    consumer=payment.customer,
-                    store=store,
-                    restaurant=store.restaurant
-                )
-                # Fetch the current total_spend value
-                spin_balance.refresh_from_db(fields=['total_spend'])
-                # Update total_spend with the new amount
-                spin_balance.total_spend += payment.amount
-                spin_balance.save()
-
+            if status_response and payment.status == "CAPTURE":
                 # Update total_score for staff
                 staff: User = User.objects.get(uid=payment.staff_uid)
                 staff_profile = staff.profile
                 staff_profile.total_score += int(payment.amount)
                 staff_profile.save(update_fields=['total_score'])
+
+                if payment.customer:
+                    # Get or create SpinBalance
+                    store = Store.objects.get(uid=payment.store_uid)
+                    spin_balance, created = SpinBalance.objects.get_or_create(
+                        consumer=payment.customer,
+                        store=store,
+                        restaurant=store.restaurant
+                    )
+                    # Fetch the current total_spend value
+                    spin_balance.refresh_from_db(fields=['total_spend'])
+                    # Update total_spend with the new amount
+                    spin_balance.total_spend += payment.amount
+                    spin_balance.save()
 
             return Response(GMOCreditPaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
         else:
