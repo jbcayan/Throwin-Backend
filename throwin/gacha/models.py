@@ -108,7 +108,6 @@ class GachaHistory(BaseModel):
         help_text="The date and time when the gacha was consumed"
     )
 
-
     def __str__(self):
         return f"{self.consumer.name} played {self.gacha_kind} gacha at {self.store.name}"
 
