@@ -32,7 +32,7 @@ class Command(BaseCommand):
 
             fc_user = User.objects.create_user(
                 email="fc.admin@gmail.com",
-                password="string1234",
+                password="String1234",    # Previous: string1234
                 name="FC ADMIN",
                 kind=UserKind.FC_ADMIN,
                 is_active=True,
@@ -43,7 +43,7 @@ class Command(BaseCommand):
 
             glow_user = User.objects.create_user(
                 email="glow.admin@gmail.com",
-                password="string1234",
+                password="String1234",    # Previous: string1234
                 name="GLOW ADMIN",
                 kind=UserKind.FC_ADMIN,
                 is_active=True,
@@ -51,6 +51,28 @@ class Command(BaseCommand):
                 auth_provider=AuthProvider.EMAIL,
             )
             self.stdout.write(f"Created user GLOW USER: {glow_user}\n")
+
+            sales_agent = User.objects.create_user(
+                email="sales.agent@gmail.com",   # Previous: sales_agent@gmail.com
+                password="String1234",           # Previous: string1234
+                name="Sales Agent",
+                kind=UserKind.SALES_AGENT,
+                is_active=True,
+                is_verified=True,
+                auth_provider=AuthProvider.EMAIL,
+            )
+            self.stdout.write(f"Created user SALES AGENT: {sales_agent}\n")
+
+            consumer = User.objects.create_user(
+                email="consumer@gmail.com",
+                password="String1234",  # Previous: string1234
+                name="Consumer",
+                kind=UserKind.CONSUMER,
+                is_active=True,
+                is_verified=True,
+                auth_provider=AuthProvider.EMAIL,
+            )
+            self.stdout.write(f"Created user CONSUMER: {consumer}\n")
 
             for english_name, japanese_name in self.names:
                 email = f"{english_name.split()[0].lower()}@example.com"
