@@ -18,20 +18,24 @@ User = get_user_model()
 def validate_password_complexity(value):
     """Validate that the password is at least 8 characters long
     and contains one Upper case letter, one lower case letter, one number"""
-    if not re.search(r"\d", value):
-        raise ValidationError("Password must contain at least one number.")
-    if not re.search(r"[A-Z]", value):
-        raise ValidationError("Password must contain at least one uppercase letter.")
-    if not re.search(r"[a-z]", value):
-        raise ValidationError("Password must contain at least one lowercase letter.")
-
+    errors = []
+    if len(value) < 8:
+        errors.append("at least 8 characters")
+    if re.search(r"\d", value) is None:
+        errors.append("one number")
+    if re.search(r"[A-Z]", value) is None:
+        errors.append("one uppercase letter")
+    if re.search(r"[a-z]", value) is None:
+        errors.append("one lowercase letter")
+    if errors:
+        raise ValidationError("Password must contain: " + ", ".join(errors) + ".")
 
 class UserRegisterSerializerWithEmail(serializers.ModelSerializer):
     """Serializer for user registration with email."""
     password = serializers.CharField(
         write_only=True,
         required=True,
-        validators=[validate_password, validate_password_complexity],
+        validators=[validate_password_complexity],
     )
     confirm_password = serializers.CharField(write_only=True, required=True)
 
@@ -52,7 +56,6 @@ class UserRegisterSerializerWithEmail(serializers.ModelSerializer):
     def create(self, validated_data):
         """Create a new user."""
         validated_data.pop("confirm_password")
-
         return TemporaryUser.objects.create(
             email=validated_data["email"],
             password=validated_data["password"],
