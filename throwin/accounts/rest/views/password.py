@@ -39,7 +39,7 @@ class PasswordResetRequestView(generics.GenericAPIView):
         # send email
         subject = "Password Reset Request"
         message = (
-            f"Dear {user.email if user.email else user.username},\n\n"
+            f"Dear {user.name if user.name else user.email},\n\n"
             f"Please click the link below to reset your password:\n\n"
             f"{reset_url}\n\n"
             "If you did not initiate this password reset, please ignore this email.\n\n"
