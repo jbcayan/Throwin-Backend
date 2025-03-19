@@ -1,19 +1,55 @@
-from django.db import models
-from django.contrib.auth import get_user_model
 import uuid
 import os
 import requests
+import logging
 from urllib.parse import parse_qs
+from decimal import Decimal
+from django.db import models, transaction
+from django.core.exceptions import ValidationError
+from django.conf import settings
 from dotenv import load_dotenv
 
-from accounts.models import User  # Importing User for reference
 from accounts.choices import UserKind  # Importing role choices
 from store.models import Store  # ✅ Corrected Import
 
 # Load environment variables from the .env file
 load_dotenv()
 
-User = get_user_model()
+logger = logging.getLogger(__name__)
+
+
+class Balance(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,  # Lazy reference to the custom user model
+        on_delete=models.CASCADE,
+        related_name="balance",
+        help_text="The user whose balance is being tracked"
+    )
+    current_balance = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="The current balance of the user"
+    )
+    total_received = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="The total amount received by the user"
+    )
+    last_updated = models.DateTimeField(
+        auto_now=True,
+        help_text="The last time the balance was updated"
+    )
+
+    def update_balance(self, amount):
+        """
+        Update the balance with the given amount.
+        """
+        self.current_balance += amount
+        self.total_received += amount
+        self.save()
+
 
 class GMOCreditPayment(models.Model):
     STATUS_CHOICES = [
@@ -28,7 +64,8 @@ class GMOCreditPayment(models.Model):
         help_text="Unique identifier for the payment transaction"
     )
     customer = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True,
+        settings.AUTH_USER_MODEL,  # Lazy reference to the custom user model
+        on_delete=models.SET_NULL, null=True, blank=True,
         related_name="gmo_payments",
         help_text="Authenticated customer (nullable for anonymous users)"
     )
@@ -93,6 +130,11 @@ class GMOCreditPayment(models.Model):
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    is_distributed = models.BooleanField(
+        default=False,
+        help_text="Indicates if the payment amount has been distributed"
+    )
+
     def __str__(self):
         return f"Order {self.order_id} - {self.status}"
 
@@ -102,7 +144,6 @@ class GMOCreditPayment(models.Model):
     # ---------------------
     # Dynamic Relationship Properties
     # ---------------------
-
     @property
     def restaurant(self):
         """
@@ -125,39 +166,88 @@ class GMOCreditPayment(models.Model):
     # ---------------------
     # Payment Status Check Helper
     # ---------------------
-
     def check_payment_status(self):
         """
         Checks the payment status with the GMO API.
         If the status returned is 'CAPTURE', update the model accordingly.
         """
-        # Retrieve credentials and base URL from environment variables
         shop_id = os.environ.get("GMO_SHOP_ID")
         shop_pass = os.environ.get("GMO_SHOP_PASS")
         base_url = os.environ.get("GMO_API_URL")
-        
-        # Construct the endpoint URL for searching the trade
         url = f"{base_url}/payment/SearchTrade.idPass"
-        
-        # Prepare payload with credentials and order id
         payload = {
             "ShopID": shop_id,
             "ShopPass": shop_pass,
             "OrderID": self.order_id
         }
-        
-        response = requests.post(url, data=payload)
-        
+        try:
+            response = requests.post(url, data=payload)
+        except requests.RequestException as e:
+            logger.error("Request to GMO API failed: %s", str(e))
+            return None
+
         if response.status_code == 200:
-            # Parse the URL-encoded response text
             parsed_response = parse_qs(response.text)
-            
-            # Get the status value (first element from list)
             status_value = parsed_response.get("Status", [None])[0]
             if status_value == "CAPTURE":
                 self.status = "CAPTURE"
                 self.save(update_fields=["status"])
             return parsed_response
         else:
-            # Handle error as needed (consider logging instead of printing)
+            logger.error("GMO API responded with status code %s", response.status_code)
             return None
+
+    def distribute_payment(self):
+        """
+        Distribute the payment amount to Staff, Glow Admin, FC Admin, and Sales Agent.
+        This method calculates commission, net amount, and updates the balances accordingly.
+        Distribution is allowed only if payment status is 'CAPTURE'.
+        """
+        if self.status != "CAPTURE":
+            logger.error("Cannot distribute payment for order_id %s as status is not CAPTURE.", self.order_id)
+            return
+
+        if self.is_distributed:
+            logger.info("Payment with order_id %s has already been distributed.", self.order_id)
+            return
+
+        with transaction.atomic():
+            paypal_commission = (self.amount * Decimal("0.036")) + Decimal("40")
+            net_amount = self.amount - paypal_commission
+
+            staff_share = net_amount * Decimal("0.75")
+            management_share = net_amount * Decimal("0.25")
+            glow_share = management_share * Decimal("0.30")
+            fc_share = management_share * Decimal("0.30")
+            sales_agent_share = management_share * Decimal("0.40")
+
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+
+            try:
+                staff = User.objects.get(uid=self.staff_uid)
+                if hasattr(staff, "balance"):
+                    staff.balance.update_balance(staff_share)
+                    logger.info("Staff balance updated by %s for order_id %s", staff_share, self.order_id)
+            except User.DoesNotExist:
+                logger.error("Staff user with uid %s not found during distribution.", self.staff_uid)
+                raise Exception("Staff user not found for distribution.")
+
+            glow_admin = User.objects.filter(kind=UserKind.GLOW_ADMIN).first()
+            if glow_admin and hasattr(glow_admin, "balance"):
+                glow_admin.balance.update_balance(glow_share)
+                logger.info("Glow Admin balance updated by %s for order_id %s", glow_share, self.order_id)
+
+            fc_admin = User.objects.filter(kind=UserKind.FC_ADMIN).first()
+            if fc_admin and hasattr(fc_admin, "balance"):
+                fc_admin.balance.update_balance(fc_share)
+                logger.info("FC Admin balance updated by %s for order_id %s", fc_share, self.order_id)
+
+            sales_agent = self.sales_agent
+            if sales_agent and hasattr(sales_agent, "balance"):
+                sales_agent.balance.update_balance(sales_agent_share)
+                logger.info("Sales Agent balance updated by %s for order_id %s", sales_agent_share, self.order_id)
+
+            self.is_distributed = True
+            self.save(update_fields=["is_distributed"])
+            logger.info("Payment with order_id %s marked as distributed.", self.order_id)

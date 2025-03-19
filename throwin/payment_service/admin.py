@@ -144,10 +144,8 @@ class BankAccountAdmin(admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
-
-
 from django.contrib import admin
-from .gmo_pg.models import GMOCreditPayment
+from .gmo_pg.models import GMOCreditPayment, Balance
 
 @admin.register(GMOCreditPayment)
 class GMOCreditPaymentAdmin(admin.ModelAdmin):
@@ -156,18 +154,18 @@ class GMOCreditPaymentAdmin(admin.ModelAdmin):
     """
     list_display = (
         "order_id", "nickname", "amount", "currency", "status",
-        "transaction_id", "approval_code", "process_date", "created_at"
+        "transaction_id", "approval_code", "process_date", "is_distributed", "created_at"
     )
-    list_filter = ("status", "created_at")
+    list_filter = ("status", "is_distributed", "created_at")
     search_fields = ("order_id", "transaction_id", "nickname", "staff_uid")
     ordering = ("-created_at",)
     readonly_fields = (
         "order_id", "customer", "nickname", "staff_uid", "store_uid", 
         "amount", "currency", "status", "transaction_id", "approval_code",
         "process_date", "card_last4", "expire_date", "pay_method",
-        "forward", "created_at", "updated_at"
+        "forward", "access_id", "access_pass", "token", "is_processed",
+        "is_distributed", "created_at", "updated_at"
     )
-
     fieldsets = (
         ("Transaction Details", {
             "fields": (
@@ -180,6 +178,10 @@ class GMOCreditPaymentAdmin(admin.ModelAdmin):
             "fields": ("card_last4", "expire_date", "pay_method", "forward"),
             "classes": ("collapse",)
         }),
+        ("Payment Processing", {
+            "fields": ("is_processed", "is_distributed", "access_id", "access_pass", "token"),
+            "classes": ("collapse",)
+        }),
         ("Timestamps", {
             "fields": ("created_at", "updated_at"),
             "classes": ("collapse",)
@@ -188,8 +190,18 @@ class GMOCreditPaymentAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         """Prevent manual creation of GMO Payments from Admin Panel."""
-        return False  # Payments should only be created through API calls
+        return False
 
     def has_delete_permission(self, request, obj=None):
         """Prevent deletion of payments from the Admin Panel."""
-        return False  # Payments should not be deleted for audit trail purposes
+        return False
+
+
+@admin.register(Balance)
+class BalanceAdmin(admin.ModelAdmin):
+    """
+    Admin panel configuration for the Balance model.
+    """
+    list_display = ("user", "current_balance", "total_received", "last_updated")
+    search_fields = ("user__username", "user__email")
+    ordering = ("-last_updated",)

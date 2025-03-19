@@ -42,6 +42,7 @@ class UserAdmin(BaseUserAdmin):
                 "gender",
                 "image",
                 "auth_provider",
+                "password"
             )
         }),
         ("Permissions", {

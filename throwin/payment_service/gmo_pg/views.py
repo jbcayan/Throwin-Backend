@@ -43,30 +43,40 @@ class GMOCreditCardPaymentView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data, context={"request": request})
         if serializer.is_valid():
             payment = serializer.save()
-            # Explicitly call check_payment_status and log its response
+            # Check payment status with GMO API
             status_response = payment.check_payment_status()
 
-            # Check if payment is captured and customer is authenticated
+            # Proceed only if payment status is "CAPTURE" (successful)
             if status_response and payment.status == "CAPTURE":
-                # Update total_score for staff
-                staff: User = User.objects.get(uid=payment.staff_uid)
+                try:
+                    # Use a string literal for the type annotation to avoid Pylance errors
+                    staff: "User" = User.objects.get(uid=payment.staff_uid)
+                except User.DoesNotExist:
+                    logger.error("Staff user with uid %s not found", payment.staff_uid)
+                    return Response({"error": "Staff user not found"}, status=status.HTTP_404_NOT_FOUND)
+                
                 staff_profile = staff.profile
                 staff_profile.total_score += int(payment.amount)
                 staff_profile.save(update_fields=['total_score'])
 
                 if payment.customer:
-                    # Get or create SpinBalance
-                    store = Store.objects.get(uid=payment.store_uid)
+                    try:
+                        store = Store.objects.get(uid=payment.store_uid)
+                    except Store.DoesNotExist:
+                        logger.error("Store with uid %s not found", payment.store_uid)
+                        return Response({"error": "Store not found"}, status=status.HTTP_404_NOT_FOUND)
                     spin_balance, created = SpinBalance.objects.get_or_create(
                         consumer=payment.customer,
                         store=store,
                         restaurant=store.restaurant
                     )
-                    # Fetch the current total_spend value
                     spin_balance.refresh_from_db(fields=['total_spend'])
-                    # Update total_spend with the new amount
                     spin_balance.total_spend += payment.amount
                     spin_balance.save()
+
+                # Distribute the net payment to Staff, Glow Admin, FC Admin, and Sales Agent.
+                # Note: The distribute_payment() method itself includes a guard for payment status.
+                payment.distribute_payment()
 
             return Response(GMOCreditPaymentSerializer(payment).data, status=status.HTTP_201_CREATED)
         else:
