@@ -205,3 +205,21 @@ class BalanceAdmin(admin.ModelAdmin):
     list_display = ("user", "current_balance", "total_received", "last_updated")
     search_fields = ("user__username", "user__email")
     ordering = ("-last_updated",)
+
+
+
+from payment_service.gmo_pg.models import PayPalDetail, PayPalDisbursement
+
+@admin.register(PayPalDetail)
+class PayPalDetailAdmin(admin.ModelAdmin):
+    list_display = ('paypal_email', 'user', 'account_type', 'created_at', 'updated_at')
+    search_fields = ('paypal_email', 'user__email', 'user__phone_number')
+    list_filter = ('account_type',)
+    ordering = ('-created_at',)
+
+@admin.register(PayPalDisbursement)
+class PayPalDisbursementAdmin(admin.ModelAdmin):
+    list_display = ('user', 'amount', 'status', 'transaction_id', 'created_at', 'updated_at')
+    search_fields = ('user__email', 'transaction_id')
+    list_filter = ('status',)
+    ordering = ('-created_at',)

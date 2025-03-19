@@ -251,3 +251,97 @@ class GMOCreditPayment(models.Model):
             self.is_distributed = True
             self.save(update_fields=["is_distributed"])
             logger.info("Payment with order_id %s marked as distributed.", self.order_id)
+
+
+## PayPal For Disbursements ##
+from django.db import models
+from django.conf import settings
+
+class PayPalDetail(models.Model):
+    """
+    Stores PayPal account details for users.
+
+    For Sales Agents, Restaurant Owners, and Staff, each user should have their individual
+    PayPal account linked. For FC Admin and Glow Admin users, a single shared PayPal account
+    is used, so the 'user' field can remain null.
+    """
+    ACCOUNT_TYPE_CHOICES = [
+        ('individual', 'Individual'),
+        ('fc_admin', 'FC Admin'),
+        ('glow_admin', 'Glow Admin'),
+    ]
+    
+    # Link for individual accounts; leave blank for shared accounts.
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        help_text="Linked user for individual PayPal accounts. Use null for shared accounts."
+    )
+    account_type = models.CharField(
+        max_length=20,
+        choices=ACCOUNT_TYPE_CHOICES,
+        default='individual',
+        help_text="Indicates if the account is individual or shared (for FC Admin or Glow Admin)."
+    )
+    paypal_email = models.EmailField(
+        unique=True,
+        help_text="The PayPal email address associated with the account."
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        if self.user:
+            return f"{self.user} - {self.paypal_email}"
+        return f"{self.account_type} - {self.paypal_email}"
+
+
+class PayPalDisbursement(models.Model):
+    """
+    Logs disbursement transactions from a user's balance to their PayPal account.
+
+    This model records the details for each payout attempt (scheduled on the last day
+    of the month when the user's balance is at least 3000 JPY). It is used for auditing and
+    troubleshooting disbursement operations.
+    """
+    STATUS_CHOICES = [
+        ("PENDING", "Pending"),
+        ("COMPLETED", "Completed"),
+        ("FAILED", "Failed"),
+    ]
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="paypal_disbursements",
+        help_text="The user receiving the disbursement."
+    )
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text="The disbursed amount in JPY."
+    )
+    transaction_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Transaction ID returned by the PayPal API."
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="PENDING",
+        help_text="The current status of the disbursement."
+    )
+    message = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Optional message or error detail regarding the disbursement."
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Disbursement for {self.user} of {self.amount} JPY - {self.status}"

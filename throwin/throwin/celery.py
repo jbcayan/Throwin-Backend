@@ -39,3 +39,15 @@ app.conf.beat_schedule = {
 #         "schedule": crontab(minute="*"),  # Run every minute
 #     },
 # }
+
+
+from celery.schedules import crontab
+
+
+app.conf.beat_schedule.update({
+    "test-paypal-disbursement-every-minute": {
+        "task": "payment_service.tasks.disburse_paypal_payments",
+         "schedule": crontab(hour=0, minute=0),
+        # "schedule": crontab(minute="*/1"),  # every minute
+    },
+})

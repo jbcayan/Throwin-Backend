@@ -1,19 +1,66 @@
-SECRET_KEY=
+SECRET_KEY="django-insecure-3k4cdk&3%1tu9wn)sejeo%9t*gg42y0!+cf=_3j=$mg2&juk*$"
 DEBUG=True
-ENABLE_SILK=
-ALLOWED_HOSTS=
+ENABLE_SILK=True
+ALLOWED_HOSTS="localhost, 127.0.0.1, now.sh, throwin-backend.onrender.com, d4c2-115-127-159-140.ngrok-free.app"
 
-DB_NAME=
-DB_USER=
-DB_PASSWORD=
-DB_HOST=
-DB_PORT=
+PRODUCTION=False
 
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
+DATABASE_TYPE=sqlite
+
+DB_NAME="jbc_throwin_db"
+DB_USER=""
+DB_PASSWORD=""
+DB_HOST="localhost"
+#DB_HOST="host.docker.internal"
+DB_PORT="5432"
+
+
+
+#For Render
+RENDER = False
+DATABASE_URL=""
+
+GOOGLE_CLIENT_ID="googleusercontent.com"
+GOOGLE_CLIENT_SECRET=""
 
 SOCIAL_AUTH_PASSWORD=
 
-PAYPAL_CLIENT_ID=YourSandboxClientID
-PAYPAL_CLIENT_SECRET=YourSandboxClientSecret
-PAYPAL_MODE=sandbox  # Use 'live' for production
+
+EMAIL_BACKEND="django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST="smtp.gmail.com"
+EMAIL_USE_TLS=True
+EMAIL_PORT=587
+EMAIL_HOST_USER=
+EMAIL_HOST_PASSWORD=
+
+FRONTEND_URL="http://localhost:3000"
+
+
+
+
+
+
+
+
+
+
+
+
+# Paypal Config
+PAYPAL_MODE=sandbox  # sandbox or live
+
+PAYPAL_CLIENT_ID=
+PAYPAL_CLIENT_SECRET=
+
+# Paypal Distribution AC Config
+Paypal_Disbursement_AC_CLIENT_ID= 
+Paypal_Disbursement_AC_CLIENT_SECRET=
+
+
+# GMO Payment Gateway Credentials
+DATABASE_URL=sqlite:///gmo_pg.db
+GMO_SHOP_ID=
+GMO_SHOP_PASS=
+GMO_SITE_ID=
+GMO_SITE_PASS=
+GMO_API_URL=https://pt01.mul-pay.jp
