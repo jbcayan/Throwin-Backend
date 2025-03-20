@@ -116,8 +116,8 @@ def disburse_paypal_payments():
     last_day = calendar.monthrange(today.year, today.month)[1]
     
     # Proceed only if today is the last day of the month.
-    # if today.day != last_day:
-    #     return "Today is not the last day of the month. Task exited."
+    if today.day != last_day:
+        return "Today is not the last day of the month. Task exited."
     
     # Retrieve all balances where current_balance is >= 3000 JPY.
     eligible_balances = Balance.objects.filter(current_balance__gte=3000)
