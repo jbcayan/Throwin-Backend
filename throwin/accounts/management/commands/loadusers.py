@@ -45,7 +45,7 @@ class Command(BaseCommand):
                 email="glow.admin@gmail.com",
                 password="String1234",    # Previous: string1234
                 name="GLOW ADMIN",
-                kind=UserKind.FC_ADMIN,
+                kind=UserKind.GLOW_ADMIN,
                 is_active=True,
                 is_verified=True,
                 auth_provider=AuthProvider.EMAIL,
