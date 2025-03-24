@@ -14,7 +14,7 @@ from google.auth.transport import requests
 from google.oauth2 import id_token
 
 from rest_framework.exceptions import AuthenticationFailed
-from rest_framework_simplejwt.tokens import AccessToken
+from rest_framework_simplejwt.tokens import AccessToken, RefreshToken
 
 from accounts.choices import UserKind
 from accounts.models import TemporaryUser
@@ -47,15 +47,28 @@ def register_social_user(provider, email, name, profile_image=""):
         Register a user with social login credentials if the user does not exist,
         or return a message to continue login with existing provider.
     """
-    user = User.objects.filter(email=email)
+    user = User.objects.get(email=email)
 
-    if user.exists():
-        if user[0].auth_provider == provider:
+    if user:
+        if user.auth_provider == provider:
             return login_social_user(email=email, password=settings.SOCIAL_AUTH_PASSWORD)
         else:
-            raise AuthenticationFailed(
-                detail=f'Please continue your login using {user[0].auth_provider}'
-            )
+            if user.name is None:
+                user.name = name
+                user.save()
+
+            refresh = RefreshToken.for_user(user)
+            return {
+                "msg": "Login Successful",
+                "data": {
+                    "email": user.email,
+                    "name": user.name or "",
+                    "role": user.kind,
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                },
+            }
+
     else:
         user = User.objects.create_user(
             email=email,

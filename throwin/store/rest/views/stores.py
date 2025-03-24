@@ -1,20 +1,9 @@
 """Views for store"""
-from rest_framework import generics, status
+from rest_framework import generics, status, permissions
 from rest_framework.response import Response
-from rest_framework import permissions
 
 from store.models import Store
 from store.rest.serializers.stores import StoreSerializer
-
-from common.permissions import (
-    IsConsumerOrGuestUser,
-    IsConsumerUser,
-    IsGlowAdminUser,
-    IsFCAdminUser,
-    CheckAnyPermission,
-    IsRestaurantOwnerUser,
-    IsSuperAdminUser,
-)
 
 
 class StoreList(generics.ListAPIView):
