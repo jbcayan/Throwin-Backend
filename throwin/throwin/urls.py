@@ -8,7 +8,11 @@ admin.site.site_header = "Throwin Admin"
 admin.site.site_title = "Throwin Admin Panel"
 admin.site.index_title = "Welcome to Throwin Panel"
 
+from .health_check import HealthCheckView
+
 urlpatterns = [
+    path('', HealthCheckView.as_view(), name='health_check'),
+    
     path('admin/', admin.site.urls),
     path("auth", include("accounts.rest.urls")),
     path("stores", include("store.rest.urls")),
