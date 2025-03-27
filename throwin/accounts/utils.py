@@ -47,7 +47,7 @@ def register_social_user(provider, email, name, profile_image=""):
         Register a user with social login credentials if the user does not exist,
         or return a message to continue login with existing provider.
     """
-    user = User.objects.get(email=email)
+    user = User.objects.filter(email=email).first()
 
     if user:
         if user.auth_provider == provider:
