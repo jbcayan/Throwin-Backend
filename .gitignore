@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 !.env.production
+throwin/throwin/staticfiles/
+
 # C extensions
 *.so
 
