@@ -230,7 +230,8 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "https://throwin-backend.onrender.com"
+    "https://throwin-backend.onrender.com",
+    "https://backend.throwin-glow.com",
 ]
 
 SESSION_COOKIE_SECURE = False

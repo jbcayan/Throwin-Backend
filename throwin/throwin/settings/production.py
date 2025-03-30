@@ -227,6 +227,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8000",
     "http://throwin-frontend-react.s3-website-ap-northeast-1.amazonaws.com",
     "https://api-dev.throwin-glow.com",
+    "https://backend.throwin-glow.com",
 ]
 
 CSRF_COOKIE_SECURE = True
