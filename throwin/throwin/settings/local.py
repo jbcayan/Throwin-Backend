@@ -146,6 +146,9 @@ else:  # Assuming PostgreSQL as the other option
             "PASSWORD": config("DB_PASSWORD", default="postgres"),
             "HOST": config("DB_HOST", default="127.0.0.1"),
             "PORT": config("DB_PORT", default="5432"),
+            "OPTIONS": {
+                "sslmode": "require",  # Add this line if SSL is required
+            },
         }
     }
 # Password validation
