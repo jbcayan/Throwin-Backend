@@ -182,6 +182,9 @@ class ActivateNewAccountView(generics.GenericAPIView):
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+@extend_schema(
+    summary="Activate a user's account and change email for FC, Glow, Sales Agent and Restaurant Owner",
+)
 class ActivateAccountView(generics.GenericAPIView):
     """
     API endpoint to activate a user's account.
