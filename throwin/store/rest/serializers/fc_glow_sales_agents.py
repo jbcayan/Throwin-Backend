@@ -519,12 +519,13 @@ class SalesAgentListCreateSerializer(serializers.ModelSerializer):
             "email": instance.email,
             "agency_code": instance.profile.agency_code,
             "phone_number": instance.phone_number,
+            "password_status": "password set" if instance.is_active else "password not set",
             "post_code": instance.profile.post_code,
             "company_name": instance.profile.company_name,
             "address": instance.profile.address,
             "invoice_number": instance.profile.invoice_number,
             "corporate_number": instance.profile.corporate_number,
-            "bank_accounts": BankAccountSerializer(bank_accounts, many=True).data
+            "bank_accounts": BankAccountSerializer(bank_accounts, many=True).data,
         }
 
 
