@@ -25,7 +25,9 @@ from store.rest.serializers.fc_glow_sales_agents import (
     ActivationNewUserSerializer,
     SalesAgentListCreateSerializer,
     ActivationSerializer,
-    AdminsChangeEmailRequestSerializer, ChangeAdminNameSerializer,
+    AdminsChangeEmailRequestSerializer,
+    ChangeAdminNameSerializer,
+    FcGlowAgentAccountDetailsSerializer,
 )
 from django.db import transaction
 
@@ -341,3 +343,23 @@ class AdminChangeNameView(generics.CreateAPIView):
     )
     permission_classes = (CheckAnyPermission,)
     serializer_class = ChangeAdminNameSerializer
+
+@extend_schema(
+    summary="Retrieve the details of the FC or GLOW or Sales Agent account.",
+    methods=["GET"],
+)
+class FcGlowAgentAccountDetailsView(generics.GenericAPIView):
+    available_permission_classes = (
+        IsGlowAdminUser,
+        IsFCAdminUser,
+        IsSalesAgentUser,
+    )
+    permission_classes = (CheckAnyPermission,)
+    serializer_class = FcGlowAgentAccountDetailsSerializer
+
+    def get(self, request, *args, **kwargs):
+        """
+        Retrieve the details of the FC or GLOW account.
+        """
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)

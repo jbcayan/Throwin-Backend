@@ -10,6 +10,7 @@ from store.rest.views.fc_glow_sales_agents import (
     ActivateAccountView,
     AdminsChangeEmailRequestView,
     AdminChangeNameView,
+    FcGlowAgentAccountDetailsView,
 )
 
 urlpatterns = [
@@ -37,4 +38,7 @@ urlpatterns = [
     path("/settings/change-name", AdminChangeNameView.as_view(),
          name="change-name"
     ),
+    path("/settings", FcGlowAgentAccountDetailsView.as_view(),
+         name="fc-glow-settings"
+         ),
 ]

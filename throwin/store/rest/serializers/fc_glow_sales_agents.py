@@ -28,6 +28,37 @@ from store.models import Restaurant, RestaurantUser
 User = get_user_model()
 
 
+class FcGlowAgentAccountDetailsSerializer(serializers.ModelSerializer):
+    """
+    Serializer for representing FC/Glow account details.
+    """
+    company_name = serializers.CharField(source="profile.company_name")
+    address = serializers.CharField(source="profile.address")
+    corporate_number = serializers.CharField(source="profile.corporate_number")
+    invoice_number = serializers.CharField(source="profile.invoice_number")
+    agency_code = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = [
+            "name",
+            "email",
+            "phone_number",
+            "company_name",
+            "address",
+            "corporate_number",
+            "invoice_number",
+            "agency_code",
+        ]
+
+    def get_agency_code(self, obj):
+        # Check if the user is a Sales Agent and return the agency_code
+        if obj.kind == UserKind.SALES_AGENT:
+            return obj.profile.agency_code
+        return None
+
+
+
 class BankAccountSerializer(serializers.ModelSerializer):
     """
     Serializer for representing bank account details.
