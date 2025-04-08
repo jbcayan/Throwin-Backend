@@ -1,5 +1,4 @@
 """Views for restaurant owner."""
-
 from django.contrib.auth import get_user_model
 from django.db.models import (
     Count,
@@ -7,22 +6,15 @@ from django.db.models import (
     F
 )
 from django_filters.rest_framework import DjangoFilterBackend
-
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-
-from rest_framework import generics, status
-from rest_framework.response import Response
+from rest_framework import generics
 from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.response import Response
 
 from accounts.choices import UserKind, PublicStatus
-
 from common.permissions import (
     CheckAnyPermission,
-    IsRestaurantOwnerUser,
-    IsFCAdminUser,
-    IsGlowAdminUser,
-    IsSuperAdminUser,
-    IsSalesAgentUser
+    IsRestaurantOwnerUser
 )
 from gacha.choices import GachaKind
 from payment_service.bank_details.bank_details_model import BankAccount
@@ -360,7 +352,10 @@ class RestaurantOwnerChangeNameView(generics.CreateAPIView):
     permission_classes = (CheckAnyPermission,)
     serializer_class = ChangeRestaurantOwnerNameSerializer
 
-
+@extend_schema(
+    summary="Get the restaurant owner's detail.",
+    methods=["GET"],
+)
 class RestaurantOwnerDetailView(generics.GenericAPIView):
     available_permission_classes = (IsRestaurantOwnerUser,)
     permission_classes = (CheckAnyPermission,)
@@ -390,7 +385,10 @@ class RestaurantOwnerDetailView(generics.GenericAPIView):
         except Restaurant.DoesNotExist:
             return Response({"error": "Restaurant not found for this owner."}, status=404)
 
-
+@extend_schema(
+    summary="Get the restaurant owner's reviews [Reviews of Consumers]",
+    methods=["GET"],
+)
 class RestaurantOwnerReviewListView(generics.ListAPIView):
     """
     API view for restaurant owners to list their reviews.
@@ -411,7 +409,10 @@ class RestaurantOwnerReviewListView(generics.ListAPIView):
             return reviews
         except Restaurant.DoesNotExist:
             return Response({"error": "Restaurant not found for this owner."}, status=404)
-
+@extend_schema(
+    summary="Create a reply to a review.",
+    methods=["POST"],
+)
 class RestaurantOwnerReplyCreateView(generics.CreateAPIView):
     """
     API view for restaurant owners to create a reply to a review.
@@ -424,6 +425,10 @@ class RestaurantOwnerReplyCreateView(generics.CreateAPIView):
     def perform_create(self, serializer):
         serializer.save()
 
+@extend_schema(
+    summary="Retrieve a review and its replies.",
+    methods=["GET"],
+)
 class RestaurantOwnerRetrieveReviewRepliesView(generics.RetrieveAPIView):
     available_permission_classes = (IsRestaurantOwnerUser,)
     permission_classes = (CheckAnyPermission,)
