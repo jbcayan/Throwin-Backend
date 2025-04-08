@@ -8,7 +8,10 @@ from store.rest.views.restaurant_owner import (
     StaffListByStoreView,
     RestaurantGachaHistoryView,
     RestaurantOwnerChangeNameView,
-    RestaurantOwnerDetailView
+    RestaurantOwnerDetailView,
+    RestaurantOwnerReviewListView,
+    RestaurantOwnerReplyCreateView,
+    RestaurantOwnerRetrieveReviewRepliesView
 )
 
 urlpatterns = [
@@ -32,5 +35,14 @@ urlpatterns = [
          ),
     path("/settings/change-name", RestaurantOwnerChangeNameView.as_view(),
          name="change-name"
+         ),
+    path("/reviews", RestaurantOwnerReviewListView.as_view(),
+         name="restaurant-owner-reviews"
+         ),
+    path("/reviews/<str:review_uid>/replies", RestaurantOwnerRetrieveReviewRepliesView.as_view(),
+         name="restaurant-owner-reviews-replies"
+         ),
+    path("/reply", RestaurantOwnerReplyCreateView.as_view(),
+         name="restaurant-owner-reply"
          ),
 ]

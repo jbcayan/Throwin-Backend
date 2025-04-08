@@ -26,6 +26,7 @@ from common.permissions import (
 )
 from gacha.choices import GachaKind
 from payment_service.bank_details.bank_details_model import BankAccount
+from review.models import Review
 from store.filters import StoreFilter, StaffFilter
 from store.models import Store, RestaurantUser, StoreUser, Restaurant
 from store.rest.serializers.restaurant_owner import (
@@ -36,7 +37,10 @@ from store.rest.serializers.restaurant_owner import (
     StaffUserSerializer,
     GachaHistorySerializer,
     ChangeRestaurantOwnerNameSerializer,
-    RestaurantOwnerDetailSerializer
+    RestaurantOwnerDetailSerializer,
+    RestaurantOwnerReplySerializer,
+    RestaurantOwnerReviewListSerializer,
+    RestaurantOwnerReviewRepliesSerializer
 )
 
 User = get_user_model()
@@ -385,3 +389,52 @@ class RestaurantOwnerDetailView(generics.GenericAPIView):
 
         except Restaurant.DoesNotExist:
             return Response({"error": "Restaurant not found for this owner."}, status=404)
+
+
+class RestaurantOwnerReviewListView(generics.ListAPIView):
+    """
+    API view for restaurant owners to list their reviews.
+    """
+    available_permission_classes = (IsRestaurantOwnerUser,)
+    permission_classes = (CheckAnyPermission,)
+    pagination_class = None
+    serializer_class = RestaurantOwnerReviewListSerializer
+
+    def get_queryset(self):
+        # Assuming the user is the restaurant owner
+        user = self.request.user
+        restaurant = user.get_restaurant_owner_restaurant
+        try:
+            reviews = Review.objects.filter(
+                store_uid__in=[store.uid for store in restaurant.stores.all()]
+            )
+            return reviews
+        except Restaurant.DoesNotExist:
+            return Response({"error": "Restaurant not found for this owner."}, status=404)
+
+class RestaurantOwnerReplyCreateView(generics.CreateAPIView):
+    """
+    API view for restaurant owners to create a reply to a review.
+    Only a user with the restaurant owner role is allowed to create replies.
+    """
+    serializer_class = RestaurantOwnerReplySerializer
+    available_permission_classes = (IsRestaurantOwnerUser,)
+    permission_classes = (CheckAnyPermission,)
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+class RestaurantOwnerRetrieveReviewRepliesView(generics.RetrieveAPIView):
+    available_permission_classes = (IsRestaurantOwnerUser,)
+    permission_classes = (CheckAnyPermission,)
+    serializer_class = RestaurantOwnerReviewRepliesSerializer
+
+    lookup_url_kwarg = 'review_uid'
+    lookup_field = 'uid'
+
+    def get_queryset(self):
+        user = self.request.user
+        restaurant = user.get_restaurant_owner_restaurant
+        return Review.objects.filter(
+            store_uid__in=[store.uid for store in restaurant.stores.all()]
+        )

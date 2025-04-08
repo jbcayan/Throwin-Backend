@@ -10,6 +10,7 @@ from rest_framework import serializers
 from accounts.choices import UserKind
 from common.serializers import BaseSerializer
 from core.utils import to_decimal
+from review.models import Review, Reply
 from store.models import Store, StoreUser, RestaurantUser
 
 User = get_user_model()
@@ -417,3 +418,78 @@ class RestaurantOwnerDetailSerializer(serializers.Serializer):
     branch_name = serializers.CharField(source='bank_account.branch_name', default=None)
     account_type = serializers.CharField(source='bank_account.account_type', default=None)
     account_number = serializers.CharField(source='bank_account.account_number', default=None)
+
+
+class RestaurantOwnerReviewListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Review
+        fields = ("uid", "consumer_name", "message", "created_at")
+        read_only_fields = ('uid',)
+
+class RestaurantOwnerReplySerializer(serializers.ModelSerializer):
+    review_uid = serializers.SlugRelatedField(
+        queryset=Review.objects.all(),
+        slug_field='uid',
+        required=True,
+        write_only=True,
+    )
+    parent_reply_uid = serializers.SlugRelatedField(
+        queryset=Reply.objects.all(),
+        slug_field='uid',
+        required=False,
+        allow_null=True,
+        write_only=True,
+    )
+    message = serializers.CharField(required=True)
+
+    class Meta:
+        model = Reply
+        fields = ('uid', 'review_uid', 'parent_reply_uid', 'message')
+        read_only_fields = ('uid',)
+
+    def create(self, validated_data):
+        # Pop review_uid and parent_reply_uid from validated data
+        review_uid = validated_data.pop('review_uid')
+        parent_reply_uid = validated_data.pop('parent_reply_uid', None)
+
+        # Get the logged-in user
+        request = self.context.get('request')
+        user = request.user
+
+        # Check if the user is a restaurant owner
+        if user.kind != UserKind.RESTAURANT_OWNER:
+            raise serializers.ValidationError("Only restaurant owners can reply to reviews.")
+
+        # Create the reply
+        reply = Reply.objects.create(
+            review=review_uid,
+            parent_reply=parent_reply_uid,
+            restaurant_owner=user,
+            message=validated_data['message'],
+        )
+        return reply
+
+
+class RepliesSerializer(serializers.ModelSerializer):
+    restaurant_owner_name = serializers.SerializerMethodField()
+    consumer_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Reply
+        fields = ["uid", "message", "consumer_name", "restaurant_owner_name", "created_at"]
+
+    def get_restaurant_owner_name(self, obj):
+        # Return restaurant owner name if exists, otherwise None
+        return obj.restaurant_owner.name if obj.restaurant_owner else None
+
+    def get_consumer_name(self, obj):
+        # Return consumer name if exists, otherwise None
+        return obj.consumer.name if obj.consumer else None
+
+class RestaurantOwnerReviewRepliesSerializer(serializers.ModelSerializer):
+    review_replies = RepliesSerializer(many=True, source='replies')
+
+    class Meta:
+        model = Review
+        fields = ("uid", "message", "review_replies")
+        read_only_fields = ("uid", "message", "review_replies")

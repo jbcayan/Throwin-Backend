@@ -1,15 +1,19 @@
-from rest_framework import serializers
-from django.conf import settings
-from .models import GMOCreditPayment
-from accounts.models import User
-from store.models import Store  # ✅ Corrected Import
-import uuid
-import requests
+import os
 import logging
+import uuid
+
+import requests
+
+from rest_framework import serializers
+
+from accounts.models import User
+from store.models import Store
+from .models import GMOCreditPayment
+from review.models import Review
 
 logger = logging.getLogger(__name__)
 
-import os
+
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -42,6 +46,7 @@ class GMOCreditPaymentSerializer(serializers.ModelSerializer):
     customer_name = serializers.CharField(source="customer.name", read_only=True)
 
     token = serializers.CharField(write_only=True, required=True)
+    message = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = GMOCreditPayment
@@ -53,7 +58,7 @@ class GMOCreditPaymentSerializer(serializers.ModelSerializer):
 
             # Newly added fields
             "staff_name", "restaurant_name", "store_name",
-            "sales_agent_name", "customer_name"
+            "sales_agent_name", "customer_name", "message",
         ]
         read_only_fields = [
             "order_id", "status", "transaction_id", "approval_code", "process_date",
@@ -96,6 +101,7 @@ class GMOCreditPaymentSerializer(serializers.ModelSerializer):
         store_uid = validated_data["store_uid"]
         amount = validated_data["amount"]
         token = validated_data["token"]
+        message = validated_data.pop("message", None)
 
         customer = self.context["request"].user if self.context["request"].user.is_authenticated else None
         nickname = customer.username if customer else validated_data.get("nickname", "Anonymous")
@@ -162,6 +168,18 @@ class GMOCreditPaymentSerializer(serializers.ModelSerializer):
         )
 
         logger.info("Payment successfully created: %s", payment.order_id)
+
+        if message and message != "" and payment.status == "CAPTURE":
+            review = Review.objects.create(
+                payment=payment,
+                payment_type="GMOCreditPayment",
+                transaction_id=order_id,
+                consumer= customer,
+                consumer_name=nickname,
+                message=message,
+                store_uid=store_uid,
+            )
+            logger.info("Review created for payment: %s", review.transaction_id)
         return payment
 
     def _send_gmo_request(self, url, payload):

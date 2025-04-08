@@ -60,6 +60,7 @@ PROJECT_APPS = [
     "payment_service.apps.PaymentServiceConfig",
     "notification.apps.NotificationConfig",
     "gacha.apps.GachaConfig",
+    "review.apps.ReviewConfig",
 ]
 
 if ENABLE_SILK:
@@ -146,7 +147,10 @@ else:  # Assuming PostgreSQL as the other option
             "PASSWORD": config("DB_PASSWORD", default="postgres"),
             "HOST": config("DB_HOST", default="127.0.0.1"),
             "PORT": config("DB_PORT", default="5432")
-        }
+        },
+        "OPTIONS": {
+            "sslmode": "require",  # Add this line if SSL is required
+        },
     }
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
@@ -394,7 +398,7 @@ SITE_NAME = "Throwin"
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        # "LOCATION": "redis://localhost:6379",
-        "LOCATION": "redis://redis_cache:6379",
+        "LOCATION": "redis://localhost:6379",
+        # "LOCATION": "redis://redis_cache:6379",
     }
 }

@@ -60,6 +60,7 @@ PROJECT_APPS = [
     "payment_service.apps.PaymentServiceConfig",
     "notification.apps.NotificationConfig",
     "gacha.apps.GachaConfig",
+    "review.apps.ReviewConfig",
 ]
 
 if ENABLE_SILK:
