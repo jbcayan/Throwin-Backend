@@ -16,6 +16,7 @@ from accounts.models import TemporaryUser
 from accounts.tasks import send_mail_task
 from accounts.utils import generate_verification_token
 from common.serializers import BaseSerializer
+from review.models import Review
 
 domain = settings.SITE_DOMAIN
 
@@ -118,6 +119,15 @@ class EmailChangeTokenSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid token")
 
 
+
+class ReviewSerializer(serializers.ModelSerializer):
+    """
+    Serializer for representing a review associated with a staff member.
+    """
+    class Meta:
+        model = Review
+        fields = ("consumer_name", "message", "created_at")
+
 class StaffDetailForConsumerSerializer(BaseSerializer):
     """Serializer to represent restaurant stuff details."""
 
@@ -140,6 +150,7 @@ class StaffDetailForConsumerSerializer(BaseSerializer):
     store_code = serializers.SerializerMethodField()
     store_uid = serializers.SerializerMethodField()
     throwin_amounts = serializers.SerializerMethodField()
+    reviews = serializers.SerializerMethodField()
 
     class Meta(BaseSerializer.Meta):
         model = User
@@ -154,6 +165,7 @@ class StaffDetailForConsumerSerializer(BaseSerializer):
             "store_code",
             "store_uid",
             "throwin_amounts",
+            "reviews",
         )
 
     def get_image(self, obj) -> dict or None:
@@ -194,6 +206,16 @@ class StaffDetailForConsumerSerializer(BaseSerializer):
         if staff_store and staff_store.throwin_amounts:
             return staff_store.throwin_amounts.split(",")  # Convert string to list
         return []
+
+    def get_reviews(self, obj) -> list:
+        """
+        Retrieve a list of reviews related to the given staff member by matching
+        the staff_uid (from Review) with the user's uid.
+        """
+        # Fetch reviews whose staff_uid equals the user uid
+        reviews_qs = Review.objects.filter(staff_uid=obj.uid).order_by("-created_at")
+        # Serialize the reviews and return the data
+        return ReviewSerializer(reviews_qs, many=True, context=self.context).data
 
 
 class MeSerializer(BaseSerializer):

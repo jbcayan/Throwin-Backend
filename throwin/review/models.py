@@ -48,6 +48,10 @@ class Review(BaseModel):
         default=uuid.uuid4, blank=True, null=True, db_index=True,
         help_text="Unique identifier for store (optional)"
     )
+    staff_uid = models.UUIDField(
+        default=uuid.uuid4, blank=True, null=True, db_index=True,
+        help_text="Unique identifier for staff receiving the tip"
+    )
 
     def __str__(self):
         return f"{self.consumer_name} - {self.message[:10]}..."

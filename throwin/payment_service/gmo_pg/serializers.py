@@ -174,7 +174,7 @@ class GMOCreditPaymentSerializer(serializers.ModelSerializer):
                 payment=payment,
                 payment_type="GMOCreditPayment",
                 transaction_id=order_id,
-                consumer= customer,
+                consumer= customer.name if customer.name else "Anonymous",
                 consumer_name=nickname,
                 message=message,
                 store_uid=store_uid,
