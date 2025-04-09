@@ -16,7 +16,7 @@ from accounts.models import TemporaryUser
 from accounts.tasks import send_mail_task
 from accounts.utils import generate_verification_token
 from common.serializers import BaseSerializer
-from review.models import Review
+from review.models import Review, Reply
 
 domain = settings.SITE_DOMAIN
 
@@ -291,3 +291,13 @@ class StaffLikeToggleSerializer(serializers.Serializer):
             kind=UserKind.RESTAURANT_STAFF
         )
         return staff
+
+
+class RestaurantOwnerReplySerializer(serializers.ModelSerializer):
+    """
+    Serializer for replies made by a restaurant owner.
+    """
+
+    class Meta:
+        model = Reply
+        fields = ["uid", "message", "created_at"]

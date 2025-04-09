@@ -19,6 +19,7 @@ from accounts.rest.serializers.user import (
     AccountActivationSerializer,
     EmailChangeTokenSerializer,
     StaffLikeToggleSerializer,
+    RestaurantOwnerReplySerializer,
 )
 from common.permissions import (
     IsConsumerUser,
@@ -30,6 +31,7 @@ from common.permissions import (
     IsSuperAdminUser,
     IsRestaurantOwnerUser,
 )
+from review.models import Reply
 from store.models import StoreUser
 from store.rest.serializers.store_stuff import (
     StoreStuffListSerializer,
@@ -451,3 +453,55 @@ class StoreUserSearchView(generics.GenericAPIView):
 
         data = self.serializer_class(store_users, many=True).data
         return Response(data, status=status.HTTP_200_OK)
+
+@extend_schema(
+    summary="Get replies made by restaurant owners on reviews that belong to the authenticated consumer.",
+    description="Get replies made by restaurant owners on reviews that belong to the authenticated consumer.",
+    request=RestaurantOwnerReplySerializer
+)
+class ConsumerRestaurantOwnerRepliesAPIView(generics.ListAPIView):
+    """
+    API endpoint that returns replies made by restaurant owners on reviews
+    that belong to the authenticated consumer.
+    """
+    available_permission_classes = (
+        IsConsumerUser,
+    )
+    permission_classes = (CheckAnyPermission,)
+    serializer_class = RestaurantOwnerReplySerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        # Filter replies where:
+        # - attached review's consumer is the current user
+        # - reply has a non-null restaurant_owner
+        return Reply.objects.filter(
+            review__consumer=user,
+            restaurant_owner__isnull=False
+        )
+
+@extend_schema(
+    summary="Get detailed information of a single reply made by a restaurant owner on a review that belongs to the authenticated consumer.",
+    description="Get detailed information of a single reply made by a restaurant owner on a review that belongs to the authenticated consumer.",
+    request=RestaurantOwnerReplySerializer
+)
+class ConsumerRestaurantOwnerReplyDetailAPIView(generics.RetrieveAPIView):
+    """
+    API endpoint that retrieves detailed information of a single reply made by a
+    restaurant owner on a review that belongs to the authenticated consumer.
+    """
+    available_permission_classes = (
+        IsConsumerUser,
+    )
+    permission_classes = (CheckAnyPermission,)
+    serializer_class = RestaurantOwnerReplySerializer
+    lookup_field = 'uid'
+
+    def get_queryset(self):
+        user = self.request.user
+        # Filter to make sure the reply belongs to a review of the consumer
+        # and that it was made by a restaurant owner.
+        return Reply.objects.filter(
+            review__consumer=user,
+            restaurant_owner__isnull=False
+        )

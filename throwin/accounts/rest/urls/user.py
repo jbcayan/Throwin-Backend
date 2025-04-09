@@ -15,6 +15,8 @@ from accounts.rest.views.user import (
     ConsumerLikeStaffToggle,
     SetGuestName,
     StoreUserSearchView,
+    ConsumerRestaurantOwnerRepliesAPIView,
+    ConsumerRestaurantOwnerReplyDetailAPIView
 )
 
 urlpatterns = [
@@ -77,5 +79,15 @@ urlpatterns = [
         "/store-user-search",
         StoreUserSearchView.as_view(),
         name="store-user-search"
+    ),
+    path(
+        "/notifications",
+        ConsumerRestaurantOwnerRepliesAPIView.as_view(),
+        name="consumer-restaurant-owner-replies"
+    ),
+    path(
+        "/notifications/<str:uid>",
+        ConsumerRestaurantOwnerReplyDetailAPIView.as_view(),
+        name="consumer-restaurant-owner-reply-detail"
     ),
 ]
