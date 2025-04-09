@@ -37,6 +37,16 @@ jobs:
         echo "Deploying application..."
         cd ~/Throwin-Backend
         git pull origin main
+        
+        # Selectively prune unused Docker objects
+        echo "Pruning dangling Docker images (cache layers only)..."
+        docker image prune -f
+        echo "Pruning stopped containers..."
+        docker container prune -f
+        echo "Pruning unused Docker volumes..."
+        docker volume prune -f
+          
+        # Restart the application
         docker-compose down
         docker-compose up --build -d
         echo "Deployment complete."
