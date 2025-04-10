@@ -449,7 +449,7 @@ class SalesAgentListCreateSerializer(serializers.ModelSerializer):
         if UserProfile.objects.filter(invoice_number=invoice_number).exists():
             raise serializers.ValidationError({"invoice_number": "Invoice number already exists."})
 
-        if UserProfile.objects.filter(corporate_number=corporate_number).exists():
+        if corporate_number and UserProfile.objects.filter(corporate_number=corporate_number).exists():
             raise serializers.ValidationError({"corporate_number": "Corporate number already exists."})
 
         sales_agent = User.objects.create_user(
