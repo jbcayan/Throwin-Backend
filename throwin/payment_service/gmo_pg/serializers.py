@@ -173,7 +173,7 @@ class GMOCreditPaymentSerializer(serializers.ModelSerializer):
         print(f"Payment status: {payment.status}")
 
         if message and message != "" and (
-            payment.status == "Captured" or payment.status == 0
+            payment.status == "CAPTURE" or payment.status == 0
         ):
 
             print("let's create a review for this payment")

@@ -182,6 +182,7 @@ class GMOCreditPayment(models.Model):
         }
         try:
             response = requests.post(url, data=payload)
+            print("MY GMO PG RESPONSE : ", response.content)
         except requests.RequestException as e:
             logger.error("Request to GMO API failed: %s", str(e))
             return None
