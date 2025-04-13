@@ -387,7 +387,7 @@ class SalesAgentListCreateSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(max_length=100)
     address = serializers.CharField(max_length=255)
     invoice_number = serializers.CharField(max_length=20)
-    corporate_number = serializers.CharField(max_length=100)
+    corporate_number = serializers.CharField(max_length=100, required=False)
 
     bank_name = serializers.CharField(max_length=100)
     branch_name = serializers.CharField(max_length=100)
@@ -428,7 +428,7 @@ class SalesAgentListCreateSerializer(serializers.ModelSerializer):
         company_name = validated_data.pop("company_name")
         address = validated_data.pop("address")
         invoice_number = validated_data.pop("invoice_number")
-        corporate_number = validated_data.pop("corporate_number")
+        corporate_number = validated_data.pop("corporate_number", None)
 
         bank_name = validated_data.pop("bank_name")
         branch_name = validated_data.pop("branch_name")
@@ -449,7 +449,7 @@ class SalesAgentListCreateSerializer(serializers.ModelSerializer):
         if UserProfile.objects.filter(invoice_number=invoice_number).exists():
             raise serializers.ValidationError({"invoice_number": "Invoice number already exists."})
 
-        if UserProfile.objects.filter(corporate_number=corporate_number).exists():
+        if corporate_number and UserProfile.objects.filter(corporate_number=corporate_number).exists():
             raise serializers.ValidationError({"corporate_number": "Corporate number already exists."})
 
         sales_agent = User.objects.create_user(
