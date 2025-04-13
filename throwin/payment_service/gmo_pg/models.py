@@ -203,6 +203,7 @@ class GMOCreditPayment(models.Model):
                         consumer_name=self.customer.name if self.customer.name else "Anonymous",
                         message=self.message,
                         store_uid=self.store_uid,
+                        staff_uid=self.staff_uid,
                     )
             return parsed_response
         else:
