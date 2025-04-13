@@ -204,7 +204,6 @@ class GMOCreditPayment(models.Model):
                         message=self.message,
                         store_uid=self.store_uid,
                     )
-                    print("MY REVIEW : ", review)
             return parsed_response
         else:
             logger.error("GMO API responded with status code %s", response.status_code)
