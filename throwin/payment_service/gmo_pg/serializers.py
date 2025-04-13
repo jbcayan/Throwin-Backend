@@ -165,30 +165,10 @@ class GMOCreditPaymentSerializer(serializers.ModelSerializer):
             expire_date=exec_response.get("Expire"),
             forward=exec_response.get("Forward"),
             pay_method=exec_response.get("Method"),
+            message=message if message and message != "" else None,
         )
 
         logger.info("Payment successfully created: %s", payment.order_id)
-
-        print("="*50)
-        print(f"Payment status: {payment.status}")
-
-        if message and message != "" and (
-            payment.status == "CAPTURE" or payment.status == 0
-        ):
-
-            print("let's create a review for this payment")
-            review = Review.objects.create(
-                payment=payment,
-                payment_type="GMOCreditPayment",
-                transaction_id=order_id,
-                consumer= customer if customer else None,
-                consumer_name=customer.name if customer.name else "Anonymous",
-                message=message,
-                store_uid=store_uid,
-            )
-
-            print("Review created for payment: %s", review)
-            logger.info("Review created for payment: %s", review.transaction_id)
 
         return payment
 

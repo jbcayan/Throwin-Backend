@@ -10,6 +10,7 @@ from django.conf import settings
 from dotenv import load_dotenv
 
 from accounts.choices import UserKind  # Importing role choices
+from review.models import Review
 from store.models import Store  # ✅ Corrected Import
 
 # Load environment variables from the .env file
@@ -126,6 +127,7 @@ class GMOCreditPayment(models.Model):
     is_processed = models.BooleanField(
         default=False, help_text="Indicates if the payment has been processed"
     )
+    message = models.TextField(blank=True, null=True)
 
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -182,7 +184,6 @@ class GMOCreditPayment(models.Model):
         }
         try:
             response = requests.post(url, data=payload)
-            print("MY GMO PG RESPONSE : ", response.content)
         except requests.RequestException as e:
             logger.error("Request to GMO API failed: %s", str(e))
             return None
@@ -193,6 +194,17 @@ class GMOCreditPayment(models.Model):
             if status_value == "CAPTURE":
                 self.status = "CAPTURE"
                 self.save(update_fields=["status"])
+                if self.message:
+                    review = Review.objects.create(
+                        payment=self,
+                        payment_type="GMOCreditPayment",
+                        transaction_id=self.order_id,
+                        consumer=self.customer if self.customer else None,
+                        consumer_name=self.customer.name if self.customer.name else "Anonymous",
+                        message=self.message,
+                        store_uid=self.store_uid,
+                    )
+                    print("MY REVIEW : ", review)
             return parsed_response
         else:
             logger.error("GMO API responded with status code %s", response.status_code)

@@ -171,7 +171,7 @@ class GMOCreditPaymentAdmin(admin.ModelAdmin):
             "fields": (
                 "order_id", "customer", "nickname", "staff_uid", "store_uid",
                 "amount", "currency", "status", "transaction_id", "approval_code",
-                "process_date"
+                "process_date", "message",
             )
         }),
         ("Card Details", {
