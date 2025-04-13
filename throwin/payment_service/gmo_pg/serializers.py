@@ -169,7 +169,12 @@ class GMOCreditPaymentSerializer(serializers.ModelSerializer):
 
         logger.info("Payment successfully created: %s", payment.order_id)
 
+        print("="*50)
+        print(f"Payment status: {payment.status}")
+
         if message and message != "" and payment.status == "CAPTURE":
+
+            print("let's create a review for this payment")
             review = Review.objects.create(
                 payment=payment,
                 payment_type="GMOCreditPayment",
@@ -179,7 +184,10 @@ class GMOCreditPaymentSerializer(serializers.ModelSerializer):
                 message=message,
                 store_uid=store_uid,
             )
+
+            print("Review created for payment: %s", review)
             logger.info("Review created for payment: %s", review.transaction_id)
+
         return payment
 
     def _send_gmo_request(self, url, payload):
