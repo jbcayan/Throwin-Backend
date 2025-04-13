@@ -169,13 +169,13 @@ class GMOCreditPaymentSerializer(serializers.ModelSerializer):
 
         logger.info("Payment successfully created: %s", payment.order_id)
 
-        if message and message != "":
+        if message and message != "" and payment.status == "CAPTURE":
             review = Review.objects.create(
                 payment=payment,
                 payment_type="GMOCreditPayment",
                 transaction_id=order_id,
-                consumer= customer.name if customer.name else "Anonymous",
-                consumer_name=nickname,
+                consumer= customer if customer else None,
+                consumer_name=customer.name if customer.name else "Anonymous",
                 message=message,
                 store_uid=store_uid,
             )
