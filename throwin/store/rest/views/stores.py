@@ -1,4 +1,5 @@
 """Views for store"""
+from django.http import Http404
 from rest_framework import generics, status, permissions
 from rest_framework.response import Response
 
@@ -21,8 +22,7 @@ class StoreDetail(generics.RetrieveAPIView):
 
     def get_object(self):
         try:
-            return Store().get_all_actives().get(code=self.kwargs["code"])
+            store = Store().get_all_actives().get(code=self.kwargs["code"])
+            return store
         except Store.DoesNotExist:
-            return Response({
-                "detail": "Store not found"
-            }, status=status.HTTP_404_NOT_FOUND)
+            raise Http404("Store not found")
