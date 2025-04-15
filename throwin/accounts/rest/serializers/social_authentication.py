@@ -6,7 +6,7 @@ from django.conf import settings
 
 from rest_framework import serializers
 
-from accounts.utils import Google, register_social_user
+from accounts.utils import Google, register_social_user, Line
 
 
 class GoogleSignInSerializer(serializers.Serializer):
@@ -37,24 +37,77 @@ class GoogleSignInSerializer(serializers.Serializer):
         return register_social_user(provider, email, name)
 
 
+# class LineSignInSerializer(serializers.Serializer):
+#     access_token = serializers.CharField(min_length=6)
+#
+#     def validate_access_token(self, access_token):
+#         response = requests.get(
+#             'https://api.line.me/oauth2/v2.1/verify',
+#             params={'access_token': access_token}
+#         )
+#         if response.status_code != 200:
+#             raise serializers.ValidationError("Invalid access token.")
+#
+#         user_data = response.json()
+#         user_id = user_data.get('sub')
+#         if not user_id:
+#             raise serializers.ValidationError("Invalid access token.")
+#
+#         email = user_data.get('email')
+#         name = user_data.get('name')
+#         provider = 'line'
+#
+#         return register_social_user(provider, email, name)
+
+
 class LineSignInSerializer(serializers.Serializer):
-    access_token = serializers.CharField(min_length=6)
+    code = serializers.CharField()
+    redirect_uri = serializers.CharField()
 
-    def validate_access_token(self, access_token):
-        response = requests.get(
-            'https://api.line.me/oauth2/v2.1/verify',
-            params={'access_token': access_token}
+    def validate(self, data):
+        code = data.get('code')
+        redirect_uri = data.get('redirect_uri')
+        # Print statements may be executed more than once because of the serialization process.
+
+        # Exchange code for access token
+        token_response = requests.post(
+            'https://api.line.me/oauth2/v2.1/token',
+            data={
+                'grant_type': 'authorization_code',
+                'code': code,
+                'redirect_uri': redirect_uri,
+                'client_id': settings.LINE_CHANNEL_ID,
+                'client_secret': settings.LINE_CHANNEL_SECRET,
+            },
+            headers={'Content-Type': 'application/x-www-form-urlencoded'}
         )
-        if response.status_code != 200:
-            raise serializers.ValidationError("Invalid access token.")
+        if token_response.status_code != 200:
+            raise serializers.ValidationError({'detail': 'Failed to obtain access token from LINE.'})
+        token_data = token_response.json()
+        access_token = token_data.get('access_token')
 
-        user_data = response.json()
-        user_id = user_data.get('sub')
+        # Retrieve user profile
+        profile_response = requests.get(
+            'https://api.line.me/v2/profile',
+            headers={'Authorization': f'Bearer {access_token}'}
+        )
+        if profile_response.status_code != 200:
+            raise serializers.ValidationError({'detail': 'Failed to retrieve user profile from LINE.'})
+        profile_data = profile_response.json()
+
+        user_id = profile_data.get('userId')
+        display_name = profile_data.get('displayName')
         if not user_id:
-            raise serializers.ValidationError("Invalid access token.")
-
-        email = user_data.get('email')
-        name = user_data.get('name')
+            raise serializers.ValidationError({'detail': 'Invalid user ID from LINE profile.'})
+        # Construct pseudo-email if not available
+        email = f"{user_id}@gmail.com"
         provider = 'line'
 
-        return register_social_user(provider, email, name)
+        # Call your social user register or authentication function.
+        # Returning the user data (could be a dictionary) from here.
+        return register_social_user(provider, email, display_name)
+
+    def to_representation(self, instance):
+        # Instead of trying to map "code" and "redirect_uri", we simply return the user object.
+        # This avoids the KeyError that was raised when DRF expected the original fields.
+        return instance

@@ -8,13 +8,21 @@ def login_social_user(email, password):
     """
     user = authenticate(email=email, password=password)
     refresh = RefreshToken.for_user(user)
-    return {
+
+    data = {
         "msg": "Login Successful",
         "data": {
-            "email": user.email,
+            "email": "",
             "name": user.name or "",
             "role": user.kind,
+            "auth_provider": user.auth_provider,
             "refresh": str(refresh),
             "access": str(refresh.access_token),
-        },
+        }
     }
+    # If auth_provider is Line the in data we aill append username instead of email
+    if user.auth_provider == "line":
+        data["data"]["username"] = user.username
+    else:
+        data["data"]["email"] = user.email
+    return data

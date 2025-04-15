@@ -31,10 +31,17 @@ class UserLogin(generics.GenericAPIView):
                 "email": user.email,
                 "name": user.name or "",
                 "role": user.kind,
+                "auth_provider": user.auth_provider,
                 "refresh": str(refresh),
                 "access": str(refresh.access_token),
             },
         }
+
+        if user.auth_provider == "line":
+            response_data["data"]["username"] = user.username
+        else:
+            response_data["data"]["email"] = user.email
+
         if user.kind == UserKind.SALES_AGENT:
             response_data["data"]["agency_code"] = user.profile.agency_code
         return Response(response_data, status=status.HTTP_200_OK)

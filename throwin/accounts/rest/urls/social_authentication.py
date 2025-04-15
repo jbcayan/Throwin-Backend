@@ -12,6 +12,6 @@ urlpatterns = [
         "/google", GoogleSignIn.as_view(), name="google-signin"
     ),
     path(
-        'social/line', LineSignIn.as_view(), name='line-signin'
+        '/line', LineSignIn.as_view(), name='line-signin'
     ),
 ]

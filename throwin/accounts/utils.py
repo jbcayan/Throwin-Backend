@@ -21,6 +21,8 @@ from accounts.models import TemporaryUser
 
 from common.utils import login_social_user
 
+import requests as dj_request
+
 User = get_user_model()
 
 
@@ -42,6 +44,23 @@ class Google:
             raise AuthenticationFailed('Invalid credentials') from e
 
 
+class Line:
+    @staticmethod
+    def validate(access_token):
+        """
+        Validates the Line access token by making a request to the LINE profile API.
+        Expects the access token to be valid and returns the user profile data.
+        """
+        url = "https://api.line.me/v2/profile"
+        headers = {
+            "Authorization": f"Bearer {access_token}"
+        }
+        response = dj_request.get(url, headers=headers)
+        if response.status_code != 200:
+            raise AuthenticationFailed("Invalid credentials")
+        return response.json()
+
+
 def register_social_user(provider, email, name, profile_image=""):
     """
         Register a user with social login credentials if the user does not exist,
@@ -58,16 +77,25 @@ def register_social_user(provider, email, name, profile_image=""):
                 user.save()
 
             refresh = RefreshToken.for_user(user)
-            return {
+
+            data = {
                 "msg": "Login Successful",
                 "data": {
-                    "email": user.email,
+                    "email": "",
                     "name": user.name or "",
                     "role": user.kind,
+                    "auth_provider": user.auth_provider,
                     "refresh": str(refresh),
                     "access": str(refresh.access_token),
-                },
+                }
             }
+            # If auth_provider is Line the in data we aill append username instead of email
+            if user.auth_provider == "line":
+                data["data"]["username"] = user.username
+            else:
+                data["data"]["email"] = user.email
+
+            return data
 
     else:
         user = User.objects.create_user(
