@@ -19,7 +19,7 @@ from accounts.rest.serializers.user import (
     AccountActivationSerializer,
     EmailChangeTokenSerializer,
     StaffLikeToggleSerializer,
-    RestaurantOwnerReplySerializer,
+    GetRestaurantOwnerReplySerializer,
 )
 from common.permissions import (
     IsConsumerUser,
@@ -457,7 +457,7 @@ class StoreUserSearchView(generics.GenericAPIView):
 @extend_schema(
     summary="Get replies made by restaurant owners on reviews that belong to the authenticated consumer.",
     description="Get replies made by restaurant owners on reviews that belong to the authenticated consumer.",
-    request=RestaurantOwnerReplySerializer
+    request=GetRestaurantOwnerReplySerializer
 )
 class ConsumerRestaurantOwnerRepliesAPIView(generics.ListAPIView):
     """
@@ -468,7 +468,7 @@ class ConsumerRestaurantOwnerRepliesAPIView(generics.ListAPIView):
         IsConsumerUser,
     )
     permission_classes = (CheckAnyPermission,)
-    serializer_class = RestaurantOwnerReplySerializer
+    serializer_class = GetRestaurantOwnerReplySerializer
 
     def get_queryset(self):
         user = self.request.user
@@ -483,7 +483,7 @@ class ConsumerRestaurantOwnerRepliesAPIView(generics.ListAPIView):
 @extend_schema(
     summary="Get detailed information of a single reply made by a restaurant owner on a review that belongs to the authenticated consumer.",
     description="Get detailed information of a single reply made by a restaurant owner on a review that belongs to the authenticated consumer.",
-    request=RestaurantOwnerReplySerializer
+    request=GetRestaurantOwnerReplySerializer
 )
 class ConsumerRestaurantOwnerReplyDetailAPIView(generics.RetrieveAPIView):
     """
@@ -494,7 +494,7 @@ class ConsumerRestaurantOwnerReplyDetailAPIView(generics.RetrieveAPIView):
         IsConsumerUser,
     )
     permission_classes = (CheckAnyPermission,)
-    serializer_class = RestaurantOwnerReplySerializer
+    serializer_class = GetRestaurantOwnerReplySerializer
     lookup_field = 'uid'
 
     def get_queryset(self):

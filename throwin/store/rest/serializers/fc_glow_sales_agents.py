@@ -51,7 +51,7 @@ class FcGlowAgentAccountDetailsSerializer(serializers.ModelSerializer):
             "agency_code",
         ]
 
-    def get_agency_code(self, obj):
+    def get_agency_code(self, obj) -> str or None:
         # Check if the user is a Sales Agent and return the agency_code
         if obj.kind == UserKind.SALES_AGENT:
             return obj.profile.agency_code

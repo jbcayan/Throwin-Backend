@@ -293,7 +293,7 @@ class StaffLikeToggleSerializer(serializers.Serializer):
         return staff
 
 
-class RestaurantOwnerReplySerializer(serializers.ModelSerializer):
+class GetRestaurantOwnerReplySerializer(serializers.ModelSerializer):
     """
     Serializer for replies made by a restaurant owner.
     """

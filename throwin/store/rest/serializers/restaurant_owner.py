@@ -478,11 +478,11 @@ class RepliesSerializer(serializers.ModelSerializer):
         model = Reply
         fields = ["uid", "message", "consumer_name", "restaurant_owner_name", "created_at"]
 
-    def get_restaurant_owner_name(self, obj):
+    def get_restaurant_owner_name(self, obj) -> str or None:
         # Return restaurant owner name if exists, otherwise None
         return obj.restaurant_owner.name if obj.restaurant_owner else None
 
-    def get_consumer_name(self, obj):
+    def get_consumer_name(self, obj) -> str or None:
         # Return consumer name if exists, otherwise None
         return obj.consumer.name if obj.consumer else None
 
