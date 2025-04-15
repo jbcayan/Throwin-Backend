@@ -22,7 +22,9 @@ class StoreDetail(generics.RetrieveAPIView):
 
     def get_object(self):
         try:
-            store = Store().get_all_actives().get(code=self.kwargs["code"])
+            store = Store().get_all_actives().get(
+                code=self.kwargs["code"]
+            )
             return store
         except Store.DoesNotExist:
             raise Http404("Store not found")
