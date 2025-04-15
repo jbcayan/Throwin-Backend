@@ -64,10 +64,9 @@ class LineSignInSerializer(serializers.Serializer):
     code = serializers.CharField()
     redirect_uri = serializers.CharField()
 
-    def validate(self, data):
-        code = data.get('code')
-        redirect_uri = data.get('redirect_uri')
-        # Print statements may be executed more than once because of the serialization process.
+    def create(self, validated_data):
+        code = validated_data.get('code')
+        redirect_uri = validated_data.get('redirect_uri')
 
         # Exchange code for access token
         token_response = requests.post(
@@ -81,8 +80,10 @@ class LineSignInSerializer(serializers.Serializer):
             },
             headers={'Content-Type': 'application/x-www-form-urlencoded'}
         )
+
         if token_response.status_code != 200:
             raise serializers.ValidationError({'detail': 'Failed to obtain access token from LINE.'})
+
         token_data = token_response.json()
         access_token = token_data.get('access_token')
 
@@ -91,23 +92,20 @@ class LineSignInSerializer(serializers.Serializer):
             'https://api.line.me/v2/profile',
             headers={'Authorization': f'Bearer {access_token}'}
         )
+
         if profile_response.status_code != 200:
             raise serializers.ValidationError({'detail': 'Failed to retrieve user profile from LINE.'})
-        profile_data = profile_response.json()
 
+        profile_data = profile_response.json()
         user_id = profile_data.get('userId')
         display_name = profile_data.get('displayName')
+
         if not user_id:
             raise serializers.ValidationError({'detail': 'Invalid user ID from LINE profile.'})
+
         # Construct pseudo-email if not available
         email = f"{user_id}@gmail.com"
         provider = 'line'
 
         # Call your social user register or authentication function.
-        # Returning the user data (could be a dictionary) from here.
         return register_social_user(provider, email, display_name)
-
-    def to_representation(self, instance):
-        # Instead of trying to map "code" and "redirect_uri", we simply return the user object.
-        # This avoids the KeyError that was raised when DRF expected the original fields.
-        return instance
