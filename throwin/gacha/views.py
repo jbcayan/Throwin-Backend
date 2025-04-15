@@ -1,6 +1,8 @@
 from rest_framework import generics, status
 from rest_framework.response import Response
 
+from drf_spectacular.utils import extend_schema
+
 from common.permissions import (
     IsConsumerUser,
 )
@@ -14,6 +16,9 @@ from gacha.serializers import (
 
 
 # Create your views here.
+@extend_schema(
+    summary="1. Check available spins per store for the authenticated user.",
+)
 class AvailableSpinsView(generics.ListAPIView):
     """
     API to get available spins per store for the authenticated user.
@@ -30,7 +35,9 @@ class AvailableSpinsView(generics.ListAPIView):
         except AttributeError as e:
             return SpinBalance.objects.none()
 
-
+@extend_schema(
+    summary="2. Play gacha for the authenticated user and get the result (Bronze, Silver, Gold).",
+)
 class PlayGacha(generics.GenericAPIView):
     """
     API to play gacha for the authenticated user.
@@ -48,7 +55,9 @@ class PlayGacha(generics.GenericAPIView):
             status=status.HTTP_200_OK
         )
 
-
+@extend_schema(
+    summary="3. Get a list of available gacha results for the authenticated user.",
+)
 class GachaTicketList(generics.ListAPIView):
     """
     API to get available spins per store for the authenticated user.
