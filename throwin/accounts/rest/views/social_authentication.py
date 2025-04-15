@@ -34,7 +34,5 @@ class LineSignIn(generics.GenericAPIView):
             # Use the create method to handle logic
             user_data = serializer.create(serializer.validated_data)
             return Response(user_data, status=status.HTTP_200_OK)
-        except serializer.ValidationError as e:
-            return Response(e.detail, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({'detail': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
