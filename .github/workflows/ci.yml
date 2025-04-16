@@ -77,6 +77,8 @@ jobs:
           echo "PAYPAL_MODE=${{ secrets.PAYPAL_MODE }}" >> $GITHUB_ENV
           echo "PAYPAL_CLIENT_ID=${{ secrets.PAYPAL_CLIENT_ID }}" >> $GITHUB_ENV
           echo "PAYPAL_CLIENT_SECRET=${{ secrets.PAYPAL_CLIENT_SECRET }}" >> $GITHUB_ENV
+          echo "PAYPAL_CLIENT_SECRET=${{ secrets.LINE_CHANNEL_ID }}" >> $GITHUB_ENV
+          echo "PAYPAL_CLIENT_SECRET=${{ secrets.LINE_CHANNEL_SECRET }}" >> $GITHUB_ENV
       
 
       - name: Run migrations
