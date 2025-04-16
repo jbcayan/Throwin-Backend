@@ -312,7 +312,7 @@ class OrganizationListSerializer(serializers.ModelSerializer):
     Serializer for listing organizations.
     Includes key fields for a concise overview.
     """
-    owner_name = serializers.CharField(source="""restaurant_owner.name""")
+    owner_name = serializers.CharField(source="restaurant_owner.name")
 
     class Meta:
         model = Restaurant
