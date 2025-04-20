@@ -113,11 +113,11 @@ class StoreListSerializer(BaseSerializer):
             "uid",
             "name",
             "code",
-            "exposure",
+            "status",
             "banner",
             "throwin_amounts",
         ]
-        read_only_fields = ["uid", "name", "code", "exposure", "banner", "throwin_amounts"]
+        read_only_fields = ["uid", "name", "code", "status", "banner", "throwin_amounts"]
 
     def get_banner(self, obj) -> dict | None:
         if obj.banner:
