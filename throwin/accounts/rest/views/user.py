@@ -29,7 +29,7 @@ from common.permissions import (
     IsRestaurantStaffUser,
     IsFCAdminUser,
     IsSuperAdminUser,
-    IsRestaurantOwnerUser,
+    IsRestaurantOwnerUser, IsSalesAgentUser,
 )
 from review.models import Reply
 from store.models import StoreUser
@@ -354,6 +354,7 @@ class Me(generics.GenericAPIView):
         IsGlowAdminUser,
         IsRestaurantStaffUser,
         IsFCAdminUser,
+        IsSalesAgentUser,
         IsRestaurantOwnerUser,
         IsSuperAdminUser,
     )
