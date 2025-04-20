@@ -33,7 +33,6 @@ class GoogleSignInSerializer(serializers.Serializer):
         first_name = google_user_data['given_name']
         last_name = google_user_data['family_name'] if google_user_data.get('family_name') else ''
         name = f"{first_name} {last_name}"
-        # profile_image = google_user_data.get('picture')  # Get the profile image URL
         provider = 'google'
 
         return register_social_user(provider, email, name)
