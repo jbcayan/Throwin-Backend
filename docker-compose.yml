@@ -9,9 +9,9 @@ services:
     container_name: throwin_backend
     build:
       context: .
-    volumes:
-      - .:/app:cached
-      - staticfiles:/app/staticfiles
+#    volumes:
+#      - .:/app:cached   # Keep code sync for development, optional for prod
+      # - staticfiles:/app/staticfiles   # REMOVE this line
     ports:
       - "8000:8000"
     command: sh /app/entrypoint.sh
@@ -57,5 +57,5 @@ networks:
   app_network:
     driver: bridge
 
-volumes:
-  staticfiles:
+#volumes:
+#  staticfiles:
