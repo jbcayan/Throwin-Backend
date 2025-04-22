@@ -50,6 +50,7 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "django_filters",
     "django_celery_beat",
+    "storages",
 ]
 
 PROJECT_APPS = [
@@ -174,19 +175,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
-STATIC_URL = "/static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
-
-# Use WhiteNoise to serve static files efficiently in production
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
-
-# Media files (uploads)
-MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -396,3 +384,31 @@ CACHES = {
         "LOCATION": "redis://redis_cache:6379",
     }
 }
+
+# AWS S3 settings for static files
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME', default='us-east-1')  # change if needed
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+}
+
+# Static files (CSS, JavaScript, Images)
+# https://docs.djangoproject.com/en/5.1/howto/static-files/
+
+
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+
+# Use WhiteNoise to serve static files efficiently in production
+# STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# STATIC_URL = "/static/"
+
+# Media files (uploads)
+# MEDIA_URL = "/media/"
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, "media")
