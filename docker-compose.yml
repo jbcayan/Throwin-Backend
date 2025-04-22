@@ -10,7 +10,7 @@ services:
     build:
       context: .
     volumes:
-      - .:/app:cached   # Keep code sync for development, optional for prod
+       - .:/app:cached   # Keep code sync for development, optional for prod
        - staticfiles:/app/staticfiles   # REMOVE this line
     ports:
       - "8000:8000"
