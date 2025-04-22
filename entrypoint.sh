@@ -17,7 +17,11 @@ echo "Redis is up!"
 echo "Applying migrations..."
 python manage.py migrate --noinput
 
-# Collect static files (uploads to S3)
+# Ensure staticfiles directory exists
+#echo "Ensuring staticfiles directory exists..."
+#mkdir -p /app/staticfiles
+
+# Collect static files
 echo "Collecting static files..."
 python manage.py collectstatic --noinput || echo "Static files collection failed but continuing."
 
@@ -29,7 +33,8 @@ celery -A throwin worker --loglevel=info &
 echo "Starting Celery beat..."
 celery -A throwin beat --loglevel=info &
 
-echo "Starting Django application server..."
-# Uncomment one of the following as appropriate:
-# python manage.py runserver 0.0.0.0:8000
+echo "Starting Django development server..."
+#python manage.py runserver 0.0.0.0:8000
+
+# Start the Gunicorn server
 exec gunicorn throwin.wsgi:application --bind 0.0.0.0:8000
