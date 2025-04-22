@@ -18,8 +18,8 @@ echo "Applying migrations..."
 python manage.py migrate --noinput
 
 # Ensure staticfiles directory exists
-#echo "Ensuring staticfiles directory exists..."
-#mkdir -p /app/staticfiles
+echo "Ensuring staticfiles directory exists..."
+mkdir -p /app/staticfiles
 
 # Collect static files
 echo "Collecting static files..."
