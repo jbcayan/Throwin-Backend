@@ -64,10 +64,7 @@ PROJECT_APPS = [
 ]
 
 if ENABLE_SILK:
-    THIRD_PARTY_APPS += [
-        "silk",
-        "django_extensions",
-    ]
+    THIRD_PARTY_APPS += ["silk"]
 
 if DEBUG:
     THIRD_PARTY_APPS += ["drf_spectacular"]
@@ -92,8 +89,8 @@ DEBUG_TOOLBAR_PANELS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
     "corsheaders.middleware.CorsMiddleware",
+    'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -129,16 +126,12 @@ WSGI_APPLICATION = 'throwin.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
-DATABASE_TYPE = config("DATABASE_TYPE", default="sqlite")
 
-if DATABASE_TYPE == "sqlite":
+if config("RENDER", cast=bool, default=False):
     DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
-        }
+        "default": dj_database_url.parse(config("DATABASE_URL")),
     }
-else:  # Assuming PostgreSQL as the other option
+else:
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.postgresql",
@@ -146,12 +139,13 @@ else:  # Assuming PostgreSQL as the other option
             "USER": config("DB_USER", default="postgres"),
             "PASSWORD": config("DB_PASSWORD", default="postgres"),
             "HOST": config("DB_HOST", default="127.0.0.1"),
-            "PORT": config("DB_PORT", default="5432")
-        },
-        "OPTIONS": {
-            "sslmode": "require",  # Add this line if SSL is required
-        },
+            "PORT": config("DB_PORT", default="5432"),
+            "OPTIONS": {
+                "sslmode": "require",  # Add this line if SSL is required
+            },
+        }
     }
+
 # Password validation
 # https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
@@ -213,7 +207,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3001",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    # "https://sub.example.com",
+    "https://api-dev.throwin-glow.com",  # Use HTTPS if frontend runs on HTTPS
 ]
 
 CORS_ALLOW_METHODS = (
@@ -236,26 +230,25 @@ CORS_ALLOW_HEADERS = (
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "https://throwin-backend.onrender.com",
+    "http://throwin-frontend-react.s3-website-ap-northeast-1.amazonaws.com",
+    "https://api-dev.throwin-glow.com",
     "https://backend.throwin-glow.com",
 ]
 
-SESSION_COOKIE_SECURE = False
+CSRF_COOKIE_SECURE = True
 CORS_ALLOW_CREDENTIALS = True
-
-CSRF_USE_SESSIONS = True
-# CSRF_COOKIE_DOMAIN = 'localhost:5173'
 # CSRF_COOKIE_DOMAIN = 'core-sm.online'
 CSRF_COOKIE_DOMAIN = None  # Defaults to the current domain
+CSRF_USE_SESSIONS = True
+CSRF_COOKIE_SAMESITE = "None"  # Required for cross-origin CSRF
 
-
-# SESSION_COOKIE_SAMESITE = "Lax"  # Allows cookies for cross-origin GET requests
-# CSRF_COOKIE_SAMESITE = "Lax"     # Ensures cookies are sent for cross-origin requests
-
+SESSION_COOKIE_SAMESITE = "None"  # Required for cross-origin requests
+SESSION_COOKIE_SECURE = True
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -294,7 +287,7 @@ SIMPLE_JWT = {
     "ACCESS_TOKEN_LIFETIME": timedelta(days=5),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=15),
     "ROTATE_REFRESH_TOKENS": False,
-    "BLACKLIST_AFTER_ROTATION": True,
+    "BLACKLIST_AFTER_ROTATION": False,
     "UPDATE_LAST_LOGIN": False,
     "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,
@@ -380,9 +373,6 @@ VERSATILEIMAGEFIELD_RENDITION_KEY_SETS = {
 GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET")
 
-LINE_CHANNEL_ID = config("LINE_CHANNEL_ID")
-LINE_CHANNEL_SECRET = config("LINE_CHANNEL_SECRET")
-
 SOCIAL_AUTH_PASSWORD = config("SOCIAL_AUTH_PASSWORD")
 
 EMAIL_BACKEND = config("EMAIL_BACKEND")
@@ -392,42 +382,14 @@ EMAIL_USE_TLS = config("EMAIL_USE_TLS")
 EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 
-FRONTEND_URL = config("FRONTEND_URL", default="http://localhost:5173")
-SITE_DOMAIN = config("SITE_DOMAIN", default="http://localhost:8000")
-
+FRONTEND_URL = config("FRONTEND_URL")
+SITE_DOMAIN = config("SITE_DOMAIN", default="https://api-dev.throwin-glow.com")
 SITE_NAME = "Throwin"
 
 # For docker Redis Caching
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        # "LOCATION": "redis://localhost:6379",
         "LOCATION": "redis://redis_cache:6379",
     }
 }
-
-from storages.backends.s3boto3 import S3Boto3Storage
-
-class StaticStorage(S3Boto3Storage):
-    location = 'static'
-    default_acl = 'public-read'
-
-class MediaStorage(S3Boto3Storage):
-    location = 'media'
-    default_acl = 'public-read'
-
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
-]
-
-# AWS S3 settings for static and media files
-# AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
-# AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
-# AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
-# AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME', default='us-east-1')
-# AWS_S3_CUSTOM_DOMAIN = config('AWS_S3_CUSTOM_DOMAIN', default=f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com')
-#
-# # Optional: Prevent file overwrite and set ACL
-# AWS_S3_FILE_OVERWRITE = False
-# AWS_DEFAULT_ACL = None
-# AWS_S3_SIGNATURE_VERSION = "s3v4"

@@ -53,3 +53,8 @@ docker compose up --build
 ```bash
 docker compose down
 ```
+
+### This command will allow you to run commands in the Django container.
+```bash
+docker exec -it throwin_backend /bin/bash
+```

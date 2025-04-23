@@ -1,9 +1,12 @@
 from decouple import config
 
 PRODUCTION = config("PRODUCTION", default=False, cast=bool)
+DEVELOPMENT = config("DEVELOPMENT", default=False, cast=bool)
 
 if PRODUCTION:
     from .production import *
+elif DEVELOPMENT:
+    from .development import *
 else:
     from .local import *
 

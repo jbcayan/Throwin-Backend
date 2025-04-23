@@ -50,6 +50,7 @@ THIRD_PARTY_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "django_filters",
     "django_celery_beat",
+    "storages",
 ]
 
 PROJECT_APPS = [
@@ -175,21 +176,39 @@ USE_I18N = True
 
 USE_TZ = True
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
+# =========================
+# STATIC & MEDIA FILES (S3)
+# =========================
 
-STATIC_URL = "/static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
+# --- AWS S3 CREDENTIALS ---
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME', default='us-east-1')
+AWS_S3_CUSTOM_DOMAIN = config('AWS_S3_CUSTOM_DOMAIN', default=f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com')
 
-# Use WhiteNoise to serve static files efficiently in production
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+# S3 Default Options
+AWS_S3_OBJECT_PARAMETERS = {
+    "CacheControl": "max-age=86400",
+}
+AWS_DEFAULT_ACL = None  # Important for newer AWS behavior
 
-# Media files (uploads)
-MEDIA_URL = "/media/"
-MEDIA_ROOT = os.path.join(BASE_DIR, "media")
 
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
+# --- STATIC FILES ---
+STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
+# --- MEDIA FILES ---
+MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+
+# Correct Django 4.2+ storage configuration
+STORAGES = {
+    "default": {
+        "BACKEND": "throwin.storages_backends.MediaStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "throwin.storages_backends.StaticStorage",
+    },
+}
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -207,7 +226,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3001",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "https://api-dev.throwin-glow.com",  # Use HTTPS if frontend runs on HTTPS
+    "https://api-dev.throwin-glow.com",  # Use HTTPS if the frontend runs on HTTPS
 ]
 
 CORS_ALLOW_METHODS = (
@@ -393,3 +412,25 @@ CACHES = {
         "LOCATION": "redis://redis_cache:6379",
     }
 }
+
+
+AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_SIGNATURE_NAME = "s3v4"
+AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME', default='us-east-1')
+AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = None
+AES_S3_VERITY = True
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',
+}
+
+STATICFILES_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
+STATIC_ROOT = '/tmp/staticfiles'
+
+DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
+MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+MEDIA_ROOT = '/tmp/media'

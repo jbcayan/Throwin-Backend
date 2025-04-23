@@ -25,9 +25,9 @@ RUN apk --update add --no-cache \
     adduser -D -h /app -u 1000 appuser
 
 # Ensure staticfiles directory exists with correct permissions
-RUN mkdir -p /app/staticfiles && \
-    chmod -R 755 /app/staticfiles && \
-    chown -R appuser:appuser /app/staticfiles
+#RUN mkdir -p /app/staticfiles && \
+#    chmod -R 755 /app/staticfiles && \
+#    chown -R appuser:appuser /app/staticfiles
 
 # Copy requirements and install dependencies
 COPY requirements.txt /app/
