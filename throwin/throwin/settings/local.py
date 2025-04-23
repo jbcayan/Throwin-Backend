@@ -129,11 +129,13 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'throwin.wsgi.application'
 
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
+
+# =========================
+# Database Configuration
+# =========================
+# Switches between SQLite and PostgreSQL based on environment variable.
 
 DATABASE_TYPE = config("DATABASE_TYPE", default="sqlite")
-
 if DATABASE_TYPE == "sqlite":
     DATABASES = {
         'default': {
@@ -155,8 +157,9 @@ else:  # Assuming PostgreSQL as the other option
             "sslmode": "require",  # Add this line if SSL is required
         },
     }
-# Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
+# =========================
+# Password Validation
+# =========================
 
 AUTH_PASSWORD_VALIDATORS = [
     {
