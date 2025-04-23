@@ -1,7 +1,12 @@
 from decouple import config
 
 PRODUCTION = config("PRODUCTION", default=False, cast=bool)
-DEVELOPMENT = config("DEVELOPMENT", default=True, cast=bool)
+DEVELOPMENT = config("DEVELOPMENT", default=False, cast=bool)
+
+print("================================================")
+print("PRODUCTION:", PRODUCTION)
+print("DEVELOPMENT:", DEVELOPMENT)
+print("================================================")
 
 if PRODUCTION:
     from .production import *
