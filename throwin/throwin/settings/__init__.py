@@ -1,7 +1,7 @@
 from decouple import config
 
 PRODUCTION = config("PRODUCTION", default=False, cast=bool)
-DEVELOPMENT = config("DEVELOPMENT", default=False, cast=bool)
+DEVELOPMENT = config("DEVELOPMENT", default=True, cast=bool)
 
 if PRODUCTION:
     from .production import *
