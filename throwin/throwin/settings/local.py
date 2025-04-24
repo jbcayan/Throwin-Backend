@@ -1,6 +1,8 @@
 # =========================
 # Basic Imports and Path Setup
 # =========================
+print("================================================"
+      "Loading local settings for throwin backend...")
 import os
 import dj_database_url
 from datetime import timedelta
