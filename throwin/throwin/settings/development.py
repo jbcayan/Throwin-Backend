@@ -9,9 +9,6 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
-print("================================================")
-print("Using development settings")
-print("================================================")
 
 import os
 import dj_database_url
