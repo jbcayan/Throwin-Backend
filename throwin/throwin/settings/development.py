@@ -394,3 +394,8 @@ CACHES = {
         "LOCATION": "redis://redis_cache:6379",
     }
 }
+
+# --- Added for correct https pagination links ---
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+# -----------------------------------------------
