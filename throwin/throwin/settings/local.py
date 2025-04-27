@@ -403,33 +403,7 @@ SITE_NAME = "Throwin"
 CACHES = {
     "default": {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
-        # "LOCATION": "redis://localhost:6379",
-        "LOCATION": "redis://redis_cache:6379",
+        "LOCATION": "redis://localhost:6379",
+        # "LOCATION": "redis://redis_cache:6379",
     }
 }
-
-from storages.backends.s3boto3 import S3Boto3Storage
-
-class StaticStorage(S3Boto3Storage):
-    location = 'static'
-    default_acl = 'public-read'
-
-class MediaStorage(S3Boto3Storage):
-    location = 'media'
-    default_acl = 'public-read'
-
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, "static"),
-]
-
-# AWS S3 settings for static and media files
-# AWS_ACCESS_KEY_ID = config('AWS_ACCESS_KEY_ID')
-# AWS_SECRET_ACCESS_KEY = config('AWS_SECRET_ACCESS_KEY')
-# AWS_STORAGE_BUCKET_NAME = config('AWS_STORAGE_BUCKET_NAME')
-# AWS_S3_REGION_NAME = config('AWS_S3_REGION_NAME', default='us-east-1')
-# AWS_S3_CUSTOM_DOMAIN = config('AWS_S3_CUSTOM_DOMAIN', default=f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com')
-#
-# # Optional: Prevent file overwrite and set ACL
-# AWS_S3_FILE_OVERWRITE = False
-# AWS_DEFAULT_ACL = None
-# AWS_S3_SIGNATURE_VERSION = "s3v4"
