@@ -255,8 +255,8 @@ CSRF_USE_SESSIONS = True
 CSRF_COOKIE_DOMAIN = None  # Defaults to the current domain
 
 
-# SESSION_COOKIE_SAMESITE = "Lax"  # Allows cookies for cross-origin GET requests
-# CSRF_COOKIE_SAMESITE = "Lax"     # Ensures cookies are sent for cross-origin requests
+# SESSION_COOKIE_SAMESITE = "Lax"
+# CSRF_COOKIE_SAMESITE = "Lax"
 
 
 REST_FRAMEWORK = {
