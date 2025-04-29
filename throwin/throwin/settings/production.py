@@ -388,6 +388,9 @@ VERSATILEIMAGEFIELD_RENDITION_KEY_SETS = {
 GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET")
 
+LINE_CHANNEL_ID = config("LINE_CHANNEL_ID")
+LINE_CHANNEL_SECRET = config("LINE_CHANNEL_SECRET")
+
 SOCIAL_AUTH_PASSWORD = config("SOCIAL_AUTH_PASSWORD")
 
 EMAIL_BACKEND = config("EMAIL_BACKEND")
@@ -430,3 +433,8 @@ STATIC_ROOT = '/tmp/staticfiles'
 DEFAULT_FILE_STORAGE = 'storages.backends.s3boto3.S3Boto3Storage'
 MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
 MEDIA_ROOT = '/tmp/media'
+
+# --- Added for correct https pagination links ---
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+USE_X_FORWARDED_HOST = True
+# -----------------------------------------------
