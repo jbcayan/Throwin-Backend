@@ -78,17 +78,19 @@ class BankAccountSerializer(serializers.ModelSerializer):
 
 class OrganizationCreateSerializer(serializers.Serializer):
     """
-    Serializer to create an organization along with its associated restaurant, owner account, and bank account.
-    Validates the agency code to retrieve a sales agent and updates the owner's user profile.
-    Executes the creation process within an atomic transaction to ensure data integrity.
+    Serializer to create an organization, its restaurant, owner, and bank account.
+    Ensures atomicity and validates uniqueness of key fields.
     """
+
     company_name = serializers.CharField(max_length=100)
     address = serializers.CharField(max_length=255, required=False)
     agency_code = serializers.CharField(max_length=20, required=False)
     post_code = serializers.CharField(max_length=10)
     industry = serializers.CharField(max_length=100)
     invoice_number = serializers.CharField(max_length=100, required=False)
-    corporate_number = serializers.CharField(max_length=100, required=False)
+    corporate_number = serializers.CharField(
+        max_length=100, required=False, allow_blank=True, allow_null=True
+    )
     owner_name = serializers.CharField(max_length=100)
     telephone_number = serializers.CharField(max_length=15)
     email = serializers.EmailField()
@@ -106,199 +108,201 @@ class OrganizationCreateSerializer(serializers.Serializer):
             "account_type", "account_number", "account_holder_name",
         ]
 
+    def validate(self, attrs):
+        """
+        Perform serializer-level validation for unique constraints.
+        """
+        email = attrs.get("email")
+        phone = attrs.get("telephone_number")
+        invoice = attrs.get("invoice_number")
+        corporate = attrs.get("corporate_number")
+
+        if User.objects.filter(email=email).exists():
+            raise ValidationError({"email": "Email already exists."})
+        if User.objects.filter(phone_number=phone).exists():
+            raise ValidationError({"telephone_number": "Phone number already exists."})
+        if invoice and UserProfile.objects.filter(invoice_number=invoice).exists():
+            raise ValidationError({"invoice_number": "Invoice number already exists."})
+        if corporate and UserProfile.objects.filter(corporate_number=corporate).exists():
+            raise ValidationError({"corporate_number": "Corporate number already exists."})
+
+        return attrs
+
+    def _get_sales_agent(self, agency_code):
+        """
+        Retrieve sales agent user by agency code.
+        """
+        if not agency_code:
+            return None
+        try:
+            return UserProfile.objects.get(agency_code=agency_code).user
+        except ObjectDoesNotExist:
+            raise ValidationError({"sales_agent": "Invalid agency code."})
+
+    def _create_owner(self, validated_data):
+        """
+        Create a restaurant owner user and update their profile.
+        """
+        owner = User.objects.create_user(
+            email=validated_data["email"],
+            name=validated_data["owner_name"],
+            phone_number=validated_data["telephone_number"],
+            kind=UserKind.RESTAURANT_OWNER,
+            is_active=False,
+        )
+        profile = owner.profile
+        profile.post_code = validated_data["post_code"]
+        profile.company_name = validated_data["company_name"]
+        profile.invoice_number = validated_data.get("invoice_number")
+        profile.corporate_number = validated_data.get("corporate_number")
+        profile.save(update_fields=["post_code", "company_name", "invoice_number", "corporate_number"])
+        return owner
+
+    def _create_restaurant(self, validated_data, owner, user, sales_agent=None):
+        """
+        Create the restaurant and associated RestaurantUser(s).
+        """
+        restaurant = Restaurant.objects.create(
+            name=validated_data["company_name"],
+            restaurant_owner=owner,
+            post_code=validated_data["post_code"],
+            address=validated_data.get("address"),
+            industry=validated_data["industry"],
+            invoice_number=validated_data.get("invoice_number"),
+            corporate_number=validated_data.get("corporate_number"),
+            created_by=user,
+            sales_agent=sales_agent,
+        )
+        RestaurantUser.objects.create(
+            restaurant=restaurant,
+            user=owner,
+            created_by=user,
+            role=UserKind.RESTAURANT_OWNER,
+        )
+        if sales_agent:
+            RestaurantUser.objects.get_or_create(
+                restaurant=restaurant,
+                user=sales_agent,
+                defaults={"created_by": user, "role": UserKind.SALES_AGENT},
+            )
+        return restaurant
+
+    def _create_bank_account(self, validated_data, owner):
+        """
+        Create a bank account for the owner.
+        """
+        BankAccount.objects.create(
+            user=owner,
+            bank_name=validated_data["bank_name"],
+            branch_name=validated_data["branch_name"],
+            account_type=validated_data["account_type"],
+            account_holder_name=validated_data["account_holder_name"],
+            account_number=validated_data["account_number"],
+            is_active=True,
+        )
+
+    def _send_activation_email(self, owner):
+        """
+        Send activation email to the owner.
+        """
+        activation_url = generate_admin_new_account_activation_url(owner)
+        subject = "Activate Your Account"
+        message = f"Please click the following link to set password and activate your account: {activation_url}"
+        send_mail_task.delay(subject, message, owner.email)
+
     @transaction.atomic
     def create(self, validated_data):
-        """Create a restaurant, restaurant owner, and bank account, then return the created Restaurant instance."""
+        """
+        Create an organization, owner, restaurant, and bank account atomically.
+        """
         user = self.context["request"].user
-        sales_agent = None
-
         try:
-            # Check for existing email and phone number
-            if User.objects.filter(email=validated_data.get("email")).exists():
-                raise ValidationError({"email": "Email already exists."})
-
-            if User.objects.filter(phone_number=validated_data.get("telephone_number")).exists():
-                raise ValidationError({"telephone_number": "Phone number already exists."})
-
-            if UserProfile.objects.filter(invoice_number=validated_data.get("invoice_number")).exists():
-                raise ValidationError({"invoice_number": "Invoice number already exists."})
-
-            if UserProfile.objects.filter(corporate_number=validated_data.get("corporate_number")).exists():
-                raise ValidationError({"corporate_number": "Corporate number already exists."})
-
-            if validated_data.get("agency_code"):
-                try:
-                    sales_agent = UserProfile.objects.get(agency_code=validated_data.get("agency_code")).user
-                except ObjectDoesNotExist:
-                    raise ValidationError({"sales_agent": "Invalid agency code."})
-
-            # Create owner
-            owner = User.objects.create_user(
-                email=validated_data.get("email"),
-                name=validated_data.get("owner_name"),
-                phone_number=validated_data.get("telephone_number"),
-                kind=UserKind.RESTAURANT_OWNER,
-                is_active=False,
-            )
-
-            # Update user profile
-            profile = owner.profile
-            profile_fields = {
-                'post_code': validated_data.get("post_code"),
-                'company_name': validated_data.get("company_name"),
-                'invoice_number': validated_data.get("invoice_number"),
-                'corporate_number': validated_data.get("corporate_number"),
-            }
-            for field, value in profile_fields.items():
-                setattr(profile, field, value)
-            profile.save(update_fields=profile_fields.keys())
-
-            # Create the restaurant
-            restaurant = Restaurant.objects.create(
-                name=validated_data.get("company_name"),
-                restaurant_owner=owner,
-                post_code=validated_data.get("post_code"),
-                address=validated_data.get("address"),
-                industry=validated_data.get("industry"),
-                invoice_number=validated_data.get("invoice_number"),
-                corporate_number=validated_data.get("corporate_number"),
-                created_by=user,
-            )
-
-            restaurant_user = RestaurantUser.objects.create(
-                restaurant=restaurant,
-                user=owner,
-                created_by=user,
-                role=UserKind.RESTAURANT_OWNER,
-            )
-
-            if sales_agent:
-                restaurant.sales_agent = sales_agent
-                restaurant.save(update_fields=["sales_agent"])
-
-                restaurant_user_sales = RestaurantUser.objects.create(
-                    restaurant=restaurant,
-                    user=sales_agent,
-                    created_by=user,
-                    role=UserKind.SALES_AGENT,
-                )
-
-            # Create bank account for the owner
-            BankAccount.objects.create(
-                user=owner,
-                bank_name=validated_data.get("bank_name"),
-                branch_name=validated_data.get("branch_name"),
-                account_type=validated_data.get("account_type"),
-                account_holder_name=validated_data.get("account_holder_name"),
-                account_number=validated_data.get("account_number"),
-                is_active=True,
-            )
-
-            # Send activation email outside the transaction
-            # Send activation email
-            activation_url = generate_admin_new_account_activation_url(owner)
-            subject = "Activate Your Account"
-            message = f"Please click the following link to set password and activate your account: {activation_url}"
-            send_mail_task.delay(subject, message, owner.email)
-
-            return restaurant
-
+            sales_agent = self._get_sales_agent(validated_data.get("agency_code"))
+            owner = self._create_owner(validated_data)
+            restaurant = self._create_restaurant(validated_data, owner, user, sales_agent)
+            self._create_bank_account(validated_data, owner)
         except IntegrityError as e:
-            # Rollback and raise a meaningful error
             raise ValidationError(f"Database integrity error: {str(e)}")
         except Exception as e:
-            # Rollback and raise a general error
             raise ValidationError(f"An error occurred: {str(e)}")
 
+        # Send activation email outside the transaction
+        self._send_activation_email(owner)
+        return restaurant
+
     def update(self, instance, validated_data):
-        """ Update the Restaurant instance along with its associated owner's profile and active bank account. """
-
-        # Check if invoice_number is provided and perform uniqueness check
-        new_invoice_number = validated_data.get("invoice_number")
-        if new_invoice_number and instance.invoice_number != new_invoice_number:
-            if UserProfile.objects.filter(invoice_number=new_invoice_number).exists():
+        """
+        Update the restaurant, owner's profile, and active bank account.
+        """
+        # Uniqueness checks for invoice and corporate numbers
+        invoice = validated_data.get("invoice_number")
+        corporate = validated_data.get("corporate_number")
+        if invoice and instance.invoice_number != invoice:
+            if UserProfile.objects.filter(invoice_number=invoice).exists():
                 raise ValidationError({"invoice_number": "Invoice number already exists."})
-
-        # Check if corporate_number is provided and perform uniqueness check
-        new_corporate_number = validated_data.get("corporate_number")
-        if new_corporate_number and instance.corporate_number != new_corporate_number:
-            if UserProfile.objects.filter(corporate_number=new_corporate_number).exists():
+        if corporate and instance.corporate_number != corporate:
+            if UserProfile.objects.filter(corporate_number=corporate).exists():
                 raise ValidationError({"corporate_number": "Corporate number already exists."})
 
         # Update restaurant fields
-        instance.name = validated_data.get("company_name", instance.name)
-        instance.address = validated_data.get("address", instance.address)
-        instance.post_code = validated_data.get("post_code", instance.post_code)
-        instance.industry = validated_data.get("industry", instance.industry)
-        instance.invoice_number = new_invoice_number or instance.invoice_number
-        instance.corporate_number = new_corporate_number or instance.corporate_number
+        for attr in ["company_name", "address", "post_code", "industry", "invoice_number", "corporate_number"]:
+            val = validated_data.get(attr)
+            if val is not None:
+                setattr(instance, "name" if attr == "company_name" else attr, val)
 
-        new_agency_code = validated_data.get("agency_code")
-        if new_agency_code:
-            try:
-                sales_agent = UserProfile.objects.get(agency_code=new_agency_code).user
-                instance.sales_agent = sales_agent
-            except ObjectDoesNotExist:
-                raise ValidationError({"sales_agent": "Invalid agency code."})
+        # Update sales agent if agency code provided
+        agency_code = validated_data.get("agency_code")
+        if agency_code:
+            instance.sales_agent = self._get_sales_agent(agency_code)
+        instance.save()
 
-        instance.save(update_fields=[
-            "name", "address", "post_code", "industry", "invoice_number", "corporate_number", "sales_agent"
-        ])
-
-        # Update owner fields
+        # Update owner
         owner = instance.restaurant_owner
-        # Check if telephone_number is provided and perform uniqueness check
-        new_telephone_number = validated_data.get("telephone_number")
-        if new_telephone_number and owner.phone_number != new_telephone_number:
-            if User.objects.filter(phone_number=new_telephone_number).exists():
-                raise serializers.ValidationError({"telephone_number": "Phone number already exists."})
-
-        # Update owner's email and name
-        new_email = validated_data.get("email", owner.email)
-        if owner.email != new_email:
+        new_phone = validated_data.get("telephone_number")
+        new_email = validated_data.get("email")
+        if new_phone and owner.phone_number != new_phone:
+            if User.objects.filter(phone_number=new_phone).exists():
+                raise ValidationError({"telephone_number": "Phone number already exists."})
+        if new_email and owner.email != new_email:
             if User.objects.filter(email=new_email).exists():
-                raise serializers.ValidationError({"email": "This email already exists."})
+                raise ValidationError({"email": "This email already exists."})
             activation_url = generate_admin_account_activation_url(owner, new_email)
             subject = "Email Change Request"
             message = f"Please click the following link to verify your new email: {activation_url}"
             send_mail_task.delay(subject, message, new_email)
 
         owner.name = validated_data.get("owner_name", owner.name)
-        owner.phone_number = validated_data.get("telephone_number", owner.phone_number)
+        owner.phone_number = new_phone or owner.phone_number
         owner.save(update_fields=["name", "phone_number", "is_verified"])
 
+        # Update owner's profile
         profile = owner.profile
-        profile.post_code = validated_data.get("post_code", profile.post_code)
-        profile.company_name = validated_data.get("company_name", profile.company_name)
-        profile.invoice_number = new_invoice_number or profile.invoice_number
-        profile.corporate_number = new_corporate_number or profile.corporate_number
-        profile.save(update_fields=["post_code", "company_name", "invoice_number", "corporate_number"])
+        for attr in ["post_code", "company_name", "invoice_number", "corporate_number"]:
+            val = validated_data.get(attr)
+            if val is not None:
+                setattr(profile, attr, val)
+        profile.save()
 
-        # Update active bank account details if available
+        # Update bank account
         bank_account = BankAccount.objects.filter(user=owner, is_active=True).first()
         if bank_account:
-            bank_account.bank_name = validated_data.get("bank_name", bank_account.bank_name)
-            bank_account.branch_name = validated_data.get("branch_name", bank_account.branch_name)
-            bank_account.account_type = validated_data.get("account_type", bank_account.account_type)
-            bank_account.account_number = validated_data.get("account_number", bank_account.account_number)
-            bank_account.account_holder_name = validated_data.get("account_holder_name",
-                                                                  bank_account.account_holder_name)
-            bank_account.save(update_fields=[
-                "bank_name", "branch_name", "account_type", "account_number", "account_holder_name"
-            ])
+            for attr in ["bank_name", "branch_name", "account_type", "account_number", "account_holder_name"]:
+                val = validated_data.get(attr)
+                if val is not None:
+                    setattr(bank_account, attr, val)
+            bank_account.save()
 
         return instance
 
     def to_representation(self, instance):
         """
-        Custom representation after creation of the restaurant.
-        This method returns key details of the created restaurant.
+        Return key details of the created or updated restaurant.
         """
         return {
             "uid": instance.uid,
             "name": instance.name,
             "restaurant_owner_uid": instance.restaurant_owner.uid,
-            "sales_agent_uid": instance.sales_agent.uid if instance.sales_agent else None,
+            "sales_agent_uid": getattr(instance.sales_agent, "uid", None),
             "post_code": instance.post_code,
             "address": instance.address,
             "industry": instance.industry,
@@ -387,7 +391,12 @@ class SalesAgentListCreateSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(max_length=100)
     address = serializers.CharField(max_length=255)
     invoice_number = serializers.CharField(max_length=20)
-    corporate_number = serializers.CharField(max_length=100, required=False)
+    corporate_number = serializers.CharField(
+        max_length=100,
+        required=False,
+        allow_null=True,
+        allow_blank=True
+    )
 
     bank_name = serializers.CharField(max_length=100)
     branch_name = serializers.CharField(max_length=100)
