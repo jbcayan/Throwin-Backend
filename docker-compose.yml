@@ -57,5 +57,5 @@ networks:
   app_network:
     driver: bridge
 
-#volumes:
-#  staticfiles:
+volumes:
+  staticfiles:
