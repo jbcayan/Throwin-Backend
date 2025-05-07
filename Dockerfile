@@ -25,9 +25,17 @@ RUN apk --update add --no-cache \
     adduser -D -h /app -u 1000 appuser
 
 # Ensure staticfiles directory exists with correct permissions
+# ==================== NOTE ============================
+# COMMENT THIS LINE IF YOU ARE USING S3 FOR STATIC FILES
+# ==================== NOTE ============================
 #RUN mkdir -p /app/staticfiles && \
 #    chmod -R 755 /app/staticfiles && \
 #    chown -R appuser:appuser /app/staticfiles
+
+# Ensure media directory exists and is writable by appuser
+RUN mkdir -p /app/throwin/throwin/media && \
+    chmod -R 775 /app/throwin/throwin/media && \
+    chown -R appuser:appuser /app/throwin/throwin/media
 
 # Copy requirements and install dependencies
 COPY requirements.txt /app/
