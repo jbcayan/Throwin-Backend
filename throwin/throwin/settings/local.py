@@ -8,10 +8,6 @@ from pathlib import Path
 
 from decouple import config
 
-print("========================")
-print("Using Local Settings")
-print("========================")
-
 # =========================
 # Paths and Base Directory
 # =========================

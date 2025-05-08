@@ -385,24 +385,55 @@ class ActivationNewUserSerializer(serializers.Serializer):
 
 class SalesAgentListCreateSerializer(serializers.ModelSerializer):
     """
-    Serializer for creating a sales agent.
+    Serializer for creating, updating, and listing Sales Agent accounts.
+    Handles agent creation/updates with associated profile and bank account information.
     """
-    post_code = serializers.CharField(max_length=20)
-    company_name = serializers.CharField(max_length=100)
-    address = serializers.CharField(max_length=255)
-    invoice_number = serializers.CharField(max_length=20)
+    # Profile Information
+    post_code = serializers.CharField(
+        max_length=20,
+        help_text="Postal code for the agent's company"
+    )
+    company_name = serializers.CharField(
+        max_length=100,
+        help_text="Legal name of the agent's company"
+    )
+    address = serializers.CharField(
+        max_length=255,
+        help_text="Physical address of the company"
+    )
+    invoice_number = serializers.CharField(
+        max_length=20,
+        help_text="Unique identifier for invoicing purposes"
+    )
     corporate_number = serializers.CharField(
         max_length=100,
         required=False,
         allow_null=True,
-        allow_blank=True
+        allow_blank=True,
+        help_text="Corporate registration number if available"
     )
 
-    bank_name = serializers.CharField(max_length=100)
-    branch_name = serializers.CharField(max_length=100)
-    account_type = serializers.CharField(max_length=100)
-    account_number = serializers.CharField(max_length=100)
-    account_holder_name = serializers.CharField(max_length=100)
+    # Bank Account Information
+    bank_name = serializers.CharField(
+        max_length=100,
+        help_text="Name of the bank"
+    )
+    branch_name = serializers.CharField(
+        max_length=100,
+        help_text="Branch name of the bank"
+    )
+    account_type = serializers.CharField(
+        max_length=100,
+        help_text="Type of bank account (e.g., checking, savings)"
+    )
+    account_number = serializers.CharField(
+        max_length=100,
+        help_text="Bank account number"
+    )
+    account_holder_name = serializers.CharField(
+        max_length=100,
+        help_text="Name of the account holder"
+    )
 
     class Meta:
         model = User
@@ -410,146 +441,195 @@ class SalesAgentListCreateSerializer(serializers.ModelSerializer):
             "email",
             "name",
             "phone_number",
-
             "post_code",
             "company_name",
             "address",
             "invoice_number",
             "corporate_number",
-
             "bank_name",
             "branch_name",
             "account_type",
             "account_number",
             "account_holder_name",
         ]
-
         extra_kwargs = {
-            "email": {"required": True},
-            "name": {"required": True},
-            "phone_number": {"required": True},
+            "email": {
+                "required": True,
+                "help_text": "Email address for the agent account"
+            },
+            "name": {
+                "required": True,
+                "help_text": "Full name of the agent"
+            },
+            "phone_number": {
+                "required": True,
+                "help_text": "Contact phone number"
+            },
         }
 
+    def validate(self, data):
+        """Perform cross-field validation and uniqueness checks."""
+        errors = {}
+        instance = self.instance  # Will be None for create, existing instance for update
+
+        # Check for existing user with same email or phone
+        email = data.get('email')
+        phone_number = data.get('phone_number')
+        invoice_number = data.get('invoice_number')
+        corporate_number = data.get('corporate_number')
+
+        if email and (not instance or instance.email != email):
+            if User.objects.filter(email=email).exclude(pk=getattr(instance, 'pk', None)).exists():
+                errors['email'] = "This email already exists."
+
+        if phone_number and (not instance or instance.phone_number != phone_number):
+            if User.objects.filter(phone_number=phone_number).exclude(pk=getattr(instance, 'pk', None)).exists():
+                errors['phone_number'] = "This phone number already exists."
+
+        if invoice_number and (not instance or instance.profile.invoice_number != invoice_number):
+            if UserProfile.objects.filter(invoice_number=invoice_number).exclude(
+                    user=getattr(instance, 'pk', None)).exists():
+                errors['invoice_number'] = "Invoice number already exists."
+
+        if corporate_number and (not instance or instance.profile.corporate_number != corporate_number):
+            if UserProfile.objects.filter(corporate_number=corporate_number).exclude(
+                    user=getattr(instance, 'pk', None)).exists():
+                errors['corporate_number'] = "Corporate number already exists."
+
+        if errors:
+            raise serializers.ValidationError(errors)
+
+        return data
 
     @transaction.atomic
     def create(self, validated_data):
-        post_code = validated_data.pop("post_code")
-        company_name = validated_data.pop("company_name")
-        address = validated_data.pop("address")
-        invoice_number = validated_data.pop("invoice_number")
-        corporate_number = validated_data.pop("corporate_number", None)
+        """Create a new Sales Agent with associated profile and bank account."""
+        # Extract profile data
+        profile_data = {
+            'post_code': validated_data.pop('post_code'),
+            'company_name': validated_data.pop('company_name'),
+            'address': validated_data.pop('address'),
+            'invoice_number': validated_data.pop('invoice_number'),
+            'corporate_number': validated_data.pop('corporate_number', None) or None,
+        }
 
-        bank_name = validated_data.pop("bank_name")
-        branch_name = validated_data.pop("branch_name")
-        account_type = validated_data.pop("account_type")
-        account_number = validated_data.pop("account_number")
-        account_holder_name = validated_data.pop("account_holder_name")
+        # Extract bank account data
+        bank_account_data = {
+            'bank_name': validated_data.pop('bank_name'),
+            'branch_name': validated_data.pop('branch_name'),
+            'account_type': validated_data.pop('account_type'),
+            'account_number': validated_data.pop('account_number'),
+            'account_holder_name': validated_data.pop('account_holder_name'),
+        }
 
-        name = validated_data.pop("name")
-        phone_number = validated_data.pop("phone_number")
-        email = validated_data.pop("email")
+        # Create user (sales agent)
+        validated_data.update({
+            'kind': UserKind.SALES_AGENT,
+            'is_active': False,
+        })
+        sales_agent = User.objects.create_user(**validated_data)
 
-        if User.objects.filter(email=email).exists():
-            raise serializers.ValidationError({"email": "This email already exists."})
+        # Create profile
+        self._create_user_profile(sales_agent, profile_data)
 
-        if User.objects.filter(phone_number=phone_number).exists():
-            raise serializers.ValidationError({"phone_number": "This phone number already exists."})
+        # Create bank account
+        self._create_bank_account(sales_agent, bank_account_data)
 
-        if UserProfile.objects.filter(invoice_number=invoice_number).exists():
-            raise serializers.ValidationError({"invoice_number": "Invoice number already exists."})
-
-        if corporate_number and UserProfile.objects.filter(corporate_number=corporate_number).exists():
-            raise serializers.ValidationError({"corporate_number": "Corporate number already exists."})
-
-        sales_agent = User.objects.create_user(
-            name=name,
-            phone_number=phone_number,
-            email=email,
-            kind=UserKind.SALES_AGENT,
-            is_active=False,
-        )
-
-        # Send activation email
-        activation_url = generate_admin_new_account_activation_url(sales_agent)
-        subject = "Activate Your Account"
-        message = f"Please click the following link to set password and activate your account: {activation_url}"
-        send_mail_task.delay(subject, message, sales_agent.email)
-
-        profile = sales_agent.profile
-        profile.post_code = post_code
-        profile.company_name = company_name
-        profile.address = address
-        profile.invoice_number = invoice_number
-        profile.corporate_number = corporate_number
-        profile.save()
-
-        bank_account = BankAccount.objects.create(
-            user=sales_agent,
-            bank_name=bank_name,
-            branch_name=branch_name,
-            account_type=account_type,
-            account_number=account_number,
-            account_holder_name=account_holder_name,
-            is_active=True
-        )
+        # Send activation email (after transaction completes successfully)
+        self._send_activation_email(sales_agent, is_new_account=True)
 
         return sales_agent
 
     @transaction.atomic
     def update(self, instance, validated_data):
-        post_code = validated_data.pop("post_code", instance.profile.post_code)
-        company_name = validated_data.pop("company_name", instance.profile.company_name)
-        address = validated_data.pop("address", instance.profile.address)
-        invoice_number = validated_data.pop("invoice_number", instance.profile.invoice_number)
-        corporate_number = validated_data.pop("corporate_number", instance.profile.corporate_number)
+        """Update an existing Sales Agent and associated profile."""
+        # Extract profile data
+        profile_data = {
+            'post_code': validated_data.pop('post_code', instance.profile.post_code),
+            'company_name': validated_data.pop('company_name', instance.profile.company_name),
+            'address': validated_data.pop('address', instance.profile.address),
+            'invoice_number': validated_data.pop('invoice_number', instance.profile.invoice_number),
+            'corporate_number': validated_data.pop('corporate_number', instance.profile.corporate_number) or None,
+        }
 
-        name = validated_data.pop("name", instance.name)
-        email = validated_data.pop("email", instance.email)
-        phone_number = validated_data.pop("phone_number", instance.phone_number)
+        # Handle email change
+        new_email = validated_data.get('email', instance.email)
+        if new_email != instance.email:
+            self._handle_email_change(instance, new_email)
 
-        if (instance.phone_number != phone_number and
-                User.objects.filter(phone_number=phone_number).exists()):
-            raise serializers.ValidationError("This phone number already exists")
+        # Update user fields
+        instance.name = validated_data.get('name', instance.name)
+        instance.phone_number = validated_data.get('phone_number', instance.phone_number)
+        instance.save(update_fields=['name', 'phone_number', 'email', 'is_verified'])
 
-        if instance.email != email:
-            if User.objects.filter(email=email).exists():
-                raise serializers.ValidationError("This email already exists")
-
-            instance.email = email
-            instance.is_verified = False  # Deactivate until email is confirmed
-            activation_url = generate_admin_new_account_activation_url(instance)
-            subject = "Activate Your Account"
-            message = f"Please click the following link to activate your account with new email: {activation_url}"
-            send_mail_task.delay(subject, message, email)
-
-        instance.name = name
-        instance.phone_number = phone_number
-        instance.save(
-            update_fields=[
-                "email",
-                "name",
-                "phone_number",
-                "is_verified"
-            ]
-        )
-
-        profile = instance.profile
-        profile.post_code = post_code
-        profile.company_name = company_name
-        profile.address = address
-        profile.invoice_number = invoice_number
-        profile.corporate_number = corporate_number
-        profile.save(
-            update_fields=[
-                "post_code",
-                "company_name",
-                "address",
-                "invoice_number",
-                "corporate_number",
-            ]
-        )
+        # Update profile
+        self._update_user_profile(instance, profile_data)
 
         return instance
+
+    def _create_user_profile(self, user, profile_data):
+        """Create or update user profile with the given data."""
+        profile = user.profile
+        for field, value in profile_data.items():
+            setattr(profile, field, value)
+        profile.save()
+
+    def _update_user_profile(self, user, profile_data):
+        """Update existing user profile with the given data."""
+        profile = user.profile
+        update_fields = []
+
+        for field, value in profile_data.items():
+            if getattr(profile, field) != value:
+                setattr(profile, field, value)
+                update_fields.append(field)
+
+        if update_fields:
+            profile.save(update_fields=update_fields)
+
+    def _create_bank_account(self, user, bank_account_data):
+        """Create a bank account for the user."""
+        BankAccount.objects.create(
+            user=user,
+            is_active=True,
+            **bank_account_data
+        )
+
+    def _handle_email_change(self, user, new_email):
+        """Handle email change including verification flow."""
+        user.email = new_email
+        user.is_verified = False
+        self._send_activation_email(user, is_new_account=False)
+
+    def _send_activation_email(self, user, is_new_account=True):
+        """Send appropriate activation email based on context."""
+        activation_url = generate_admin_new_account_activation_url(user)
+
+        if is_new_account:
+            subject = "Activate Your Sales Agent Account"
+            message = (
+                f"Dear {user.name},\n\n"
+                f"Your sales agent account has been created. "
+                f"Please click the following link to set your password and activate your account:\n\n"
+                f"{activation_url}\n\n"
+                f"Thank you,\n"
+                f"The Management Team"
+            )
+        else:
+            subject = "Verify Your New Email Address"
+            message = (
+                f"Dear {user.name},\n\n"
+                f"You have requested to change your email address. "
+                f"Please click the following link to verify your new email address:\n\n"
+                f"{activation_url}\n\n"
+                f"If you didn't request this change, please contact support immediately.\n\n"
+                f"Thank you,\n"
+                f"The Management Team"
+            )
+
+        transaction.on_commit(
+            lambda: send_mail_task.delay(subject, message, user.email)
+        )
 
     def to_representation(self, instance):
         bank_accounts = instance.bank_accounts
