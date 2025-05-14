@@ -101,6 +101,11 @@ class LineSignInSerializer(serializers.Serializer):
         user_id = profile_data.get('userId')
         display_name = profile_data.get('displayName')
 
+        print("========== Line User Data ============")
+        print("user id: ", user_id)
+        print("display name: ", display_name)
+        print("========== End Line User Data ============")
+
         if not user_id:
             raise serializers.ValidationError({'detail': 'Invalid user ID from LINE profile.'})
 
