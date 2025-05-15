@@ -100,7 +100,6 @@ class LineSignInSerializer(serializers.Serializer):
         profile_data = profile_response.json()
         user_id = profile_data.get('userId')
         display_name = profile_data.get('displayName')
-        email = profile_data.get('email')
 
         print("========== Line User Data ============")
         print("user id: ", user_id)
