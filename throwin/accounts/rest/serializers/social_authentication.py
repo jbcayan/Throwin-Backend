@@ -100,11 +100,16 @@ class LineSignInSerializer(serializers.Serializer):
         profile_data = profile_response.json()
         user_id = profile_data.get('userId')
         display_name = profile_data.get('displayName')
+        email = profile_data.get('email')
 
         print("========== Line User Data ============")
         print("user id: ", user_id)
         print("display name: ", display_name)
+        print("profile data: ", profile_data)
+        email = profile_data.get('email')
+        print("email: ", email)
         print("========== End Line User Data ============")
+
 
         if not user_id:
             raise serializers.ValidationError({'detail': 'Invalid user ID from LINE profile.'})
