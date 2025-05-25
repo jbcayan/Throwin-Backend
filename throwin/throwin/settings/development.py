@@ -374,6 +374,11 @@ VERSATILEIMAGEFIELD_RENDITION_KEY_SETS = {
 GOOGLE_CLIENT_ID = config("GOOGLE_CLIENT_ID")
 GOOGLE_CLIENT_SECRET = config("GOOGLE_CLIENT_SECRET")
 
+print("=============================================")
+print(GOOGLE_CLIENT_ID)
+print(GOOGLE_CLIENT_SECRET)
+print("=============================================")
+
 LINE_CHANNEL_ID = config("LINE_CHANNEL_ID")
 LINE_CHANNEL_SECRET = config("LINE_CHANNEL_SECRET")
 
