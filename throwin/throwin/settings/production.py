@@ -124,9 +124,13 @@ WSGI_APPLICATION = 'throwin.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 
-if config("RENDER", cast=bool, default=False):
+DATABASE_TYPE = config("DATABASE_TYPE", default="sqlite")
+if DATABASE_TYPE == "sqlite":
     DATABASES = {
-        "default": dj_database_url.parse(config("DATABASE_URL")),
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
 else:
     DATABASES = {
