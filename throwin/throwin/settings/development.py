@@ -208,6 +208,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3001",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
+    "http://alpha.throwin-glow.com",
+    "https://alpha.throwin-glow.com",
     "https://api-dev.throwin-glow.com",  # Use HTTPS if frontend runs on HTTPS
 ]
 
@@ -238,6 +240,8 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:8000",
     "http://throwin-frontend-react.s3-website-ap-northeast-1.amazonaws.com",
     "https://api-dev.throwin-glow.com",
+    "http://alpha.throwin-glow.com",
+    "https://alpha.throwin-glow.com",
     "https://backend.throwin-glow.com",
 ]
 
