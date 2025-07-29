@@ -2,6 +2,8 @@
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 from drf_spectacular.utils import extend_schema
 from rest_framework import generics, status
 from rest_framework.response import Response
@@ -17,7 +19,7 @@ from accounts.utils import generate_email_activation_url
 
 User = get_user_model()
 
-
+@method_decorator(csrf_exempt, name='dispatch')
 @extend_schema(
     summary="Consumer Registration by Email and Password",
     request=UserRegisterSerializerWithEmail,
