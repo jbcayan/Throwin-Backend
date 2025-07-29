@@ -19,7 +19,7 @@ from accounts.utils import generate_email_activation_url
 
 User = get_user_model()
 
-@method_decorator(csrf_exempt, name='dispatch')
+# @method_decorator(csrf_exempt, name='dispatch')
 @extend_schema(
     summary="Consumer Registration by Email and Password",
     request=UserRegisterSerializerWithEmail,
