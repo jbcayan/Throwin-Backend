@@ -88,7 +88,7 @@ class StoreCreateSerializer(serializers.ModelSerializer):
         validated_data.pop("restaurant", None)
         store = super().update(instance, validated_data)
         store.updated_by = self.context["request"].user
-        store.save(update_fields=["created_by"])
+        store.save(update_fields=["updated_by"])
         return store
 
 
