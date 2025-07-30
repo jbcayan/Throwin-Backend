@@ -70,8 +70,10 @@ class StoreCreateSerializer(serializers.ModelSerializer):
             f"{amount:.2f}" for amount in throwin_amounts
         )
         validated_data["restaurant"] = self.context["request"].user.get_restaurant_owner_restaurant
-
-        return super().create(validated_data)
+        store = super().create(validated_data)
+        store.created_by = self.context["request"].user
+        store.save(update_fields=["created_by"])
+        return store
 
     def update(self, instance, validated_data):
         """Update store."""
@@ -84,9 +86,12 @@ class StoreCreateSerializer(serializers.ModelSerializer):
 
         # Remove 'restaurant' to prevent modification
         validated_data.pop("restaurant", None)
+        store = super().update(instance, validated_data)
+        store.updated_by = self.context["request"].user
+        store.save(update_fields=["created_by"])
+        return store
 
-        # Update the instance with the validated data
-        return super().update(instance, validated_data)
+
 
     def to_representation(self, instance):
         # Convert comma-separated string back to a list of formatted strings
