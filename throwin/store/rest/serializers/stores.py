@@ -63,6 +63,10 @@ class StoreSerializer(BaseSerializer):
     def get_banner(self, obj) -> dict or None:
         if obj.banner:
             try:
+                # Check if file exists
+                if not obj.banner.storage.exists(obj.banner.name):
+                    return None
+
                 return {
                     'small': domain + obj.banner.crop['400x400'].url,
                     'medium': domain + obj.banner.crop['600x600'].url,
@@ -70,7 +74,7 @@ class StoreSerializer(BaseSerializer):
                     'full_size': domain + obj.banner.url,
                 }
             except Exception as e:
-                return {'error': str(e)}  # Handle errors gracefully
+                return None  # Return None instead of error details
         return None
 
     def to_representation(self, instance):
