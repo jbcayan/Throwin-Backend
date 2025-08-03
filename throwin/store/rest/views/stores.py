@@ -21,10 +21,14 @@ class StoreDetail(generics.RetrieveAPIView):
     permission_classes = (permissions.AllowAny,)
 
     def get_object(self):
+        print("================================")
+        print(self.kwargs["code"])
         try:
             store = Store().get_all_actives().get(
                 code=self.kwargs["code"]
             )
+            print("We got the store")
+            print(store)
             return store
         except Store.DoesNotExist:
             raise Http404("Store not found")
