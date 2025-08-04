@@ -296,18 +296,13 @@ class PaymentStatsView(APIView):
             payments_qs = scoped["payments_qs"]
 
             # 2) Aggregations
-            agg = payments_qs.aggregate(
-                total_amount=Sum("amount"),
-                pending_balance=Sum("net_amount", filter=~PaymentHistory.objects.none().query.where)  # placeholder, overridden below
+            total_amount_jpy = (
+                payments_qs.aggregate(total_amount=Sum("amount")).get("total_amount") or Decimal("0.00")
             )
-            # Django < 3.2 doesn't support conditional Sum with filter kwarg on aggregate; we handle pending below anyway
-            total_amount_jpy = agg.get("total_amount") or Decimal("0.00")
-
             # Pending (latest balance): is_distributed=False, sum of net_amount
             pending_balance = (
                 payments_qs.filter(is_distributed=False).aggregate(x=Sum("net_amount")).get("x") or Decimal("0.00")
             )
-
             total_throwins = payments_qs.count()
 
             # Distinct stores involved in filtered payments (ignores null store)
