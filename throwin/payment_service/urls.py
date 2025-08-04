@@ -10,6 +10,10 @@ from .views import (
 
 )
 
+
+from .dashboard_stats import PaymentStatsView
+
+
 from .gmo_pg.views import (
     GMOCreditCardPaymentView,
     RoleBasedPaymentHistoryView,
@@ -46,4 +50,8 @@ urlpatterns = [
     path("gmo-pg/credit-card/payment-history/", RoleBasedPaymentHistoryView.as_view(), name="gmo_payment_history"),
     # # Check payment status
     # path("gmo-pg/credit-card/payment-status/<str:order_id>/", CheckGMOPaymentStatusView.as_view(), name="gmo_payment_status"),
+
+
+    
+    path("analytics/stats/", PaymentStatsView.as_view(), name="payment_stats"),
 ]
