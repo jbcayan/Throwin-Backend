@@ -1,402 +1,360 @@
-# payment_service/dashboard_stats.py
-
+import uuid
+import os
+import requests
 import logging
+from urllib.parse import parse_qs
 from decimal import Decimal
+from django.db import models, transaction
+from django.core.exceptions import ValidationError
+from django.conf import settings
+from dotenv import load_dotenv
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status, serializers
+from accounts.choices import UserKind  # Importing role choices
+from review.models import Review
+from store.models import Store  # ✅ Corrected Import
 
-from common.permissions import (
-    CheckAnyPermission,
-    IsSuperAdminUser, IsFCAdminUser, IsGlowAdminUser,
-    IsSalesAgentUser, IsRestaurantOwnerUser,
-)
-
-from .models import GMOCreditPayment, Balance  # <-- updated to GMO + Balance
-from store.models import Restaurant, Store
-from accounts.choices import UserKind
-
-from django.db.models import Sum, Count
-from django.db.models.functions import TruncDate
-from django.utils.dateparse import parse_date
-from django.utils import timezone
-from datetime import datetime, time
-from uuid import UUID
-
-# --- OpenAPI / Swagger (drf-spectacular) ------------------------------------
-try:
-    from drf_spectacular.utils import (
-        extend_schema,
-        OpenApiParameter,
-        OpenApiTypes,
-        OpenApiExample,
-    )
-except Exception:  # drf-spectacular not installed
-    def extend_schema(*args, **kwargs):  # type: ignore
-        def _wrap(func):
-            return func
-        return _wrap
+# Load environment variables from the .env file
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
-CAPTURE_STATUS = "CAPTURE"
-JPY = "JPY"
 
-
-# --- Response serializer (for docs) -----------------------------------------
-class PaymentTimeseriesItemSerializer(serializers.Serializer):
-    date = serializers.DateField(help_text="Day (YYYY-MM-DD)")
-    throwin_count = serializers.IntegerField(help_text="Successful payments that day (CAPTURE)")
-    total_amount = serializers.DecimalField(
-        max_digits=12, decimal_places=2, help_text="Sum of gross amounts in JPY for that day"
+class Balance(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,  # Lazy reference to the custom user model
+        on_delete=models.CASCADE,
+        related_name="balance",
+        help_text="The user whose balance is being tracked"
+    )
+    current_balance = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="The current balance of the user"
+    )
+    total_received = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        help_text="The total amount received by the user"
+    )
+    last_updated = models.DateTimeField(
+        auto_now=True,
+        help_text="The last time the balance was updated"
     )
 
-
-class PaymentStatsResponseSerializer(serializers.Serializer):
-    filters_applied = serializers.DictField(child=serializers.CharField(allow_null=True), help_text="Echo of filters used")
-    total_amount_jpy = serializers.DecimalField(max_digits=12, decimal_places=2, help_text="Gross total (filtered CAPTURE JPY)")
-    total_throwins = serializers.IntegerField(help_text="Number of successful payments (filtered, CAPTURE)")
-    latest_balance_jpy = serializers.DecimalField(max_digits=12, decimal_places=2, help_text="Current user's Balance.current_balance")
-    total_stores = serializers.IntegerField(help_text="Distinct stores (by store_uid) involved in filtered payments")
-    timeseries = PaymentTimeseriesItemSerializer(many=True)
-
-
-# --- Filter logic ------------------------------------------------------------
-def _safe_uuid(val: str):
-    """Return UUID if valid, else None."""
-    try:
-        return UUID(val)
-    except Exception:
-        return None
+    def update_balance(self, amount):
+        """
+        Update the balance with the given amount.
+        """
+        self.current_balance += amount
+        self.total_received += amount
+        self.save()
 
 
-def _apply_filters(payments_qs, stores_qs, params):
-    """
-    Apply optional filters to scoped querysets:
-      - year: int (e.g., 2025)  -> based on created_at
-      - month: int 1-12         -> based on created_at
-      - store_uid: UUID (GMOCreditPayment.store_uid)
-      - staff_uid: UUID (GMOCreditPayment.staff_uid)
-      - date_from, date_to: YYYY-MM-DD (inclusive, on created_at)
-    Note: All filters are combined (AND).
-    """
-    print("[PaymentStats] Applying filters with params:", dict(params))
-    year = params.get("year")
-    month = params.get("month")
-    store_uid = params.get("store_uid")
-    staff_uid = params.get("staff_uid")
-    date_from = params.get("date_from")
-    date_to = params.get("date_to")
-
-    # Year
-    if year:
-        try:
-            y = int(year)
-            payments_qs = payments_qs.filter(created_at__year=y)
-            print(f"[PaymentStats] Filtered by year={y}")
-        except ValueError:
-            logger.debug("Ignoring invalid 'year' filter: %r", year)
-            print(f"[PaymentStats][WARN] Invalid year filter ignored: {year}")
-
-    # Month
-    if month:
-        try:
-            m = int(month)
-            if 1 <= m <= 12:
-                payments_qs = payments_qs.filter(created_at__month=m)
-                print(f"[PaymentStats] Filtered by month={m}")
-            else:
-                logger.debug("Ignoring out-of-range 'month': %r", month)
-                print(f"[PaymentStats][WARN] Out-of-range month ignored: {month}")
-        except ValueError:
-            logger.debug("Ignoring invalid 'month' filter: %r", month)
-            print(f"[PaymentStats][WARN] Invalid month filter ignored: {month}")
-
-    # Store UID
-    if store_uid:
-        uid = _safe_uuid(store_uid)
-        if uid:
-            # narrow stores_qs (used only for debugging/count if needed)
-            stores_qs = stores_qs.filter(uid=uid)
-            payments_qs = payments_qs.filter(store_uid=uid)
-            print(f"[PaymentStats] Filtered by store_uid={uid}")
-        else:
-            logger.debug("Ignoring invalid 'store_uid' UUID: %r", store_uid)
-            print(f"[PaymentStats][WARN] Invalid store_uid ignored: {store_uid}")
-
-    # Staff UID
-    if staff_uid:
-        uid = _safe_uuid(staff_uid)
-        if uid:
-            payments_qs = payments_qs.filter(staff_uid=uid)
-            print(f"[PaymentStats] Filtered by staff_uid={uid}")
-        else:
-            logger.debug("Ignoring invalid 'staff_uid' UUID: %r", staff_uid)
-            print(f"[PaymentStats][WARN] Invalid staff_uid ignored: {staff_uid}")
-
-    # Date range (inclusive) on created_at
-    tz = timezone.get_current_timezone()
-    if date_from:
-        df = parse_date(date_from)
-        if df:
-            start_dt = timezone.make_aware(datetime.combine(df, time.min), tz)
-            payments_qs = payments_qs.filter(created_at__gte=start_dt)
-            print(f"[PaymentStats] Filtered by date_from={start_dt.isoformat()}")
-        else:
-            logger.debug("Ignoring invalid 'date_from': %r", date_from)
-            print(f"[PaymentStats][WARN] Invalid date_from ignored: {date_from}")
-
-    if date_to:
-        dt_ = parse_date(date_to)
-        if dt_:
-            end_dt = timezone.make_aware(datetime.combine(dt_, time.max), tz)
-            payments_qs = payments_qs.filter(created_at__lte=end_dt)
-            print(f"[PaymentStats] Filtered by date_to={end_dt.isoformat()}")
-        else:
-            logger.debug("Ignoring invalid 'date_to': %r", date_to)
-            print(f"[PaymentStats][WARN] Invalid date_to ignored: {date_to}")
-
-    print(
-        "[PaymentStats] After filters -> payments_qs.count():",
-        payments_qs.count()
-    )
-    return payments_qs, stores_qs
-
-
-def get_role_scoped_qs(user, params=None):
-    """
-    Returns a dict of querysets scoped to the user's role and filtered by params:
-      - payments_qs: GMOCreditPayment filtered by role, CAPTURE status, and JPY (+ filters)
-      - stores_qs: Stores visible to the role (used for narrowing scope & debug)
-    """
-    params = params or {}
-    print(f"[PaymentStats] get_role_scoped_qs for user_id={getattr(user, 'id', None)} kind={getattr(user, 'kind', None)}")
-
-    # Base (global) queryset: CAPTURE + JPY
-    base_qs = GMOCreditPayment.objects.filter(
-        status=CAPTURE_STATUS,
-        currency=JPY,
-    )
-
-    # Admins see everything
-    if user.kind in {UserKind.SUPER_ADMIN, UserKind.FC_ADMIN, UserKind.GLOW_ADMIN}:
-        stores_qs = Store.objects.all()
-        payments_qs = base_qs
-        print("[PaymentStats] Scope=GLOBAL (Admin). Base CAPTURE payments:", payments_qs.count())
-        payments_qs, stores_qs = _apply_filters(payments_qs, stores_qs, params)
-        return {
-            "payments_qs": payments_qs,
-            "stores_qs": stores_qs,
-        }
-
-    # Sales Agent → restaurants they manage -> stores under those restaurants
-    if user.kind == UserKind.SALES_AGENT:
-        agent_restaurants = user.get_agent_restaurants or []
-        restaurants_qs = Restaurant.objects.filter(pk__in=[r.pk for r in agent_restaurants])
-        stores_qs = Store.objects.filter(restaurant__in=restaurants_qs)
-        store_uids = list(stores_qs.values_list("uid", flat=True))
-        payments_qs = base_qs.filter(store_uid__in=store_uids)
-        print("[PaymentStats] Scope=SALES_AGENT. Restaurants:", restaurants_qs.count(), "Stores:", stores_qs.count(), "Base payments:", payments_qs.count())
-        payments_qs, stores_qs = _apply_filters(payments_qs, stores_qs, params)
-        return {
-            "payments_qs": payments_qs,
-            "stores_qs": stores_qs,
-        }
-
-    # Restaurant Owner → their restaurant(s) -> stores under those restaurants
-    if user.kind == UserKind.RESTAURANT_OWNER:
-        owned_ids = set()
-
-        single = getattr(user, "get_restaurant_owner_restaurant", None)
-        if callable(single):
-            r = single()
-            if r:
-                owned_ids.add(r.pk)
-
-        rel_mgr = getattr(user, "restaurants", None)
-        if hasattr(rel_mgr, "values_list"):
-            owned_ids.update(rel_mgr.values_list("pk", flat=True))
-
-        restaurants_qs = Restaurant.objects.filter(pk__in=owned_ids)
-        stores_qs = Store.objects.filter(restaurant__in=restaurants_qs)
-        store_uids = list(stores_qs.values_list("uid", flat=True))
-        payments_qs = base_qs.filter(store_uid__in=store_uids)
-        print("[PaymentStats] Scope=RESTAURANT_OWNER. Restaurants:", restaurants_qs.count(), "Stores:", stores_qs.count(), "Base payments:", payments_qs.count())
-        payments_qs, stores_qs = _apply_filters(payments_qs, stores_qs, params)
-        return {
-            "payments_qs": payments_qs,
-            "stores_qs": stores_qs,
-        }
-
-    # Fallback (shouldn’t hit for this endpoint)
-    print("[PaymentStats][WARN] Scope fallback hit. User likely unauthorized for this endpoint.")
-    return {
-        "payments_qs": GMOCreditPayment.objects.none(),
-        "stores_qs": Store.objects.none(),
-    }
-
-
-def _get_user_latest_balance(user) -> Decimal:
-    """
-    Latest balance per request: use Balance model for the **current user only**.
-    If the user has no Balance row, return 0.00.
-    """
-    try:
-        bal = Balance.objects.filter(user=user).only("current_balance").first()
-        current = bal.current_balance if bal else Decimal("0.00")
-        print(f"[PaymentStats] latest_balance_jpy for user_id={getattr(user, 'id', None)} -> {current}")
-        return current
-    except Exception as e:
-        logger.exception("Failed to read Balance for user_id=%s", getattr(user, "id", None))
-        print("[PaymentStats][ERROR] Reading Balance failed:", repr(e))
-        return Decimal("0.00")
-
-
-# --- View -------------------------------------------------------------------
-class PaymentStatsView(APIView):
-    """
-    Role-scoped analytics for:
-    super_admin, fc_admin, glow_admin, sales_agent, restaurant_owner
-
-    Data source:
-      - Payments: GMOCreditPayment (status=CAPTURE, currency=JPY)
-      - Latest balance: current authenticated user's Balance.current_balance
-
-    Supported filters (query params):
-      - year: int (e.g., 2025)         [created_at]
-      - month: int 1-12                [created_at]
-      - store_uid: UUID (Store.uid)
-      - staff_uid: UUID (User.uid)     [GMOCreditPayment.staff_uid]
-      - date_from: YYYY-MM-DD          [created_at, inclusive]
-      - date_to: YYYY-MM-DD            [created_at, inclusive]
-    """
-    permission_classes = [CheckAnyPermission]
-    available_permission_classes = [
-        IsSuperAdminUser, IsFCAdminUser, IsGlowAdminUser,
-        IsSalesAgentUser, IsRestaurantOwnerUser,
+class GMOCreditPayment(models.Model):
+    STATUS_CHOICES = [
+        ("PENDING", "Pending"),
+        ("CAPTURE", "Captured"),
+        ("FAILED", "Failed"),
+        ("CANCELED", "Canceled"),
     ]
 
-    @extend_schema(
-        operation_id="payment_service__payment_stats",
-        tags=["Payment Service - Analytics"],
-        summary="Get role-scoped payment statistics (GMO + Balance)",
-        description=(
-            "Returns analytics scoped to the authenticated user's role. "
-            "All filters are optional and combined with AND logic. "
-            "Payments source: GMOCreditPayment (CAPTURE + JPY). "
-            "Latest balance is taken from the current user's Balance.current_balance."
-        ),
-        parameters=[
-            OpenApiParameter(name="year", description="Filter by year (e.g., 2025)", required=False, type=OpenApiTypes.INT),
-            OpenApiParameter(name="month", description="Filter by month (1-12)", required=False, type=OpenApiTypes.INT),
-            OpenApiParameter(name="store_uid", description="Filter by Store.uid (UUID)", required=False, type=OpenApiTypes.UUID),
-            OpenApiParameter(name="staff_uid", description="Filter by User.uid (UUID of staff)", required=False, type=OpenApiTypes.UUID),
-            OpenApiParameter(name="date_from", description="Start date inclusive (YYYY-MM-DD)", required=False, type=OpenApiTypes.DATE),
-            OpenApiParameter(name="date_to", description="End date inclusive (YYYY-MM-DD)", required=False, type=OpenApiTypes.DATE),
-        ],
-        responses={200: PaymentStatsResponseSerializer},
-        examples=[
-            OpenApiExample(
-                "Example response",
-                value={
-                    "filters_applied": {
-                        "year": "2025",
-                        "month": "7",
-                        "store_uid": "5e0f9a7a-8e24-4f55-b6b6-1a6b2f7b2bb1",
-                        "staff_uid": None,
-                        "date_from": "2025-07-01",
-                        "date_to": "2025-07-31",
-                    },
-                    "total_amount_jpy": "12345.00",
-                    "total_throwins": 42,
-                    "latest_balance_jpy": "678.00",
-                    "total_stores": 3,
-                    "timeseries": [
-                        {"date": "2025-07-01", "throwin_count": 5, "total_amount": "1500.00"},
-                        {"date": "2025-07-02", "throwin_count": 2, "total_amount": "600.00"},
-                    ],
-                },
-            )
-        ],
+    order_id = models.CharField(
+        max_length=50, unique=True, db_index=True,
+        help_text="Unique identifier for the payment transaction"
     )
-    def get(self, request, *args, **kwargs):
-        print("[PaymentStats] GET /analytics/stats called with query_params:", dict(request.query_params))
+    customer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,  # Lazy reference to the custom user model
+        on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="gmo_payments",
+        help_text="Authenticated customer (nullable for anonymous users)"
+    )
+    nickname = models.CharField(
+        max_length=100, blank=True, null=True,
+        help_text="Nickname for the payer (optional for unauthenticated users)"
+    )
+
+    # UUIDs for entity relationships
+    staff_uid = models.UUIDField(
+        default=uuid.uuid4, editable=False, db_index=True,
+        help_text="Unique identifier for staff receiving the tip"
+    )
+    store_uid = models.UUIDField(
+        default=uuid.uuid4, blank=True, null=True, db_index=True,
+        help_text="Unique identifier for store (optional)"
+    )
+
+    amount = models.DecimalField(
+        max_digits=10, decimal_places=2,
+        help_text="Payment amount"
+    )
+    currency = models.CharField(
+        max_length=10, default="JPY",
+        help_text="Currency of the payment"
+    )
+
+    status = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default="PENDING",
+        help_text="Status of the payment"
+    )
+    transaction_id = models.CharField(
+        max_length=100, blank=True, null=True,
+        help_text="Transaction ID generated by GMO"
+    )
+    approval_code = models.CharField(
+        max_length=50, blank=True, null=True,
+        help_text="Approval code from GMO"
+    )
+    process_date = models.DateTimeField(blank=True, null=True)
+
+    access_id = models.CharField(max_length=100, blank=True, null=True)
+    access_pass = models.CharField(max_length=100, blank=True, null=True)
+    token = models.CharField(max_length=512, blank=True, null=True)
+
+    card_last4 = models.CharField(
+        max_length=4, blank=True, null=True,
+        help_text="Last 4 digits of the credit card"
+    )
+    expire_date = models.CharField(
+        max_length=5, blank=True, null=True,
+        help_text="Credit card expiry date (MMYY)"
+    )
+
+    forward = models.CharField(max_length=100, blank=True, null=True)
+    pay_method = models.CharField(max_length=50, blank=True, null=True)
+
+    is_processed = models.BooleanField(
+        default=False, help_text="Indicates if the payment has been processed"
+    )
+    message = models.TextField(blank=True, null=True)
+
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    is_distributed = models.BooleanField(
+        default=False,
+        help_text="Indicates if the payment amount has been distributed"
+    )
+
+    def __str__(self):
+        return f"Order {self.order_id} - {self.status}"
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    # ---------------------
+    # Dynamic Relationship Properties
+    # ---------------------
+    @property
+    def restaurant(self):
+        """
+        Dynamically fetch the restaurant based on the store.
+        """
         try:
-            # 1) Build scoped querysets with filters
-            scoped = get_role_scoped_qs(request.user, params=request.query_params)
-            payments_qs = scoped["payments_qs"]
-            print("[PaymentStats] Scoped CAPTURE payments count:", payments_qs.count())
+            store = Store.objects.get(uid=self.store_uid)
+            return store.restaurant if store else None
+        except Store.DoesNotExist:
+            return None
 
-            # 2) Aggregations
-            total_amount_jpy = (
-                payments_qs.aggregate(total_amount=Sum("amount")).get("total_amount") or Decimal("0.00")
-            )
-            print("[PaymentStats] total_amount_jpy:", total_amount_jpy)
+    @property
+    def sales_agent(self):
+        """
+        Dynamically fetch the sales agent based on the restaurant.
+        """
+        restaurant = self.restaurant
+        return restaurant.sales_agent if restaurant else None
 
-            total_throwins = payments_qs.count()
-            print("[PaymentStats] total_throwins:", total_throwins)
+    # ---------------------
+    # Payment Status Check Helper
+    # ---------------------
+    def check_payment_status(self):
+        """
+        Checks the payment status with the GMO API.
+        If the status returned is 'CAPTURE', update the model accordingly.
+        """
+        shop_id = os.environ.get("GMO_SHOP_ID")
+        shop_pass = os.environ.get("GMO_SHOP_PASS")
+        base_url = os.environ.get("GMO_API_URL")
+        url = f"{base_url}/payment/SearchTrade.idPass"
+        payload = {
+            "ShopID": shop_id,
+            "ShopPass": shop_pass,
+            "OrderID": self.order_id
+        }
+        try:
+            response = requests.post(url, data=payload)
+        except requests.RequestException as e:
+            logger.error("Request to GMO API failed: %s", str(e))
+            return None
 
-            # Distinct stores involved in filtered payments (by store_uid)
-            total_stores = (
-                payments_qs.exclude(store_uid__isnull=True)
-                .values("store_uid")
-                .distinct()
-                .count()
-            )
-            print("[PaymentStats] total_stores (distinct store_uid in payments):", total_stores)
+        if response.status_code == 200:
+            parsed_response = parse_qs(response.text)
+            status_value = parsed_response.get("Status", [None])[0]
+            if status_value == "CAPTURE":
+                self.status = "CAPTURE"
+                self.save(update_fields=["status"])
+                if self.message:
+                    review = Review.objects.create(
+                        payment=self,
+                        payment_type="GMOCreditPayment",
+                        transaction_id=self.order_id,
+                        consumer=self.customer if self.customer else None,
+                        consumer_name=self.customer.name if self.customer.name else "Anonymous",
+                        message=self.message,
+                        store_uid=self.store_uid,
+                        staff_uid=self.staff_uid,
+                    )
+            return parsed_response
+        else:
+            logger.error("GMO API responded with status code %s", response.status_code)
+            return None
 
-            # Latest balance from Balance model for the current user
-            latest_balance = _get_user_latest_balance(request.user)
+    def distribute_payment(self):
+        """
+        Distribute the payment amount to Staff, Glow Admin, FC Admin, and Sales Agent.
+        This method calculates commission, net amount, and updates the balances accordingly.
+        Distribution is allowed only if payment status is 'CAPTURE'.
+        """
+        if self.status != "CAPTURE":
+            logger.error("Cannot distribute payment for order_id %s as status is not CAPTURE.", self.order_id)
+            return
 
-            # 3) Time series (per day) on created_at
-            daily = (
-                payments_qs
-                .annotate(day=TruncDate("created_at"))
-                .values("day")
-                .annotate(
-                    throwin_count=Count("id"),
-                    total_amount=Sum("amount"),
-                )
-                .order_by("day")
-            )
-            timeseries = [
-                {
-                    "date": item["day"],
-                    "throwin_count": item["throwin_count"] or 0,
-                    "total_amount": item["total_amount"] or Decimal("0.00"),
-                }
-                for item in daily
-            ]
-            print("[PaymentStats] timeseries length:", len(timeseries))
+        if self.is_distributed:
+            logger.info("Payment with order_id %s has already been distributed.", self.order_id)
+            return
 
-            # 4) Build response
-            response_data = {
-                "filters_applied": {
-                    "year": request.query_params.get("year"),
-                    "month": request.query_params.get("month"),
-                    "store_uid": request.query_params.get("store_uid"),
-                    "staff_uid": request.query_params.get("staff_uid"),
-                    "date_from": request.query_params.get("date_from"),
-                    "date_to": request.query_params.get("date_to"),
-                },
-                "total_amount_jpy": total_amount_jpy,
-                "total_throwins": total_throwins,
-                "latest_balance_jpy": latest_balance,
-                "total_stores": total_stores,
-                "timeseries": timeseries,
-            }
-            print("[PaymentStats] Response payload prepared.")
-            return Response(response_data, status=status.HTTP_200_OK)
+        with transaction.atomic():
+            paypal_commission = (self.amount * Decimal("0.036")) + Decimal("40")
+            net_amount = self.amount - paypal_commission
 
-        except Exception as exc:
-            # Log full stack, return safe error response
-            logger.exception("Error computing payment stats: %s", exc)
-            print("[PaymentStats][ERROR] Exception occurred:", repr(exc))
-            return Response(
-                {
-                    "detail": "Failed to compute payment statistics.",
-                    "error": str(exc),
-                },
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+            staff_share = net_amount * Decimal("0.75")
+            management_share = net_amount * Decimal("0.25")
+            glow_share = management_share * Decimal("0.30")
+            fc_share = management_share * Decimal("0.30")
+            sales_agent_share = management_share * Decimal("0.40")
+
+            from django.contrib.auth import get_user_model
+            User = get_user_model()
+
+            try:
+                staff = User.objects.get(uid=self.staff_uid)
+                if hasattr(staff, "balance"):
+                    staff.balance.update_balance(staff_share)
+                    logger.info("Staff balance updated by %s for order_id %s", staff_share, self.order_id)
+            except User.DoesNotExist:
+                logger.error("Staff user with uid %s not found during distribution.", self.staff_uid)
+                raise Exception("Staff user not found for distribution.")
+
+            glow_admin = User.objects.filter(kind=UserKind.GLOW_ADMIN).first()
+            if glow_admin and hasattr(glow_admin, "balance"):
+                glow_admin.balance.update_balance(glow_share)
+                logger.info("Glow Admin balance updated by %s for order_id %s", glow_share, self.order_id)
+
+            fc_admin = User.objects.filter(kind=UserKind.FC_ADMIN).first()
+            if fc_admin and hasattr(fc_admin, "balance"):
+                fc_admin.balance.update_balance(fc_share)
+                logger.info("FC Admin balance updated by %s for order_id %s", fc_share, self.order_id)
+
+            sales_agent = self.sales_agent
+            if sales_agent and hasattr(sales_agent, "balance"):
+                sales_agent.balance.update_balance(sales_agent_share)
+                logger.info("Sales Agent balance updated by %s for order_id %s", sales_agent_share, self.order_id)
+
+            self.is_distributed = True
+            self.save(update_fields=["is_distributed"])
+            logger.info("Payment with order_id %s marked as distributed.", self.order_id)
+
+
+## PayPal For Disbursements ##
+from django.db import models
+from django.conf import settings
+
+class PayPalDetail(models.Model):
+    """
+    Stores PayPal account details for users.
+
+    For Sales Agents, Restaurant Owners, and Staff, each user should have their individual
+    PayPal account linked. For FC Admin and Glow Admin users, a single shared PayPal account
+    is used, so the 'user' field can remain null.
+    """
+    ACCOUNT_TYPE_CHOICES = [
+        ('individual', 'Individual'),
+        ('fc_admin', 'FC Admin'),
+        ('glow_admin', 'Glow Admin'),
+    ]
+    
+    # Link for individual accounts; leave blank for shared accounts.
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        help_text="Linked user for individual PayPal accounts. Use null for shared accounts."
+    )
+    account_type = models.CharField(
+        max_length=20,
+        choices=ACCOUNT_TYPE_CHOICES,
+        default='individual',
+        help_text="Indicates if the account is individual or shared (for FC Admin or Glow Admin)."
+    )
+    paypal_email = models.EmailField(
+        unique=True,
+        help_text="The PayPal email address associated with the account."
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        if self.user:
+            return f"{self.user} - {self.paypal_email}"
+        return f"{self.account_type} - {self.paypal_email}"
+
+
+class PayPalDisbursement(models.Model):
+    """
+    Logs disbursement transactions from a user's balance to their PayPal account.
+
+    This model records the details for each payout attempt (scheduled on the last day
+    of the month when the user's balance is at least 3000 JPY). It is used for auditing and
+    troubleshooting disbursement operations.
+    """
+    STATUS_CHOICES = [
+        ("PENDING", "Pending"),
+        ("COMPLETED", "Completed"),
+        ("FAILED", "Failed"),
+    ]
+    
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="paypal_disbursements",
+        help_text="The user receiving the disbursement."
+    )
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        help_text="The disbursed amount in JPY."
+    )
+    transaction_id = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        help_text="Transaction ID returned by the PayPal API."
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default="PENDING",
+        help_text="The current status of the disbursement."
+    )
+    message = models.TextField(
+        blank=True,
+        null=True,
+        help_text="Optional message or error detail regarding the disbursement."
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Disbursement for {self.user} of {self.amount} JPY - {self.status}"

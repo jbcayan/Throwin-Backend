@@ -13,7 +13,7 @@ from common.permissions import (
     IsSalesAgentUser, IsRestaurantOwnerUser,
 )
 
-from .models import PaymentHistory
+from .gmo_pg.models import GMOCreditPayment, Balance  # <-- updated to GMO + Balance
 from store.models import Restaurant, Store
 from accounts.choices import UserKind
 
@@ -40,14 +40,14 @@ except Exception:  # drf-spectacular not installed
 
 logger = logging.getLogger(__name__)
 
-SUCCESS_STATUSES = ("success",)
+CAPTURE_STATUS = "CAPTURE"
 JPY = "JPY"
 
 
 # --- Response serializer (for docs) -----------------------------------------
 class PaymentTimeseriesItemSerializer(serializers.Serializer):
     date = serializers.DateField(help_text="Day (YYYY-MM-DD)")
-    throwin_count = serializers.IntegerField(help_text="Successful payments that day")
+    throwin_count = serializers.IntegerField(help_text="Successful payments that day (CAPTURE)")
     total_amount = serializers.DecimalField(
         max_digits=12, decimal_places=2, help_text="Sum of gross amounts in JPY for that day"
     )
@@ -55,10 +55,10 @@ class PaymentTimeseriesItemSerializer(serializers.Serializer):
 
 class PaymentStatsResponseSerializer(serializers.Serializer):
     filters_applied = serializers.DictField(child=serializers.CharField(allow_null=True), help_text="Echo of filters used")
-    total_amount_jpy = serializers.DecimalField(max_digits=12, decimal_places=2, help_text="Gross total (filtered)")
-    total_throwins = serializers.IntegerField(help_text="Number of successful payments (filtered)")
-    latest_balance_jpy = serializers.DecimalField(max_digits=12, decimal_places=2, help_text="Sum of net_amount with is_distributed = False (filtered scope)")
-    total_stores = serializers.IntegerField(help_text="Distinct stores involved in filtered payments")
+    total_amount_jpy = serializers.DecimalField(max_digits=12, decimal_places=2, help_text="Gross total (filtered CAPTURE JPY)")
+    total_throwins = serializers.IntegerField(help_text="Number of successful payments (filtered, CAPTURE)")
+    latest_balance_jpy = serializers.DecimalField(max_digits=12, decimal_places=2, help_text="Current user's Balance.current_balance")
+    total_stores = serializers.IntegerField(help_text="Distinct stores (by store_uid) involved in filtered payments")
     timeseries = PaymentTimeseriesItemSerializer(many=True)
 
 
@@ -71,14 +71,14 @@ def _safe_uuid(val: str):
         return None
 
 
-def _apply_filters(payments_qs, restaurants_qs, stores_qs, params):
+def _apply_filters(payments_qs, stores_qs, params):
     """
     Apply optional filters to scoped querysets:
-      - year: int (e.g., 2025)
-      - month: int 1-12
-      - store_uid: UUID (Store.uid)
-      - staff_uid: UUID (User.uid)
-      - date_from, date_to: YYYY-MM-DD (inclusive)
+      - year: int (e.g., 2025)  -> based on created_at
+      - month: int 1-12         -> based on created_at
+      - store_uid: UUID (GMOCreditPayment.store_uid)
+      - staff_uid: UUID (GMOCreditPayment.staff_uid)
+      - date_from, date_to: YYYY-MM-DD (inclusive, on created_at)
     Note: All filters are combined (AND).
     """
     print("[PaymentStats] Applying filters with params:", dict(params))
@@ -93,7 +93,7 @@ def _apply_filters(payments_qs, restaurants_qs, stores_qs, params):
     if year:
         try:
             y = int(year)
-            payments_qs = payments_qs.filter(payment_date__year=y)
+            payments_qs = payments_qs.filter(created_at__year=y)
             print(f"[PaymentStats] Filtered by year={y}")
         except ValueError:
             logger.debug("Ignoring invalid 'year' filter: %r", year)
@@ -104,7 +104,7 @@ def _apply_filters(payments_qs, restaurants_qs, stores_qs, params):
         try:
             m = int(month)
             if 1 <= m <= 12:
-                payments_qs = payments_qs.filter(payment_date__month=m)
+                payments_qs = payments_qs.filter(created_at__month=m)
                 print(f"[PaymentStats] Filtered by month={m}")
             else:
                 logger.debug("Ignoring out-of-range 'month': %r", month)
@@ -117,8 +117,9 @@ def _apply_filters(payments_qs, restaurants_qs, stores_qs, params):
     if store_uid:
         uid = _safe_uuid(store_uid)
         if uid:
+            # narrow stores_qs (used only for debugging/count if needed)
             stores_qs = stores_qs.filter(uid=uid)
-            payments_qs = payments_qs.filter(store__uid=uid)
+            payments_qs = payments_qs.filter(store_uid=uid)
             print(f"[PaymentStats] Filtered by store_uid={uid}")
         else:
             logger.debug("Ignoring invalid 'store_uid' UUID: %r", store_uid)
@@ -128,19 +129,19 @@ def _apply_filters(payments_qs, restaurants_qs, stores_qs, params):
     if staff_uid:
         uid = _safe_uuid(staff_uid)
         if uid:
-            payments_qs = payments_qs.filter(staff__uid=uid)
+            payments_qs = payments_qs.filter(staff_uid=uid)
             print(f"[PaymentStats] Filtered by staff_uid={uid}")
         else:
             logger.debug("Ignoring invalid 'staff_uid' UUID: %r", staff_uid)
             print(f"[PaymentStats][WARN] Invalid staff_uid ignored: {staff_uid}")
 
-    # Date range (inclusive)
+    # Date range (inclusive) on created_at
     tz = timezone.get_current_timezone()
     if date_from:
         df = parse_date(date_from)
         if df:
             start_dt = timezone.make_aware(datetime.combine(df, time.min), tz)
-            payments_qs = payments_qs.filter(payment_date__gte=start_dt)
+            payments_qs = payments_qs.filter(created_at__gte=start_dt)
             print(f"[PaymentStats] Filtered by date_from={start_dt.isoformat()}")
         else:
             logger.debug("Ignoring invalid 'date_from': %r", date_from)
@@ -150,7 +151,7 @@ def _apply_filters(payments_qs, restaurants_qs, stores_qs, params):
         dt_ = parse_date(date_to)
         if dt_:
             end_dt = timezone.make_aware(datetime.combine(dt_, time.max), tz)
-            payments_qs = payments_qs.filter(payment_date__lte=end_dt)
+            payments_qs = payments_qs.filter(created_at__lte=end_dt)
             print(f"[PaymentStats] Filtered by date_to={end_dt.isoformat()}")
         else:
             logger.debug("Ignoring invalid 'date_to': %r", date_to)
@@ -158,61 +159,52 @@ def _apply_filters(payments_qs, restaurants_qs, stores_qs, params):
 
     print(
         "[PaymentStats] After filters -> payments_qs.count():",
-        # Avoid evaluating queryset twice unnecessarily; this debug is useful.
         payments_qs.count()
     )
-    return payments_qs, restaurants_qs, stores_qs
+    return payments_qs, stores_qs
 
 
 def get_role_scoped_qs(user, params=None):
     """
     Returns a dict of querysets scoped to the user's role and filtered by params:
-      - payments_qs: PaymentHistory filtered by role, success status, and JPY (+ filters)
-      - restaurants_qs: Restaurants visible to the role (+ filters if applicable)
-      - stores_qs: Stores visible to the role (+ filters if applicable)
+      - payments_qs: GMOCreditPayment filtered by role, CAPTURE status, and JPY (+ filters)
+      - stores_qs: Stores visible to the role (used for narrowing scope & debug)
     """
     params = params or {}
     print(f"[PaymentStats] get_role_scoped_qs for user_id={getattr(user, 'id', None)} kind={getattr(user, 'kind', None)}")
 
+    # Base (global) queryset: CAPTURE + JPY
+    base_qs = GMOCreditPayment.objects.filter(
+        status=CAPTURE_STATUS,
+        currency=JPY,
+    )
+
     # Admins see everything
     if user.kind in {UserKind.SUPER_ADMIN, UserKind.FC_ADMIN, UserKind.GLOW_ADMIN}:
-        restaurants_qs = Restaurant.objects.all()
         stores_qs = Store.objects.all()
-        payments_qs = PaymentHistory.objects.filter(
-            status__in=SUCCESS_STATUSES,
-            currency=JPY,
-        )
-        print("[PaymentStats] Scope=GLOBAL (Admin). Base payments:", payments_qs.count())
-        payments_qs, restaurants_qs, stores_qs = _apply_filters(
-            payments_qs, restaurants_qs, stores_qs, params
-        )
+        payments_qs = base_qs
+        print("[PaymentStats] Scope=GLOBAL (Admin). Base CAPTURE payments:", payments_qs.count())
+        payments_qs, stores_qs = _apply_filters(payments_qs, stores_qs, params)
         return {
             "payments_qs": payments_qs,
-            "restaurants_qs": restaurants_qs,
             "stores_qs": stores_qs,
         }
 
-    # Sales Agent → restaurants they manage
+    # Sales Agent → restaurants they manage -> stores under those restaurants
     if user.kind == UserKind.SALES_AGENT:
         agent_restaurants = user.get_agent_restaurants or []
         restaurants_qs = Restaurant.objects.filter(pk__in=[r.pk for r in agent_restaurants])
         stores_qs = Store.objects.filter(restaurant__in=restaurants_qs)
-        payments_qs = PaymentHistory.objects.filter(
-            restaurant__in=restaurants_qs,
-            status__in=SUCCESS_STATUSES,
-            currency=JPY,
-        )
-        print("[PaymentStats] Scope=SALES_AGENT. Restaurants:", restaurants_qs.count(), "Base payments:", payments_qs.count())
-        payments_qs, restaurants_qs, stores_qs = _apply_filters(
-            payments_qs, restaurants_qs, stores_qs, params
-        )
+        store_uids = list(stores_qs.values_list("uid", flat=True))
+        payments_qs = base_qs.filter(store_uid__in=store_uids)
+        print("[PaymentStats] Scope=SALES_AGENT. Restaurants:", restaurants_qs.count(), "Stores:", stores_qs.count(), "Base payments:", payments_qs.count())
+        payments_qs, stores_qs = _apply_filters(payments_qs, stores_qs, params)
         return {
             "payments_qs": payments_qs,
-            "restaurants_qs": restaurants_qs,
             "stores_qs": stores_qs,
         }
 
-    # Restaurant Owner → their restaurant(s)
+    # Restaurant Owner → their restaurant(s) -> stores under those restaurants
     if user.kind == UserKind.RESTAURANT_OWNER:
         owned_ids = set()
 
@@ -228,28 +220,37 @@ def get_role_scoped_qs(user, params=None):
 
         restaurants_qs = Restaurant.objects.filter(pk__in=owned_ids)
         stores_qs = Store.objects.filter(restaurant__in=restaurants_qs)
-        payments_qs = PaymentHistory.objects.filter(
-            restaurant__in=restaurants_qs,
-            status__in=SUCCESS_STATUSES,
-            currency=JPY,
-        )
-        print("[PaymentStats] Scope=RESTAURANT_OWNER. Restaurants:", restaurants_qs.count(), "Base payments:", payments_qs.count())
-        payments_qs, restaurants_qs, stores_qs = _apply_filters(
-            payments_qs, restaurants_qs, stores_qs, params
-        )
+        store_uids = list(stores_qs.values_list("uid", flat=True))
+        payments_qs = base_qs.filter(store_uid__in=store_uids)
+        print("[PaymentStats] Scope=RESTAURANT_OWNER. Restaurants:", restaurants_qs.count(), "Stores:", stores_qs.count(), "Base payments:", payments_qs.count())
+        payments_qs, stores_qs = _apply_filters(payments_qs, stores_qs, params)
         return {
             "payments_qs": payments_qs,
-            "restaurants_qs": restaurants_qs,
             "stores_qs": stores_qs,
         }
 
     # Fallback (shouldn’t hit for this endpoint)
     print("[PaymentStats][WARN] Scope fallback hit. User likely unauthorized for this endpoint.")
     return {
-        "payments_qs": PaymentHistory.objects.none(),
-        "restaurants_qs": Restaurant.objects.none(),
+        "payments_qs": GMOCreditPayment.objects.none(),
         "stores_qs": Store.objects.none(),
     }
+
+
+def _get_user_latest_balance(user) -> Decimal:
+    """
+    Latest balance per request: use Balance model for the **current user only**.
+    If the user has no Balance row, return 0.00.
+    """
+    try:
+        bal = Balance.objects.filter(user=user).only("current_balance").first()
+        current = bal.current_balance if bal else Decimal("0.00")
+        print(f"[PaymentStats] latest_balance_jpy for user_id={getattr(user, 'id', None)} -> {current}")
+        return current
+    except Exception as e:
+        logger.exception("Failed to read Balance for user_id=%s", getattr(user, "id", None))
+        print("[PaymentStats][ERROR] Reading Balance failed:", repr(e))
+        return Decimal("0.00")
 
 
 # --- View -------------------------------------------------------------------
@@ -258,13 +259,17 @@ class PaymentStatsView(APIView):
     Role-scoped analytics for:
     super_admin, fc_admin, glow_admin, sales_agent, restaurant_owner
 
+    Data source:
+      - Payments: GMOCreditPayment (status=CAPTURE, currency=JPY)
+      - Latest balance: current authenticated user's Balance.current_balance
+
     Supported filters (query params):
-      - year: int (e.g., 2025)
-      - month: int 1-12
+      - year: int (e.g., 2025)         [created_at]
+      - month: int 1-12                [created_at]
       - store_uid: UUID (Store.uid)
-      - staff_uid: UUID (User.uid)
-      - date_from: YYYY-MM-DD
-      - date_to: YYYY-MM-DD
+      - staff_uid: UUID (User.uid)     [GMOCreditPayment.staff_uid]
+      - date_from: YYYY-MM-DD          [created_at, inclusive]
+      - date_to: YYYY-MM-DD            [created_at, inclusive]
     """
     permission_classes = [CheckAnyPermission]
     available_permission_classes = [
@@ -275,10 +280,12 @@ class PaymentStatsView(APIView):
     @extend_schema(
         operation_id="payment_service__payment_stats",
         tags=["Payment Service - Analytics"],
-        summary="Get role-scoped payment statistics",
+        summary="Get role-scoped payment statistics (GMO + Balance)",
         description=(
             "Returns analytics scoped to the authenticated user's role. "
-            "All filters are optional and combined with AND logic."
+            "All filters are optional and combined with AND logic. "
+            "Payments source: GMOCreditPayment (CAPTURE + JPY). "
+            "Latest balance is taken from the current user's Balance.current_balance."
         ),
         parameters=[
             OpenApiParameter(name="year", description="Filter by year (e.g., 2025)", required=False, type=OpenApiTypes.INT),
@@ -319,7 +326,7 @@ class PaymentStatsView(APIView):
             # 1) Build scoped querysets with filters
             scoped = get_role_scoped_qs(request.user, params=request.query_params)
             payments_qs = scoped["payments_qs"]
-            print("[PaymentStats] Scoped payments count:", payments_qs.count())
+            print("[PaymentStats] Scoped CAPTURE payments count:", payments_qs.count())
 
             # 2) Aggregations
             total_amount_jpy = (
@@ -327,23 +334,25 @@ class PaymentStatsView(APIView):
             )
             print("[PaymentStats] total_amount_jpy:", total_amount_jpy)
 
-            # Pending (latest balance): is_distributed=False, sum of net_amount
-            pending_balance = (
-                payments_qs.filter(is_distributed=False).aggregate(x=Sum("net_amount")).get("x") or Decimal("0.00")
-            )
-            print("[PaymentStats] latest_balance_jpy (pending_balance):", pending_balance)
-
             total_throwins = payments_qs.count()
             print("[PaymentStats] total_throwins:", total_throwins)
 
-            # Distinct stores involved in filtered payments (ignores null store)
-            total_stores = payments_qs.exclude(store__isnull=True).values("store_id").distinct().count()
-            print("[PaymentStats] total_stores (distinct in payments):", total_stores)
+            # Distinct stores involved in filtered payments (by store_uid)
+            total_stores = (
+                payments_qs.exclude(store_uid__isnull=True)
+                .values("store_uid")
+                .distinct()
+                .count()
+            )
+            print("[PaymentStats] total_stores (distinct store_uid in payments):", total_stores)
 
-            # 3) Time series (per day)
+            # Latest balance from Balance model for the current user
+            latest_balance = _get_user_latest_balance(request.user)
+
+            # 3) Time series (per day) on created_at
             daily = (
                 payments_qs
-                .annotate(day=TruncDate("payment_date"))
+                .annotate(day=TruncDate("created_at"))
                 .values("day")
                 .annotate(
                     throwin_count=Count("id"),
@@ -373,7 +382,7 @@ class PaymentStatsView(APIView):
                 },
                 "total_amount_jpy": total_amount_jpy,
                 "total_throwins": total_throwins,
-                "latest_balance_jpy": pending_balance,
+                "latest_balance_jpy": latest_balance,
                 "total_stores": total_stores,
                 "timeseries": timeseries,
             }
