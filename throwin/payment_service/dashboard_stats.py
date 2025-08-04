@@ -326,17 +326,11 @@ class PaymentStatsView(APIView):
             # 1) Build scoped querysets with filters
             scoped = get_role_scoped_qs(request.user, params=request.query_params)
             payments_qs = scoped["payments_qs"]
-            print("[PaymentStats] Scoped CAPTURE payments count:", payments_qs.count())
-
             # 2) Aggregations
             total_amount_jpy = (
                 payments_qs.aggregate(total_amount=Sum("amount")).get("total_amount") or Decimal("0.00")
             )
-            print("[PaymentStats] total_amount_jpy:", total_amount_jpy)
-
             total_throwins = payments_qs.count()
-            print("[PaymentStats] total_throwins:", total_throwins)
-
             # Distinct stores involved in filtered payments (by store_uid)
             total_stores = (
                 payments_qs.exclude(store_uid__isnull=True)
@@ -344,8 +338,6 @@ class PaymentStatsView(APIView):
                 .distinct()
                 .count()
             )
-            print("[PaymentStats] total_stores (distinct store_uid in payments):", total_stores)
-
             # Latest balance from Balance model for the current user
             latest_balance = _get_user_latest_balance(request.user)
 
@@ -368,8 +360,6 @@ class PaymentStatsView(APIView):
                 }
                 for item in daily
             ]
-            print("[PaymentStats] timeseries length:", len(timeseries))
-
             # 4) Build response
             response_data = {
                 "filters_applied": {
@@ -386,13 +376,11 @@ class PaymentStatsView(APIView):
                 "total_stores": total_stores,
                 "timeseries": timeseries,
             }
-            print("[PaymentStats] Response payload prepared.")
             return Response(response_data, status=status.HTTP_200_OK)
 
         except Exception as exc:
             # Log full stack, return safe error response
             logger.exception("Error computing payment stats: %s", exc)
-            print("[PaymentStats][ERROR] Exception occurred:", repr(exc))
             return Response(
                 {
                     "detail": "Failed to compute payment statistics.",
