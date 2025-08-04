@@ -153,11 +153,11 @@ class GMOCreditPaymentAdmin(admin.ModelAdmin):
     Admin panel configuration for GMOCreditPayment.
     """
     list_display = (
-        "order_id", "nickname", "amount", "currency", "status",
+        "order_id", "nickname", "amount", "currency", "status", "store_uid",
         "transaction_id", "approval_code", "process_date", "is_distributed", "created_at"
     )
     list_filter = ("status", "is_distributed", "created_at")
-    search_fields = ("order_id", "transaction_id", "nickname", "staff_uid")
+    search_fields = ("order_id", "transaction_id", "nickname", "staff_uid", "store_uid")
     ordering = ("-created_at",)
     readonly_fields = (
         "order_id", "customer", "nickname", "staff_uid", "store_uid", 
