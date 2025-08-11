@@ -137,25 +137,34 @@ def _apply_filters(payments_qs, stores_qs, params):
 
     # Date range (inclusive) on created_at
     tz = timezone.get_current_timezone()
+    
+    start_dt = None
     if date_from:
         df = parse_date(date_from)
         if df:
             start_dt = timezone.make_aware(datetime.combine(df, time.min), tz)
-            payments_qs = payments_qs.filter(created_at__gte=start_dt)
-            print(f"[PaymentStats] Filtered by date_from={start_dt.isoformat()}")
         else:
             logger.debug("Ignoring invalid 'date_from': %r", date_from)
             print(f"[PaymentStats][WARN] Invalid date_from ignored: {date_from}")
 
+    end_dt = None
     if date_to:
         dt_ = parse_date(date_to)
         if dt_:
             end_dt = timezone.make_aware(datetime.combine(dt_, time.max), tz)
-            payments_qs = payments_qs.filter(created_at__lte=end_dt)
-            print(f"[PaymentStats] Filtered by date_to={end_dt.isoformat()}")
         else:
             logger.debug("Ignoring invalid 'date_to': %r", date_to)
             print(f"[PaymentStats][WARN] Invalid date_to ignored: {date_to}")
+
+    if start_dt and end_dt:
+        payments_qs = payments_qs.filter(created_at__range=(start_dt, end_dt))
+        print(f"[PaymentStats] Filtered by date range: {start_dt.isoformat()} to {end_dt.isoformat()}")
+    elif start_dt:
+        payments_qs = payments_qs.filter(created_at__gte=start_dt)
+        print(f"[PaymentStats] Filtered by date_from={start_dt.isoformat()}")
+    elif end_dt:
+        payments_qs = payments_qs.filter(created_at__lte=end_dt)
+        print(f"[PaymentStats] Filtered by date_to={end_dt.isoformat()}")
 
     print(
         "[PaymentStats] After filters -> payments_qs.count():",
