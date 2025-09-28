@@ -204,14 +204,13 @@ SESSION_COOKIE_SAMESITE = "None"  # Required for cross-origin requests
 SESSION_COOKIE_SECURE = True
 CORS_ALLOW_HEADERS = list(default_headers) + [
     "content-type",
+    "authorization",
 ]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
     "http://alpha.throwin-glow.com",
@@ -228,14 +227,14 @@ CORS_ALLOW_METHODS = (
     "PUT",
 )
 
-CORS_ALLOW_HEADERS = (
-    "accept",
-    "authorization",
-    "content-type",
-    "user-agent",
-    "x-csrftoken",
-    "x-requested-with",
-)
+# CORS_ALLOW_HEADERS = (
+#     "accept",
+#     "authorization",
+#     "content-type",
+#     "user-agent",
+#     "x-csrftoken",
+#     "x-requested-with",
+# )
 
 CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
@@ -244,7 +243,7 @@ CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:8000",
     "http://127.0.0.1:8000",
-    "http://throwin-frontend-react.s3-website-ap-northeast-1.amazonaws.com",
+    # "http://throwin-frontend-react.s3-website-ap-northeast-1.amazonaws.com",
     "https://api-dev.throwin-glow.com",
     "http://alpha.throwin-glow.com",
     "https://backend.throwin-glow.com",
