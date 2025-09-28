@@ -8,6 +8,9 @@ from pathlib import Path
 
 from decouple import config
 
+print("="*50)
+print("I'm In local.py Settings")
+
 # =========================
 # Paths and Base Directory
 # =========================
@@ -93,10 +96,10 @@ DEBUG_TOOLBAR_PANELS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
