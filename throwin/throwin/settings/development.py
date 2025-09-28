@@ -88,8 +88,8 @@ DEBUG_TOOLBAR_PANELS = [
 ]
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
     "corsheaders.middleware.CorsMiddleware",
+    'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -198,7 +198,22 @@ AUTH_USER_MODEL = "accounts.User"
 
 APPEND_SLASH = False
 
-CORS_ALLOW_ALL_ORIGINS = True
+
+from corsheaders.defaults import default_headers
+
+CORS_ALLOW_ALL_ORIGINS = False
+CSRF_COOKIE_SECURE = True
+CORS_ALLOW_CREDENTIALS = True
+# CSRF_COOKIE_DOMAIN = 'core-sm.online'
+CSRF_COOKIE_DOMAIN = None  # Defaults to the current domain
+CSRF_USE_SESSIONS = True
+CSRF_COOKIE_SAMESITE = "None"  # Required for cross-origin CSRF
+
+SESSION_COOKIE_SAMESITE = "None"  # Required for cross-origin requests
+SESSION_COOKIE_SECURE = True
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    "content-type",
+]
 
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
@@ -245,16 +260,6 @@ CSRF_TRUSTED_ORIGINS = [
     "https://alpha.throwin-glow.com",
     "https://api-dev.throwin-glow.com",
 ]
-
-CSRF_COOKIE_SECURE = True
-CORS_ALLOW_CREDENTIALS = True
-# CSRF_COOKIE_DOMAIN = 'core-sm.online'
-CSRF_COOKIE_DOMAIN = None  # Defaults to the current domain
-CSRF_USE_SESSIONS = True
-CSRF_COOKIE_SAMESITE = "None"  # Required for cross-origin CSRF
-
-SESSION_COOKIE_SAMESITE = "None"  # Required for cross-origin requests
-SESSION_COOKIE_SECURE = True
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
