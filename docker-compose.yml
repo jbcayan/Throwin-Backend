@@ -33,7 +33,7 @@ services:
       - .:/app:cached
     command: celery -A throwin worker --loglevel=info
     env_file:
-      - ./throwin/.env
+      - ./throwin/.env   # loads EMAIL_HOST_USER, PASSWORD, etc.
     depends_on:
       - redis
     networks:
@@ -48,6 +48,10 @@ services:
     command: celery -A throwin beat --loglevel=info
     env_file:
       - ./throwin/.env
+    environment:
+      - DJANGO_SETTINGS_MODULE=throwin.settings
+      - CELERY_BROKER_URL=redis://redis_cache:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis_cache:6379/0
     depends_on:
       - redis
     networks:

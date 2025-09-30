@@ -31,6 +31,8 @@ EMAIL_HOST="smtp.gmail.com"
 EMAIL_USE_TLS=True
 EMAIL_PORT=587
 EMAIL_HOST_USER=
+# IMPORTANT: If your password contains special characters like $ or \\ (backslash), wrap it in double quotes.
+# Example: EMAIL_HOST_PASSWORD="pa$$w0rd*with$"
 EMAIL_HOST_PASSWORD=
 
 FRONTEND_URL="http://localhost:3000"

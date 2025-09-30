@@ -395,10 +395,13 @@ SOCIAL_AUTH_PASSWORD = config("SOCIAL_AUTH_PASSWORD")
 
 EMAIL_BACKEND = config("EMAIL_BACKEND")
 EMAIL_HOST = config("EMAIL_HOST")
-EMAIL_PORT = config("EMAIL_PORT")
-EMAIL_USE_TLS = config("EMAIL_USE_TLS")
+EMAIL_PORT = config("EMAIL_PORT", cast=int)
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
+EMAIL_USE_SSL = config("EMAIL_USE_SSL", cast=bool, default=False)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+EMAIL_TIMEOUT = config("EMAIL_TIMEOUT", cast=int, default=30)
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
 FRONTEND_URL = config("FRONTEND_URL")
 SITE_DOMAIN = config("SITE_DOMAIN", default="https://api-dev.throwin-glow.com")
